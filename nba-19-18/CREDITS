@@ -1,0 +1,15 @@
+The NBA Game That Ended 19–18 — asset sources & licences
+
+Artwork   All characters (the fox narrator, the players), props, scoreboard and backgrounds are drawn procedurally in code
+          (engine/cast.js, film.js). No generated or stock images. No team or league logos are drawn.
+Engine    engine/toon.js from the Lemo-Opuscar style library (github.com/lemomo-ai/lemo-opuscar), MIT licence.
+Music     Original score, written in code (music/score.py). Instrument samples:
+          Samples (CC0): Karoryfer Samples / sfzinstruments, VS Chamber Orchestra: Community Edition (Versilian Studios),
+          Versilian Community Sample Library (Versilian Studios). Bongos and brushes are synthesized.
+Sound FX  Synthesized in code (mix.py + the library's core/audio/sfx.py). No recorded samples.
+Voice     Kokoro-82M TTS (kokoro-onnx), Apache-2.0, voice am_michael.
+Fonts     Oleo Script (Soytutype), Alfa Slab One (JM Solé), Jost (indestructible type*), SIL Open Font License 1.1;
+          files and licences in fonts/.
+Facts     22 Nov 1950, Minneapolis: Fort Wayne Pistons 19, Minneapolis Lakers 18; Mikan scored 15 of the Lakers' 18;
+          the 24-second shot clock arrived in the 1954–55 season. Real names are used for historical reference only;
+          players are drawn as fictional geometric stand-ins.

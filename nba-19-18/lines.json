@@ -1,0 +1,60 @@
+[
+ {
+  "id": "l1",
+  "text": "Nineteen to eighteen. A real NBA final score.",
+  "voice": "am_michael",
+  "speed": 1.05,
+  "asr": "19-18. A real NBA final score."
+ },
+ {
+  "id": "l2",
+  "text": "In nineteen fifty, there was no shot clock.",
+  "voice": "am_michael",
+  "speed": 1.05,
+  "asr": "In 1950, there was no shot clock."
+ },
+ {
+  "id": "l3",
+  "text": "A team could hold the ball forever.",
+  "voice": "am_michael",
+  "speed": 1.05
+ },
+ {
+  "id": "l4",
+  "text": "Fort Wayne faced George Mycan's Lakers, and just held it.",
+  "voice": "am_michael",
+  "speed": 1.08,
+  "asr": "Fort Wayne faced George Mikeens Lakers and just held it."
+ },
+ {
+  "id": "l5",
+  "text": "Mycan still scored fifteen of their eighteen.",
+  "voice": "am_michael",
+  "speed": 1.08,
+  "asr": "Mike and still scored 15 of their 18."
+ },
+ {
+  "id": "l6",
+  "text": "Then, in the last seconds...",
+  "voice": "am_michael",
+  "speed": 1.0
+ },
+ {
+  "id": "l7",
+  "text": "And Fort Wayne won it.",
+  "voice": "am_michael",
+  "speed": 1.0
+ },
+ {
+  "id": "l8",
+  "text": "Four years later: the twenty-four second shot clock.",
+  "voice": "am_michael",
+  "speed": 1.12
+ },
+ {
+  "id": "l9",
+  "text": "Still the lowest-scoring game in NBA history.",
+  "voice": "am_michael",
+  "speed": 1.1
+ }
+]

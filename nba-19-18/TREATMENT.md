@@ -45,7 +45,12 @@ Setup (scoreboard, no shot clock) → turn (Fort Wayne just holds it; Mikan scor
 
 Paper `#F1E6CF`, ink `#2B2320`. Ball (the "product", one colour all film): chestnut `#8C4A2F`. Fort Wayne: mustard `#D9A93B`. Minneapolis: powder blue `#86AECB`. Fox accent: turquoise. Step grounds rotate: plum `#7C4E6B`, lime `#B6BE5A`, sand `#D8B98A`, coral `#E08B6E`, powder blue tint.
 
-## Shot list (6 shots)
+## Final timing (as built)
+
+Shot 1 0.0–4.5 · Shot 2 4.5–10.0 · Shot 3 10.0–14.75 · Shot 4 14.75–17.5 · Shot 5 17.5–21.0 (silence 20.0–20.5, swish 20.5) + FINAL board 21.0–22.5 · Shot 6 22.5–30.0 (iris-out 29.3).
+The fox faces three-quarter **right** in every shot (toward the scoreboard). Voice lines were tightened to fit 30 s; see `film.js` `VO`.
+
+## Shot list (6 shots, as planned)
 
 | # | Time | Framing / angle | Camera | Why |
 |---|---|---|---|---|
