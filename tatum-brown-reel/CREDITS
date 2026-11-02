@@ -7,6 +7,10 @@ Music     Original score, written in code (music/score.py). Samples (CC0): Karor
 Sound FX  Synthesized in code (mix.py + the library's core/audio/sfx.py).
 Voice     Kokoro-82M TTS (kokoro-onnx), Apache-2.0, voice am_michael.
 Font      Archivo (Omnibus-Type), SIL Open Font License 1.1; file and licence in fonts/.
-Content   Reported claim, paraphrased with attribution: people close to Tatum say he told the Celtics the team was better
-          with Brown; a reporter says Tatum told him in 2024 he regretted not saying so publicly. Quoted on screen:
-          "He did tell me he regretted that back in 2024." Fact: Celtics won the 2024 title; Brown was Finals MVP.
+Content   Fact-checked 2 Nov 2026:
+          - Chris Mannix (Sports Illustrated, Open Floor podcast): people close to Tatum insist he told the Celtics
+            "this team was better with Jaylen Brown on it"; Tatum told Mannix in 2024 he regretted not saying so publicly.
+            Quoted on screen: "He did tell me he regretted that back in 2024." — Chris Mannix, Sports Illustrated.
+          - Tatum wore No. 0 and Brown No. 7 for Boston.
+          - Celtics won the 2024 title (4–1 over Dallas); Brown was 2024 Finals MVP.
+          - July 1, 2026: Boston traded Brown to the Philadelphia 76ers (AP / ESPN reports).

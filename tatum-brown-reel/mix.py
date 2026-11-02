@@ -30,6 +30,7 @@ for e in E['ev']:
     elif ty == 'type': add(fx, typewriter(), t, .25 * g, .3)
     elif ty == 'snap': add(fx, snap_(), t, .4, .3)
     elif ty == 'knife': add(fx, knife(), t, .55, 0)
+    elif ty == 'slide_off': add(fx, paper_slide(.7), t, .45, .6)
     elif ty == 'collapse': add(fx, collapse(), t, .5, 0)
     elif ty == 'pen': add(fx, pen(), t, .25, -.2)
     elif ty == 'stamp': add(fx, stamp(), t, .45, 0)

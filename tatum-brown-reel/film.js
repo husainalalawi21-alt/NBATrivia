@@ -1,7 +1,7 @@
 // "Tatum's Regret" — a vertical news reel in Swiss Motion Graphics: 1080×1920, 24 fps, 32.5 s, 120 BPM.
 // Paper, ink, greys and ONE signal colour (green). Everything snaps on the beat with one ease; entrances are clip-reveals,
 // deletions are knife cuts, transitions are page pans and wipes. One timeline drives picture, captions and sound.
-export const W = 1080, H = 1920, DUR = 32.5, BEAT = 0.5;
+export const W = 1080, H = 1920, DUR = 37.5, BEAT = 0.5;
 const C = { page: '#EFEDE6', paper: '#FFFFFF', ink: '#111111', g1: '#D9D6CE', g2: '#BDB9AF', g3: '#8C887E', sig: '#00873E' };
 const FONT = (w, px) => `${w} ${px}px Archivo`;
 const M = 72, GUT = 24, COLW = (W - 2 * M - 5 * GUT) / 6;
@@ -10,17 +10,18 @@ const col = i => M + i * (COLW + GUT);
 // ------------------------------------------------------------------ timeline
 export const SECS = [
   { id: 'hook', t0: 0.0, t1: 4.0 }, { id: 'trade', t0: 4.0, t1: 8.0 }, { id: 'behind', t0: 8.0, t1: 15.0 },
-  { id: 'public', t0: 15.0, t1: 18.0 }, { id: 'regret', t0: 18.0, t1: 24.0 }, { id: 'title', t0: 24.0, t1: 28.75 },
-  { id: 'ask', t0: 28.75, t1: 32.5 },
+  { id: 'public', t0: 15.0, t1: 18.0 }, { id: 'regret', t0: 18.0, t1: 24.25 }, { id: 'title', t0: 24.25, t1: 29.25 },
+  { id: 'traded', t0: 29.25, t1: 33.75 }, { id: 'ask', t0: 33.75, t1: 37.5 },
 ];
 export const VO = [
   { id: 'l1', t: 0.3, sub: 'Jayson Tatum has one regret about Jaylen Brown.' },
   { id: 'l2', t: 4.2, sub: "For years, Brown's name kept showing up in trade talks." },
   { id: 'l3', t: 8.2, sub: 'Behind the scenes, people close to Tatum say he told the Celtics this team was better with Brown on it.' },
   { id: 'l4', t: 15.2, sub: "But publicly, he wasn't as vocal." },
-  { id: 'l5', t: 18.2, sub: 'And one reporter says Tatum told him he regretted that, back in 2024.' },
-  { id: 'l6', t: 24.1, sub: 'The same year they won a title together, with Brown as Finals MVP.' },
-  { id: 'l7', t: 28.9, sub: 'So, should Tatum have spoken up sooner?' },
+  { id: 'l5', t: 18.2, sub: 'And reporter Chris Mannix says Tatum told him he regretted that, back in 2024.' },
+  { id: 'l6', t: 24.35, sub: 'The same year they won a title together, with Brown as Finals MVP.' },
+  { id: 'l8', t: 29.55, sub: 'Then, this July, Boston traded Brown to Philadelphia.' },
+  { id: 'l7', t: 34.15, sub: 'So, should Tatum have spoken up sooner?' },
 ];
 let DURS = {};
 export function setup(d) { DURS = d || {}; buildEvents(); }
@@ -103,7 +104,7 @@ function sHook(ctx, t) {
   grid(ctx, t, 0.0, 0.8);
   rule(ctx, M, 236, W - 2 * M, t, 0.0, 0.4);
   note(ctx, 'REPORT · BOSTON', M, 280, t, 0.25);
-  note(ctx, '01 / 07', col(5), 280, t, 0.25, C.g3, 'idx1');
+  note(ctx, '01 / 08', col(5), 280, t, 0.25, C.g3, 'idx1');
   rise(ctx, 'Jayson', M, 560, 900, 200, C.ink, t, 0.25);
   rise(ctx, 'Tatum', M, 760, 900, 200, C.ink, t, 0.5);
   rise(ctx, 'has one', M, 920, 800, 120, C.ink, t, 1.25);
@@ -115,7 +116,7 @@ function sTrade(ctx, t) {
   grid(ctx, t, 4.0, 0.7);
   rule(ctx, M, 236, W - 2 * M, t, 4.0, 0.3);
   note(ctx, 'TRADE TALKS', M, 280, t, 4.25, C.ink);
-  note(ctx, '02 / 07', col(5), 280, t, 4.25, C.g3, 'idx2');
+  note(ctx, '02 / 08', col(5), 280, t, 4.25, C.g3, 'idx2');
   note(ctx, 'TATUM · NO. 0', M, 400, t, 4.25);
   note(ctx, 'BROWN · NO. 7', col(3), 400, t, 4.5);
   // the knife comes for the 7 again and again, and never cuts
@@ -136,13 +137,13 @@ function sBehind(ctx, t) {
   grid(ctx, t, 8.0, 0.5);
   rule(ctx, M, 236, W - 2 * M, t, 8.0, 0.3);
   note(ctx, 'BEHIND THE SCENES', M, 280, t, 8.25, C.sig, 'bts');
-  note(ctx, '03 / 07', col(5), 280, t, 8.25, C.g3, 'idx3');
+  note(ctx, '03 / 08', col(5), 280, t, 8.25, C.g3, 'idx3');
   note(ctx, 'WHAT PEOPLE CLOSE TO TATUM SAY', M, 420, t, 9.0, C.g3, 'who');
   note(ctx, 'HE TOLD THE CELTICS:', M, 456, t, 9.25, C.g3, 'told');
   const sy = OFF_COLLAPSE;   // collapsed by the knife in the next shot
   ctx.save(); ctx.translate(0, 800); ctx.scale(1, sy); ctx.translate(0, -800);
-  [['This team', 10.5], ['was better', 11.5], ['with Brown', 12.5], ['on it.', 13.5]].forEach(([s, l], i) =>
-    rise(ctx, s, M, 640 + i * 150, 800, 150, i === 2 ? C.sig : C.g3, t, l, { id: 'q' + i }));
+  [['“This team', 10.5], ['was better with', 11.5], ['Jaylen Brown', 12.25], ['on it.”', 13.25]].forEach(([s, l], i) =>
+    rise(ctx, s, M, 640 + i * 140, 800, 128, i === 2 ? C.sig : C.g3, t, l, { id: 'q' + i }));
   ctx.restore();
   // the two modules, joined
   const k = snap(t, 9.5, 0.3);
@@ -165,7 +166,7 @@ function sPublic(ctx, t) {
   grid(ctx, t, 15.4, 0.5);
   rule(ctx, M, 236, W - 2 * M, t, 15.4, 0.3);
   note(ctx, 'PUBLICLY', M, 280, t, 15.5, C.ink, 'pub');
-  note(ctx, '04 / 07', col(5), 280, t, 15.5, C.g3, 'idx4');
+  note(ctx, '04 / 08', col(5), 280, t, 15.5, C.g3, 'idx4');
   // giant empty quotation marks: nothing said between them; the cursor blinks, the one unsnapped thing
   rise(ctx, '“', M - 10, 980, 900, 520, C.ink, t, 15.75, { id: 'oq' });
   rise(ctx, '”', col(4), 980, 900, 520, C.ink, t, 16.0, { id: 'cq' });
@@ -177,20 +178,20 @@ function sRegret(ctx, t) {
   grid(ctx, t, 18.0, 0.5);
   rule(ctx, M, 236, W - 2 * M, t, 18.0, 0.3);
   note(ctx, 'THE REGRET', M, 280, t, 18.25, C.sig, 'reg');
-  note(ctx, '05 / 07', col(5), 280, t, 18.25, C.g3, 'idx5');
+  note(ctx, '05 / 08', col(5), 280, t, 18.25, C.g3, 'idx5');
   numeral(ctx, '2024', M - 18, 700, 340, C.ink, t, 18.75, 'y2024');
   // the quote, as the reporter gave it
   rule(ctx, M, 800, W - 2 * M, t, 19.0, 0.3, C.sig, 6);
   const lines = ['“He did tell me', 'he regretted that', 'back in 2024.”'];
   lines.forEach((s, i) => rise(ctx, s, M, 920 + i * 90, 700, 76, C.ink, t, 19.25, { id: 'rq' + i }));
-  note(ctx, '— AN NBA REPORTER, ON TATUM', M, 1230, t, 19.75, C.g3, 'attr');
+  note(ctx, '— CHRIS MANNIX, SPORTS ILLUSTRATED', M, 1230, t, 19.75, C.g3, 'attr');
 }
 function sTitle(ctx, t) {
   // signal block wipes down over the last page, then the paper rises back to the block's edge
   if (t < 24.3) { const T0 = TX; TX = null; sRegret(ctx, 23.99); TX = T0; ctx.fillStyle = C.sig; ctx.fillRect(0, 0, W, H * snap(t, 24.3, 0.3)); }
   else { ctx.fillStyle = C.page; ctx.fillRect(0, 0, W, H); ctx.fillStyle = C.sig; ctx.fillRect(0, 0, W, lerp(H, 860, snap(t, 24.6, 0.3))); }
   if (t < 24.3) return;
-  note(ctx, '06 / 07', col(5), 280, t, 24.5, C.ink, 'idx6');
+  note(ctx, '06 / 08', col(5), 280, t, 24.5, C.ink, 'idx6');
   note(ctx, '2024', M, 280, t, 24.5, C.ink, 'yr');
   rise(ctx, 'Champions', M, 620, 900, 190, C.ink, t, 24.75, { id: 'champ' });
   rise(ctx, 'together.', M, 790, 900, 150, C.paper, t, 25.25, { id: 'tog' });
@@ -200,12 +201,32 @@ function sTitle(ctx, t) {
   note(ctx, 'TATUM', M, 1340, t, 26.0, C.g3, 'lt');
   note(ctx, 'BROWN · FINALS MVP', col(3), 1340, t, 26.5, C.sig, 'lb');
 }
+function sTraded(ctx, t) {
+  ctx.fillStyle = C.page; ctx.fillRect(0, 0, W, H);
+  grid(ctx, t, 29.25, 0.5);
+  rule(ctx, M, 236, W - 2 * M, t, 29.25, 0.3);
+  note(ctx, 'JULY 1, 2026', M, 280, t, 29.5, C.ink, 'jul');
+  note(ctx, '07 / 08', col(5), 280, t, 29.5, C.g3, 'idx7b');
+  note(ctx, 'TATUM · NO. 0', M, 400, t, 29.5, C.g3, 'tt0');
+  numeral(ctx, '0', M - 14, 960, 560, C.ink, t, 29.5, 'tn0');
+  // the blade that kept missing finally cuts between them; the 7 leaves the frame (linear: the exception)
+  const ka = clamp((t - 30.1) / 0.18), off = W * Math.min(1.2, Math.max(0, t - 30.5) / 0.7);
+  if (off < W) {
+    ctx.save(); ctx.translate(off, 0);
+    note(ctx, 'BROWN · NO. 7', col(3), 400, t, 29.5, C.g3, 'tt7');
+    numeral(ctx, '7', col(3) - 14, 960, 560, C.sig, t, 29.5, 'tn7');
+    ctx.restore();
+  }
+  if (ka > 0 && t < 30.6) { ctx.fillStyle = C.sig; ctx.fillRect(col(3) - 40, 430, 4, 560 * ka); }
+  rise(ctx, 'Traded to', M, 1150, 800, 110, C.ink, t, 30.75, { id: 'tr1' });
+  rise(ctx, 'Philadelphia.', M, 1300, 900, 140, C.sig, t, 31.0, { id: 'tr2' });
+}
 function sAsk(ctx, t) {
   ctx.fillStyle = C.page; ctx.fillRect(0, 0, W, H);
   grid(ctx, t, 28.75, 0.5);
   rule(ctx, M, 236, W - 2 * M, t, 28.75, 0.3);
   note(ctx, 'YOUR CALL', M, 280, t, 29.0, C.ink, 'call');
-  note(ctx, '07 / 07', col(5), 280, t, 29.0, C.g3, 'idx7');
+  note(ctx, '08 / 08', col(5), 280, t, 29.0, C.g3, 'idx7');
   rise(ctx, 'Should he', M, 640, 900, 170, C.ink, t, 29.25);
   rise(ctx, 'have spoken', M, 820, 900, 170, C.ink, t, 29.5);
   rise(ctx, 'up sooner?', M, 1000, 900, 170, C.sig, t, 30.0);
@@ -230,11 +251,11 @@ function caption(ctx, t) {
 }
 
 // ------------------------------------------------------------------ frame + transitions
-const SCN = { hook: sHook, trade: sTrade, behind: sBehind, public: sPublic, regret: sRegret, title: sTitle, ask: sAsk };
+const SCN = { hook: sHook, trade: sTrade, behind: sBehind, public: sPublic, regret: sRegret, title: (c, t) => sTitle(c, t - 0.25), traded: sTraded, ask: (c, t) => sAsk(c, t - 5.0) };
 const sec = t => SECS.find(s => t >= s.t0 && t < s.t1) || SECS[SECS.length - 1];
 function draw(ctx, id, t, dx = 0, dy = 0) { ctx.save(); ctx.translate(dx, dy); OFF = [dx, dy]; SCN[id](ctx, t); ctx.restore(); OFF = [0, 0]; }
 // page pans land on each section's first beat: [type, duration]
-const TRANS = { trade: ['up', 0.3], behind: ['left', 0.3], regret: ['up', 0.3], ask: ['left', 0.3] };
+const TRANS = { trade: ['up', 0.3], behind: ['left', 0.3], regret: ['up', 0.3], traded: ['up', 0.3], ask: ['left', 0.3] };
 export function renderFilm(ctx, t, Q, texts) {
   TX = texts || null;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -267,7 +288,8 @@ function buildEvents() {
   ev(7.7, 'slide'); [10.5, 11.5, 12.5, 13.5].forEach(x => ev(x, 'clack', { gain: 0.7 })); ev(9.5, 'snap');
   ev(15.0, 'knife'); ev(15.2, 'collapse'); ev(15.75, 'thunk', { pitch: -3 }); ev(16.0, 'thunk', { pitch: -3 }); ev(16.5, 'clack');
   ev(17.7, 'slide'); ev(18.75, 'thunk', { pitch: -1 }); ev(19.0, 'pen'); ev(19.25, 'stamp');
-  ev(24.25, 'wipe'); ev(24.75, 'clack'); ev(25.25, 'clack'); ev(25.75, 'thunk'); ev(26.0, 'thunk', { pitch: 2 });
-  ev(28.45, 'slide'); [29.25, 29.5, 30.0].forEach(x => ev(x, 'clack')); ev(30.5, 'pen');
+  ev(24.5, 'wipe'); ev(25.0, 'clack'); ev(25.5, 'clack'); ev(26.0, 'thunk'); ev(26.25, 'thunk', { pitch: 2 });
+  ev(28.95, 'slide'); ev(29.5, 'thunk'); ev(29.5, 'thunk', { pitch: 2, gain: 0.6 }); ev(30.1, 'knife'); ev(30.5, 'slide_off'); ev(30.75, 'clack'); ev(31.0, 'clack');
+  ev(33.45, 'slide'); [34.25, 34.5, 35.0].forEach(x => ev(x, 'clack')); ev(35.5, 'pen');
   EVS.sort((a, b) => a.t - b.t);
 }

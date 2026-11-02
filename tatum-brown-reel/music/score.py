@@ -10,7 +10,7 @@ from core.audio import sampler as S
 from core.audio.sfx import SR, add
 OUT = os.path.dirname(os.path.abspath(__file__))
 S.seed(707); rng = np.random.default_rng(707)
-B = .5; DUR = 32.5; N = int(DUR * SR) + SR
+B = .5; DUR = 37.5; N = int(DUR * SR) + SR
 st = {k: np.zeros((N, 2), np.float32) for k in ('drums', 'bass', 'mar', 'top')}
 def t_(d): return np.arange(int(d * SR)) / SR
 def M(p): return S.midi(p) if isinstance(p, str) else p
@@ -32,8 +32,8 @@ def vib(t, ps, d=2.0, v=.35):
 PROG = [('A2', ['A3', 'C4', 'E4', 'B4']), ('F2', ['F3', 'A3', 'C4', 'E4']), ('C3', ['G3', 'C4', 'E4', 'D4']), ('G2', ['G3', 'B3', 'D4', 'A4'])]
 def chord(t): return PROG[int(t // 4) % 4]
 quiet = lambda t: 15.0 <= t < 18.0
-hush = lambda t: 17.5 <= t < 18.0
-END = 31.5
+hush = lambda t: 17.5 <= t < 18.0 or 30.1 <= t < 30.5   # and one beat of nothing as the blade cuts
+END = 36.5
 t = 0.0
 while t < END - 1e-6:
     root, ch = chord(t); beat = int(round(t / B)) % 4
@@ -49,10 +49,11 @@ while t < END - 1e-6:
         elif beat == 0: bass(t, root, 1.6, .5)
     t += B
 # reveals
-for x, p in [(1.75, 'E6'), (4.5, 'A5'), (5.0, 'C6'), (18.75, 'E6'), (24.75, 'A5'), (25.25, 'C6'), (30.0, 'E6')]: glock(x, p, .45)
+for x, p in [(1.75, 'E6'), (4.5, 'A5'), (5.0, 'C6'), (18.75, 'E6'), (25.0, 'A5'), (25.5, 'C6'), (31.0, 'D6'), (35.0, 'E6')]: glock(x, p, .45)
 vib(15.0, ['A3', 'C4', 'E4', 'G4'], 2.4, .3)       # the empty quote marks: one sustained chord, no drums
 vib(18.0, ['F3', 'A3', 'C4', 'E4'], 2.0, .4)
-vib(24.25, ['C4', 'E4', 'G4', 'B4'], 2.2, .45)    # the title block
+vib(24.5, ['C4', 'E4', 'G4', 'B4'], 2.2, .45)    # the title block
+vib(30.5, ['D4', 'F4', 'A4', 'C5'], 2.0, .4)      # the 7 leaves
 # hard stop on the downbeat: one final hit that rings
 kick(END, 1.0); bass(END, 'A1', 1.0, .85); vib(END, ['A3', 'C4', 'E4', 'B4'], 1.0, .45); glock(END, 'A6', .5)
 s0 = int((END - .01) * SR)
