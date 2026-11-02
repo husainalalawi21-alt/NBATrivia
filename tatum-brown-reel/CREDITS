@@ -1,0 +1,12 @@
+Tatum's Regret (reel) — asset sources & licences
+
+Design    All graphics are typography and flat shapes drawn in code (film.js), in the Swiss Motion Graphics style of the
+          Lemo-Opuscar library (github.com/lemomo-ai/lemo-opuscar, MIT). No photos, no team or league logos.
+Music     Original score, written in code (music/score.py). Samples (CC0): Karoryfer Samples / sfzinstruments,
+          Versilian Community Sample Library (Versilian Studios). Kick and hats are synthesized.
+Sound FX  Synthesized in code (mix.py + the library's core/audio/sfx.py).
+Voice     Kokoro-82M TTS (kokoro-onnx), Apache-2.0, voice am_michael.
+Font      Archivo (Omnibus-Type), SIL Open Font License 1.1; file and licence in fonts/.
+Content   Reported claim, paraphrased with attribution: people close to Tatum say he told the Celtics the team was better
+          with Brown; a reporter says Tatum told him in 2024 he regretted not saying so publicly. Quoted on screen:
+          "He did tell me he regretted that back in 2024." Fact: Celtics won the 2024 title; Brown was Finals MVP.
