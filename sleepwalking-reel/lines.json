@@ -1,0 +1,57 @@
+[
+ {
+  "id": "v1",
+  "text": "You can get out of bed, walk through the house, and open the front door, while you're still asleep.",
+  "voice": "af_heart",
+  "speed": 1.0
+ },
+ {
+  "id": "v2",
+  "text": "This is sleepwalking. It starts in deep sleep, the slow-wave stage, usually in the first third of the night.",
+  "voice": "af_heart",
+  "speed": 1.0
+ },
+ {
+  "id": "v3",
+  "text": "Normally, the whole brain sleeps together. In a sleepwalker, it splits.",
+  "voice": "af_heart",
+  "speed": 1.0
+ },
+ {
+  "id": "v4",
+  "text": "Areas that control movement wake up,",
+  "voice": "af_heart",
+  "speed": 1.0
+ },
+ {
+  "id": "v5",
+  "text": "while areas that handle judgment and awareness stay in deep sleep.",
+  "voice": "af_heart",
+  "speed": 1.0
+ },
+ {
+  "id": "v6",
+  "text": "So the body walks, often with eyes open, but no one is really in charge. Most people remember little or nothing.",
+  "voice": "af_heart",
+  "speed": 1.02
+ },
+ {
+  "id": "v7",
+  "text": "It's most common in kids. About five percent of children sleepwalk in a year, compared with one and a half percent of adults.",
+  "voice": "af_heart",
+  "speed": 1.02,
+  "asr": "It's most common in kids. About 5% of children sleepwalk in a year, compared with 1.5% of adults."
+ },
+ {
+  "id": "v8",
+  "text": "It often runs in families, and lack of sleep, stress, fever, or some medicines can trigger it.",
+  "voice": "af_heart",
+  "speed": 1.02
+ },
+ {
+  "id": "v9",
+  "text": "If you find someone sleepwalking, you don't need to wake them. Gently guide them back to bed.",
+  "voice": "af_heart",
+  "speed": 0.98
+ }
+]

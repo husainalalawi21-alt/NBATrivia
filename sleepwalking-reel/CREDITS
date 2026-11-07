@@ -1,0 +1,20 @@
+How Sleepwalking Works — asset sources & licences
+
+Picture   All 3D models (house, people, brain, graph, tiles, props) are low-poly primitives built in code with three.js
+          (world.js). No textures, no generated or stock images. Post-processing adapted from the Lemo-Opuscar library's
+          Low-poly Isometric demo (post.js; github.com/lemomo-ai/lemo-opuscar, MIT). three.js, MIT.
+Music     Original, event-driven score written in code (music/score.py).
+          Samples (CC0): Versilian Community Sample Library (Versilian Studios).
+Sound FX  Synthesized in code (mix.py + the library's core/audio/sfx.py). No recorded samples.
+Voice     Kokoro-82M TTS (kokoro-onnx), Apache-2.0, voice af_heart.
+Fonts     Josefin Sans (Santiago Orozco), Quicksand (Andrew Paglinawan), SIL Open Font License 1.1; files + licences in fonts/.
+
+Facts and sources
+- Sleepwalking is a partial arousal from NREM sleep, typically in the first third of the night; sleepwalkers "can be led
+  back to bed and do not need to be awakened" — Stallman, Aust Fam Physician 2017 (racgp.org.au/afp/2017/august).
+- During an episode from slow-wave sleep (N3), the motor cortex and cingulate showed wake-like activity while frontal and
+  parietal association cortices kept deep-sleep delta waves — Terzaghi et al., Sleep 2009 (PMC2647795).
+- 12-month prevalence 5.0% of children, 1.5% of adults (meta-analysis of 51 studies) — Stallman & Kohler, PLoS ONE 2016 (PMC5104520).
+- Recall ranges from none to complete; runs in families (twin studies); triggers include sleep loss, stress, fever and some
+  medications — reviews above.
+- The night graph is an illustrative typical night (deep sleep concentrated early), not one person's recording.
