@@ -5,7 +5,7 @@
    "id": "hook",
    "src": "city",
    "in": 24.0,
-   "frames": 139,
+   "frames": 141,
    "line": "l1",
    "f": [
     0,
@@ -31,7 +31,7 @@
    "id": "tease",
    "src": "night",
    "in": 0.0,
-   "frames": 92,
+   "frames": 180,
    "line": "l3",
    "f": [
     0,
@@ -101,7 +101,7 @@
    "id": "night1",
    "src": "night",
    "in": 3.0,
-   "frames": 134,
+   "frames": 141,
    "line": "l6",
    "f": [
     0,
@@ -112,7 +112,7 @@
    "id": "night2",
    "src": "night",
    "in": 10.0,
-   "frames": 111,
+   "frames": 116,
    "line": "l6",
    "f": [
     0.55,
@@ -176,7 +176,7 @@
    "id": "roof",
    "src": "city",
    "in": 0.0,
-   "frames": 68,
+   "frames": 100,
    "line": "l8",
    "f": [
     0,
@@ -187,7 +187,7 @@
    "id": "statue",
    "src": "city",
    "in": 12.0,
-   "frames": 51,
+   "frames": 74,
    "line": "l8",
    "f": [
     0.58,
@@ -212,7 +212,7 @@
    "src": "night",
    "in": 2.4,
    "slow": 0.6,
-   "frames": 106,
+   "frames": 144,
    "line": "l10",
    "f": [
     0,
@@ -235,7 +235,7 @@
    "src": "city",
    "in": 9.6,
    "slow": 0.5,
-   "frames": 75,
+   "frames": 87,
    "line": "l11",
    "f": [
     0.32,
