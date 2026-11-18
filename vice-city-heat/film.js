@@ -31,10 +31,10 @@ const PINK = '#ff3db8', BLUE = '#3ad7ff', WHITE = '#ffffff';
 const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x)), lerp = (a, b, t) => a + (b - a) * t;
 const seg = (t, a, b) => clamp((t - a) / (b - a)), eo = t => 1 - Math.pow(1 - clamp(t), 3), eio = t => { t = clamp(t); return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
 const back = (t, s = 1.7) => { t = clamp(t) - 1; return 1 + t * t * ((s + 1) * t + s); };
-let E, LINES, DURS, LANG = 'ar', SPAN = {}, DUR = 0;
+let E, LINES, DURS, LANG = 'ar', IS_EN = false, SPAN = {}, DUR = 0;
 const GAP = .3;
 export function setup(edit, lines, durs, lang = 'ar') {
-  E = edit; LINES = Object.fromEntries(lines.map(l => [l.id, l.text])); DURS = durs; LANG = lang;
+  E = edit; LINES = Object.fromEntries(lines.map(l => [l.id, l.text])); DURS = durs; LANG = lang; IS_EN = lang === 'en' || lang === 'elen';
   let t = .3; VO = [];
   IDS.forEach((id, i) => { const d = durs[id]; VO.push({ id, t }); const end = i < IDS.length - 1 ? t + d + GAP : t + d + 1.4; SPAN[id] = [i === 0 ? 0 : t, end]; t = end; });
   DUR = SPAN[IDS[IDS.length - 1]][1];
@@ -90,7 +90,7 @@ function chip(ctx, t, t0, t1, str, x, y, color) {
   if (t < t0 || t >= t1) return;
   const k = back(seg(t, t0, t0 + .25), 2), out = 1 - eo(seg(t, t1 - .18, t1));
   ctx.save(); ctx.globalAlpha = out; ctx.translate(x, y); ctx.scale(k, k);
-  ctx.font = '74px Lalezar'; ctx.direction = LANG === 'en' ? 'ltr' : 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = '74px Lalezar'; ctx.direction = IS_EN ? 'ltr' : 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const w = ctx.measureText(str).width + 90;
   ctx.shadowColor = color; ctx.shadowBlur = 36; ctx.fillStyle = 'rgba(16,4,24,.82)';
   ctx.beginPath(); ctx.roundRect(-w / 2, -62, w, 124, 62); ctx.fill();
@@ -107,7 +107,7 @@ function caption(ctx, t) {
   const c = cues().find(q => t >= q.t0 && t < q.t1); if (!c) return;
   const a = Math.min(seg(t, c.t0, c.t0 + .15), 1 - seg(t, c.t1 - .15, c.t1));
   const font = '700 48px Cairo', lines = wrap(ctx, c.text, font, 900).map(l => l.replace(/\u00a0/g, ' ')), lh = 70, y0 = 1560 - (lines.length - 1) * lh / 2;
-  ctx.save(); ctx.globalAlpha = a; ctx.font = font; ctx.direction = LANG === 'en' ? 'ltr' : 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.save(); ctx.globalAlpha = a; ctx.font = font; ctx.direction = IS_EN ? 'ltr' : 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   lines.forEach((l, i) => {
     const w = ctx.measureText(l).width + 44, y = y0 + i * lh;
     ctx.fillStyle = 'rgba(12,3,20,.72)'; ctx.beginPath(); ctx.roundRect(W / 2 - w / 2, y - 34, w, 66, 14); ctx.fill();
@@ -140,7 +140,7 @@ export async function render(ctx, t, opt = {}) {
   if ([3, 7, 9, 15, 17].includes(idx) && f < .2) { const d = 18 * (1 - f / .2); ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = .5; ctx.drawImage(ctx.canvas, d, 0); ctx.drawImage(ctx.canvas, -d, 0); ctx.restore(); }
   // —— titles, locked to the narration ——
   for (const [l0, f0, l1, f1, ar, en, x, y, o] of TITLES) {
-    const str = LANG === 'en' ? en : ar, o2 = { ...o, dir: o.dir || (LANG === 'en' ? 'ltr' : 'rtl') };
+    const str = IS_EN ? en : ar, o2 = { ...o, dir: o.dir || (IS_EN ? 'ltr' : 'rtl') };
     if (o.chip) chip(ctx, t, at(l0, f0), at(l1, f1), str, x, y, o.color); else title(ctx, t, at(l0, f0), at(l1, f1), str, x, y, o2);
   }
   // credit the fan artist whose graphic appears
