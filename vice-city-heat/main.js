@@ -2,9 +2,10 @@
 const Q = new URLSearchParams(location.search);
 const cv = document.getElementById('c'), g = cv.getContext('2d');
 await Promise.all(['100px Lalezar', '700 48px Cairo', '600 24px Cairo'].map(f => document.fonts.load(f, 'فايس سيتي ABC')));
-const [edit, lines, durs] = await Promise.all(['edit.json', 'lines.json', 'voices/dur.json'].map(u => fetch(u).then(r => r.json())));
+const LANG = Q.get('lang') || 'ar';
+const [edit, lines, durs] = await Promise.all(['edit.json', `lines_${LANG}.json`, `voices_${LANG}/dur.json`].map(u => fetch(u).then(r => r.json())));
 const film = await import('./film.js');
-film.setup(edit, lines, durs);
+film.setup(edit, lines, durs, LANG);
 window.DUR = film.dur();
 const cutEv = edit.clips.slice(1).map((c, i) => ({ t: c.t0, type: 'cut', n: i }));
 window.EV = [...film.VO.map(v => ({ t: v.t, type: 'vo', id: v.id })), ...cutEv].sort((a, b) => a.t - b.t);

@@ -7,8 +7,8 @@ Footage/photos  Supplied by the channel owner (assets/): Miami city/"Vice City" 
                 their use. The clips' own audio is not used. The "Just in time" banner from the jersey post is cropped out.
 Music           Original synthwave score synthesized in code (music/score.py). No samples.
 Sound FX        Synthesized whooshes (the Lemo-Opuscar library's core/audio/sfx.py).
-Voice           Microsoft Edge neural TTS via edge-tts, voice ar-KW-FahedNeural (Kuwaiti Arabic). Check Microsoft's terms
-                for commercial use of the voice.
+Voice           Arabic: Microsoft Edge neural TTS via edge-tts, voice ar-BH-AliNeural (Bahraini), pitch −12 Hz — check Microsoft's
+                terms for commercial use. English: Kokoro-82M (kokoro-onnx), Apache-2.0, voice am_onyx.
 Fonts           Lalezar (Borna Izadpanah), Cairo (Mohamed Gaber, Accademia di Belle Arti di Urbino), SIL OFL 1.1, in fonts/.
 
 Facts (checked 18 Nov 2026)
