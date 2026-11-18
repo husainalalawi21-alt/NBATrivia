@@ -8,7 +8,7 @@ def spans(lang):
     for i, k in enumerate(IDS):
         end = t + d[k] + (.3 if i < len(IDS) - 1 else 1.4); S[k] = (0 if i == 0 else t, end); t = end
     return S
-SP = [spans(l) for l in ('ar', 'en', 'me') if os.path.exists(os.path.join(HERE, f'voices_{l}', 'dur.json'))]
+SP = [spans(l) for l in ('ar', 'en', 'me', 'el') if os.path.exists(os.path.join(HERE, f'voices_{l}', 'dur.json'))]
 for c in E['clips']:
     if 'src' not in c: continue
     need = max((S[c['line']][1] - S[c['line']][0]) * (c['f'][1] - c['f'][0]) for S in SP)
