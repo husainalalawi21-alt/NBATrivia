@@ -1,0 +1,6 @@
+Manama Masters 3x3 — The Avenues promo reel — sources & licences
+Footage   Supplied by the channel owner (assets/, kept out of git): event footage and promo clip (FIBA 3x3 World Tour
+          Manama Masters, 20–21 Nov 2026, The Avenues Mall). Rights belong to their owners. Clip audio not used.
+Voice     ElevenLabs eleven_v4, voice "Ahmed – Natural and Clear" (Gulf/Kuwaiti), script as supplied by the owner.
+Music     Original beat synthesized in code (music/score.py). No samples.
+Fonts     Aref Ruqaa (titles), Tajawal (captions), Reem Kufi (3x3 / Fan Zone) — SIL OFL 1.1, in fonts/.
