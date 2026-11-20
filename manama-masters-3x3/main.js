@@ -1,7 +1,7 @@
 // Page contract: window.READY, window.render(t), window.DUR, window.EV, window.TEXTS
 const Q = new URLSearchParams(location.search);
 const cv = document.getElementById('c'), g = cv.getContext('2d');
-await Promise.all(['100px Lalezar', '700 48px Cairo', '600 24px Cairo'].map(f => document.fonts.load(f, 'فايس سيتي ABC')));
+await Promise.all(['700 100px Ruqaa', '800 50px Tajawal', '700 100px ReemKufi'].map(f => document.fonts.load(f, 'المنامة ماسترز Fan Zone 3x3')));
 const LANG = Q.get('lang') || 'ar';
 const [edit, lines, durs] = await Promise.all(['edit.json', `lines_${LANG}.json`, `voices_${LANG}/dur.json`].map(u => fetch(u).then(r => r.json())));
 const film = await import('./film.js');

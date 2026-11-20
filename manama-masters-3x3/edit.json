@@ -1,0 +1,206 @@
+{
+ "fps": 30,
+ "clips": [
+  {
+   "id": "hook1",
+   "src": "promo",
+   "in": 0.0,
+   "line": "l1",
+   "f": [
+    0,
+    0.5
+   ]
+  },
+  {
+   "id": "hook2",
+   "src": "event",
+   "in": 5.0,
+   "line": "l1",
+   "f": [
+    0.5,
+    1
+   ]
+  },
+  {
+   "id": "towers1",
+   "src": "promo",
+   "in": 1.6,
+   "line": "l2",
+   "f": [
+    0,
+    0.45
+   ]
+  },
+  {
+   "id": "towers2",
+   "src": "event",
+   "in": 2.2,
+   "line": "l2",
+   "f": [
+    0.45,
+    1
+   ],
+   "slow": 0.7
+  },
+  {
+   "id": "banner",
+   "src": "event",
+   "in": 0.0,
+   "line": "l3",
+   "f": [
+    0,
+    0.4
+   ]
+  },
+  {
+   "id": "arena",
+   "src": "event",
+   "in": 7.2,
+   "line": "l3",
+   "f": [
+    0.4,
+    1
+   ]
+  },
+  {
+   "id": "fans1",
+   "src": "event",
+   "in": 15.0,
+   "line": "l4",
+   "f": [
+    0,
+    0.5
+   ]
+  },
+  {
+   "id": "fans2",
+   "src": "event",
+   "in": 18.0,
+   "line": "l4",
+   "f": [
+    0.5,
+    1
+   ]
+  },
+  {
+   "id": "young",
+   "src": "event",
+   "in": 17.0,
+   "line": "l5",
+   "f": [
+    0,
+    0.35
+   ]
+  },
+  {
+   "id": "crowd1",
+   "src": "event",
+   "in": 25.0,
+   "line": "l5",
+   "f": [
+    0.35,
+    0.7
+   ]
+  },
+  {
+   "id": "screen",
+   "src": "event",
+   "in": 21.0,
+   "line": "l5",
+   "f": [
+    0.7,
+    1
+   ]
+  },
+  {
+   "id": "crowd2",
+   "src": "event",
+   "in": 27.5,
+   "line": "l6",
+   "f": [
+    0,
+    1
+   ]
+  },
+  {
+   "id": "game1",
+   "src": "event",
+   "in": 10.0,
+   "line": "l7",
+   "f": [
+    0,
+    0.55
+   ]
+  },
+  {
+   "id": "game2",
+   "src": "event",
+   "in": 30.0,
+   "line": "l7",
+   "f": [
+    0.55,
+    1
+   ]
+  },
+  {
+   "id": "jump",
+   "src": "event",
+   "in": 20.0,
+   "line": "l8",
+   "f": [
+    0,
+    0.33
+   ]
+  },
+  {
+   "id": "shoot",
+   "src": "event",
+   "in": 22.0,
+   "line": "l8",
+   "f": [
+    0.33,
+    0.66
+   ]
+  },
+  {
+   "id": "game3",
+   "src": "event",
+   "in": 34.0,
+   "line": "l8",
+   "f": [
+    0.66,
+    1
+   ]
+  },
+  {
+   "id": "game4",
+   "src": "event",
+   "in": 36.5,
+   "line": "l9",
+   "f": [
+    0,
+    0.5
+   ]
+  },
+  {
+   "id": "fans3",
+   "src": "event",
+   "in": 16.0,
+   "line": "l9",
+   "f": [
+    0.5,
+    1
+   ]
+  },
+  {
+   "id": "card",
+   "src": "promo",
+   "in": 7.2,
+   "line": "l10",
+   "f": [
+    0,
+    1
+   ]
+  }
+ ]
+}

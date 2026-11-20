@@ -1,33 +1,32 @@
 // "فايس سيتي… بس في الـNBA" — 1080×1920, 30 fps. The user's footage and photos, cut on the narration,
-// with neon titles (Lalezar), Arabic captions (Cairo) and flash/glitch cuts. One timeline: edit.json + VO below.
+// with Ruqaa calligraphy titles (Aref Ruqaa), Arabic captions (Tajawal) and flash/glitch cuts. One timeline: edit.json + VO below.
 export const W = 1080, H = 1920;
 export let VO = [];
-const IDS = ['l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7', 'l8', 'l9', 'l10', 'l11'];
+let IDS = [];
 // [line, frac start, line, frac end, Arabic, English, x, y, options]
+const GOLD = '#F6C34A', RED = '#E5252A';
 const TITLES = [
-  ['l1', .02, 'l1', 1, 'فايس سيتي', 'VICE CITY', 540, 520, { px: 190, color: '#ff3db8' }],
-  ['l1', .35, 'l1', 1, 'مو بس في قراند', 'NOT JUST IN GTA', 540, 700, { px: 92, color: '#3ad7ff', fill: '#fff' }],
-  ['l2', .06, 'l2', 1, 'عندهم فريق في الـNBA', 'HAS AN NBA TEAM', 540, 360, { px: 110, color: '#ff3db8' }],
-  ['l3', .06, 'l3', 1, 'ونجم من أحسن لاعبين العالم؟', 'AND A WORLD-CLASS STAR?', 540, 520, { px: 104, color: '#3ad7ff' }],
-  ['l4', .07, 'l4', .75, 'فايس سيتي = ميامي', 'VICE CITY = MIAMI', 540, 470, { px: 120, color: '#ff3db8' }],
-  ['l4', .78, 'l4', 1, 'MIAMI HEAT', 'MIAMI HEAT', 540, 470, { px: 150, color: '#ff5a3c', dir: 'ltr' }],
-  ['l5', .02, 'l5', 1, '2017', '2017', 540, 300, { px: 200, color: '#3ad7ff', dir: 'ltr' }],
-  ['l5', .1, 'l5', 1, 'جيرسي VICE', 'THE VICE JERSEY', 540, 470, { px: 104, color: '#ff3db8' }],
-  ['l5', .35, 'l5', 1, 'مستوحى من Miami Vice', 'INSPIRED BY MIAMI VICE', 540, 1190, { chip: 1, color: '#3ad7ff' }],
-  ['l5', .66, 'l5', 1, 'من أكثر الجيرسيات بيعاً', 'A LEAGUE BEST-SELLER', 540, 1340, { chip: 1, color: '#ff3db8' }],
-  ['l6', .05, 'l6', 1, 'قبل GTA 6 بيوم', 'ONE DAY BEFORE GTA 6', 540, 250, { px: 96, color: '#ff3db8' }],
-  ['l7', .02, 'l7', .46, 'ملعب لليلة وحدة بس', 'ONE NIGHT ONLY', 540, 300, { px: 110, color: '#ff3db8' }],
-  ['l7', .48, 'l7', 1, 'Nike × Cactus Jack', 'Nike × Cactus Jack', 540, 1240, { px: 96, color: '#ff3db8', dir: 'ltr' }],
-  ['l8', .05, 'l8', 1, 'سطح الأرينا: VICE CITY', 'ON THE ARENA ROOF', 540, 470, { px: 104, color: '#ff3db8' }],
-  ['l9', .03, 'l9', 1, 'يانيس', 'GIANNIS', 540, 560, { px: 240, color: '#ff3db8' }],
-  ['l9', .12, 'l9', 1, 'أنتيتوكونمبو', 'ANTETOKOUNMPO', 540, 760, { px: 120, color: '#3ad7ff' }],
-  ['l9', .45, 'l9', 1, 'MVP مرتين', '2× MVP', 540, 1000, { chip: 1, color: '#ff3db8' }],
-  ['l9', .64, 'l9', 1, 'بطل الدوري 2021', '2021 NBA CHAMPION', 540, 1160, { chip: 1, color: '#3ad7ff' }],
-  ['l10', .25, 'l10', 1, 'ضد فريقه القديم', 'VS HIS OLD TEAM', 540, 1180, { px: 110, color: '#3ad7ff' }],
-  ['l11', .04, 'l11', 1, 'باجر: GTA 6', 'TOMORROW: GTA 6', 540, 600, { px: 140, color: '#ff3db8' }],
-  ['l11', .38, 'l11', 1, 'الليلة: باسكت', 'TONIGHT: HOOPS', 540, 800, { px: 140, color: '#3ad7ff' }],
+  ['l1', .03, 'l1', 1, 'لا تفوّت!', '', 540, 500, { px: 210, color: GOLD }],
+  ['l1', .4, 'l1', 1, 'مجمع الأفنيوز', '', 540, 720, { px: 130, color: RED, fill: '#fff' }],
+  ['l2', .05, 'l2', 1, 'اليوم وباجر', '', 540, 520, { px: 200, color: GOLD }],
+  ['l2', .45, 'l2', 1, 'حدث عالمي في المملكة', '', 540, 720, { px: 96, color: RED, fill: '#fff' }],
+  ['l3', .05, 'l3', 1, 'المنامة ماسترز', '', 540, 470, { px: 170, color: GOLD }],
+  ['l3', .3, 'l3', 1, '3x3', '', 540, 680, { px: 210, color: RED, fill: '#fff', dir: 'ltr', font: '700 210px ReemKufi' }],
+  ['l4', .05, 'l4', 1, 'حدث عائلي', '', 540, 480, { px: 190, color: GOLD }],
+  ['l4', .35, 'l4', 1, 'من الطراز الأول', '', 540, 680, { px: 110, color: RED, fill: '#fff' }],
+  ['l5', .05, 'l5', 1, 'Fan Zone', '', 540, 470, { px: 160, color: GOLD, dir: 'ltr', font: '700 160px ReemKufi' }],
+  ['l5', .35, 'l5', 1, 'للعيال', '', 540, 1000, { chip: 1, color: GOLD }],
+  ['l5', .62, 'l5', 1, 'وللشباب بعد', '', 540, 1160, { chip: 1, color: RED }],
+  ['l6', .05, 'l6', 1, 'مطاعم تناسب الكل', '', 540, 520, { px: 140, color: GOLD }],
+  ['l7', .05, 'l7', 1, 'مباريات استثنائية', '', 540, 500, { px: 140, color: GOLD }],
+  ['l8', .02, 'l8', 1, 'مسابقة الدانك', '', 540, 900, { chip: 1, color: GOLD }],
+  ['l8', .33, 'l8', 1, 'مسابقة الثلاثيات', '', 540, 1060, { chip: 1, color: RED }],
+  ['l8', .66, 'l8', 1, 'المباريات النهائية', '', 540, 1220, { chip: 1, color: GOLD }],
+  ['l9', .05, 'l9', 1, 'تعال وعيش الأجواء', '', 540, 520, { px: 140, color: GOLD }],
+  ['l10', .02, 'l10', 1, 'مجمع الأفنيوز', '', 540, 330, { px: 160, color: GOLD }],
+  ['l10', .3, 'l10', 1, 'اليوم وباجر', '', 540, 520, { px: 140, color: RED, fill: '#fff' }],
 ];
-const PINK = '#ff3db8', BLUE = '#3ad7ff', WHITE = '#ffffff';
+const PINK = '#F6C34A', BLUE = '#E5252A', WHITE = '#ffffff';
 const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x)), lerp = (a, b, t) => a + (b - a) * t;
 const seg = (t, a, b) => clamp((t - a) / (b - a)), eo = t => 1 - Math.pow(1 - clamp(t), 3), eio = t => { t = clamp(t); return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
 const back = (t, s = 1.7) => { t = clamp(t) - 1; return 1 + t * t * ((s + 1) * t + s); };
@@ -35,7 +34,7 @@ let E, LINES, DURS, LANG = 'ar', IS_EN = false, SPAN = {}, DUR = 0;
 const GAP = .3;
 export function setup(edit, lines, durs, lang = 'ar') {
   E = edit; LINES = Object.fromEntries(lines.map(l => [l.id, l.text])); DURS = durs; LANG = lang; IS_EN = lang === 'en' || lang === 'elen';
-  let t = .3; VO = [];
+  IDS = lines.map(l => l.id); let t = .3; VO = [];
   IDS.forEach((id, i) => { const d = durs[id]; VO.push({ id, t }); const end = i < IDS.length - 1 ? t + d + GAP : t + d + 1.4; SPAN[id] = [i === 0 ? 0 : t, end]; t = end; });
   DUR = SPAN[IDS[IDS.length - 1]][1];
   // the cut points are fractions of each line's span; snapped to whole frames
@@ -68,7 +67,7 @@ function cover(ctx, im, z, fx, fy) {
 
 // —— text ——
 function glowText(ctx, str, x, y, o = {}) {
-  const px = o.px || 120, font = o.font || `${px}px Lalezar`;
+  const px = o.px || 120, font = o.font || `700 ${px}px Ruqaa`;
   ctx.save(); ctx.font = font; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = o.dir || 'rtl';
   let w = ctx.measureText(str).width; const maxW = o.maxW || 960; let sc = w > maxW ? maxW / w : 1;
   ctx.translate(x, y); ctx.scale(sc * (o.scale || 1), sc * (o.scale || 1)); ctx.rotate(o.rot || 0);
@@ -90,7 +89,7 @@ function chip(ctx, t, t0, t1, str, x, y, color) {
   if (t < t0 || t >= t1) return;
   const k = back(seg(t, t0, t0 + .25), 2), out = 1 - eo(seg(t, t1 - .18, t1));
   ctx.save(); ctx.globalAlpha = out; ctx.translate(x, y); ctx.scale(k, k);
-  ctx.font = '74px Lalezar'; ctx.direction = IS_EN ? 'ltr' : 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = '800 64px Tajawal'; ctx.direction = IS_EN ? 'ltr' : 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const w = ctx.measureText(str).width + 90;
   ctx.shadowColor = color; ctx.shadowBlur = 36; ctx.fillStyle = 'rgba(16,4,24,.82)';
   ctx.beginPath(); ctx.roundRect(-w / 2, -62, w, 124, 62); ctx.fill();
@@ -101,12 +100,12 @@ function chip(ctx, t, t0, t1, str, x, y, color) {
 let TX = null;
 function wrap(ctx, text, font, maxW) { ctx.font = font; const out = []; let cur = ''; for (const w of text.split(' ')) { const tt = cur ? cur + ' ' + w : w; if (ctx.measureText(tt).width <= maxW || !cur) cur = tt; else { out.push(cur); cur = w; } } if (cur) out.push(cur); return out; }
 export function cues() {
-  return VO.map((v, i) => { const nx = VO[i + 1] ? VO[i + 1].t - .05 : DUR - .3; return { t0: v.t, t1: Math.min(nx, Math.max(v.t + (DURS[v.id] ?? 3) + .5, v.t + 1.8)), text: LINES[v.id] }; });
+  return VO.map((v, i) => { const nx = VO[i + 1] ? VO[i + 1].t - .05 : DUR - .3; return { id: v.id, t0: v.t, t1: Math.min(nx, Math.max(v.t + (DURS[v.id] ?? 3) + .5, v.t + 1.8)), text: LINES[v.id] }; });
 }
 function caption(ctx, t) {
-  const c = cues().find(q => t >= q.t0 && t < q.t1); if (!c) return;
+  const c = cues().find(q => t >= q.t0 && t < q.t1); if (!c || c.id === 'l10') return;
   const a = Math.min(seg(t, c.t0, c.t0 + .15), 1 - seg(t, c.t1 - .15, c.t1));
-  const font = '700 48px Cairo', lines = wrap(ctx, c.text, font, 900).map(l => l.replace(/\u00a0/g, ' ')), lh = 70, y0 = 1560 - (lines.length - 1) * lh / 2;
+  const font = '800 50px Tajawal', lines = wrap(ctx, c.text, font, 900).map(l => l.replace(/\u00a0/g, ' ')), lh = 70, y0 = 1560 - (lines.length - 1) * lh / 2;
   ctx.save(); ctx.globalAlpha = a; ctx.font = font; ctx.direction = IS_EN ? 'ltr' : 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   lines.forEach((l, i) => {
     const w = ctx.measureText(l).width + 44, y = y0 + i * lh;
@@ -142,11 +141,6 @@ export async function render(ctx, t, opt = {}) {
   for (const [l0, f0, l1, f1, ar, en, x, y, o] of TITLES) {
     const str = IS_EN ? en : ar, o2 = { ...o, dir: o.dir || (IS_EN ? 'ltr' : 'rtl') };
     if (o.chip) chip(ctx, t, at(l0, f0), at(l1, f1), str, x, y, o.color); else title(ctx, t, at(l0, f0), at(l1, f1), str, x, y, o2);
-  }
-  // credit the fan artist whose graphic appears
-  if (['tease', 'night1', 'night2', 'star', 'rival'].includes(c.id)) {
-    ctx.save(); ctx.font = '600 24px Cairo'; ctx.textAlign = 'left'; ctx.direction = 'ltr'; ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 8;
-    ctx.fillText('Graphic: @aragaogfx', 40, 1880); ctx.restore();
   }
   if (!opt.nosubs) caption(ctx, t);
   TX = null;

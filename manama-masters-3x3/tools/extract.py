@@ -2,13 +2,13 @@
 longest language version (clip lengths follow each language's narration), and record frame counts."""
 import json, os, subprocess, shutil
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__))); E = json.load(open(os.path.join(HERE, 'edit.json')))
-IDS = [f'l{i}' for i in range(1, 12)]
+IDS = [l['id'] for l in json.load(open(os.path.join(HERE, 'lines_ar.json')))]
 def spans(lang):
     d = json.load(open(os.path.join(HERE, f'voices_{lang}', 'dur.json'))); S = {}; t = .3
     for i, k in enumerate(IDS):
         end = t + d[k] + (.3 if i < len(IDS) - 1 else 1.4); S[k] = (0 if i == 0 else t, end); t = end
     return S
-SP = [spans(l) for l in ('ar', 'en', 'me', 'el', 'elen') if os.path.exists(os.path.join(HERE, f'voices_{l}', 'dur.json'))]
+SP = [spans(l) for l in ('ar',) if os.path.exists(os.path.join(HERE, f'voices_{l}', 'dur.json'))]
 for c in E['clips']:
     if 'src' not in c: continue
     need = max((S[c['line']][1] - S[c['line']][0]) * (c['f'][1] - c['f'][0]) for S in SP)
