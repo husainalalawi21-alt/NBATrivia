@@ -1,0 +1,4 @@
+out/
+*.wav
+!music/*.wav
+voices_ar/takeA.mp3

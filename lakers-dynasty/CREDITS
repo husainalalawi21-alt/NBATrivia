@@ -1,0 +1,20 @@
+The Last Three-Peat (Lakers dynasty reel) — sources & licences
+
+Images    Generated with Higgsfield (GPT Image 2.6) on the channel owner's account, 22 Nov 2026: 3D miniature dioramas and retro
+          painted illustrations (images/). No photos, no team or league logos; players appear only from behind or as tiny figures.
+Design    All motion graphics, charts and typography drawn in code (film.js), styled after the owner's two reference reels.
+Voice     ElevenLabs eleven_v4. English: "Ian – Deep, Punchy Social Hook Voice" (take A). Arabic (Gulf): "Ahmed – Natural and Clear" (take B).
+Music     Original score written in code (music/score.py): synthesized drums, 808, pad and bell. No samples.
+Sound FX  Synthesized in code (mix.py).
+Fonts     Inter, Instrument Serif, JetBrains Mono, IBM Plex Sans Arabic — SIL Open Font License 1.1; files and licences in fonts/.
+
+Facts (checked 22 Nov 2026)
+- Lakers won the 2000, 2001 and 2002 titles (Shaq and Kobe); no NBA team has won three straight since.
+- 2001 playoffs: 15-1 — swept Portland 3-0, Sacramento 4-0, San Antonio 4-0; beat Philadelphia 4-1 in the Finals (lost Game 1).
+- 2026-27 is the Lakers' first season without LeBron James since 2017-18; James now plays for the 76ers (Wikipedia, Yardbarker).
+- Lakers 14-3, 1st in the West after a 106-104 win over Sacramento on Nov. 20/21, 2026 (ESPN, StatMuse, CBS Sports).
+- Dončić 37.2 ppg; Kessler 14.3 pts / 10.7 reb (Yahoo Sports, Heavy). Reaves re-signed July 12, 2026 (ESPN offseason recap).
+- Thin forward group, no real backup center (ESPN offseason recap).
+- Knicks won the 2026 title, 4-1 over the Spurs (NBC Sports, ESPN, CBS Sports).
+- Title odds mid-Nov. 2026: Spurs +300, Thunder +625, 76ers +900 (Fox Sports / odds listing); Lakers +2500 (bet365 board, Nov. 9, via CBS
+  Sports). Prices differ between books and dates; the chart shows implied chance (100 / (odds + 100)).

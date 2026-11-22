@@ -1,1 +1,7 @@
-@font-face { font-family: 'Archivo'; src: url(Archivo.ttf) format('truetype'); font-weight: 100 900; font-display: block; }
+@font-face { font-family: 'Inter'; src: url(Inter.ttf) format('truetype'); font-weight: 100 900; font-display: block; }
+@font-face { font-family: 'Instrument Serif'; src: url(InstrumentSerif-Italic.ttf) format('truetype'); font-style: italic; font-weight: 400; font-display: block; }
+@font-face { font-family: 'Instrument Serif'; src: url(InstrumentSerif-Regular.ttf) format('truetype'); font-style: normal; font-weight: 400; font-display: block; }
+@font-face { font-family: 'JetBrains Mono'; src: url(JetBrainsMono.ttf) format('truetype'); font-weight: 100 800; font-display: block; }
+@font-face { font-family: 'Plex Arabic'; src: url(PlexArabic-Medium.ttf) format('truetype'); font-weight: 500; font-display: block; }
+@font-face { font-family: 'Plex Arabic'; src: url(PlexArabic-SemiBold.ttf) format('truetype'); font-weight: 600; font-display: block; }
+@font-face { font-family: 'Plex Arabic'; src: url(PlexArabic-Bold.ttf) format('truetype'); font-weight: 700; font-display: block; }
