@@ -1,0 +1,317 @@
+<title>Lakers Reel Directions</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,800;1,800;1,900&family=Big+Shoulders+Display:wght@800;900&family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: three direction rows, each = name + pitch on top, three 9:16 frames underneath; frames wrap to one column on phones. */
+:root {
+  --bg: #08070b;
+  --panel: #121019;
+  --line: #2a2533;
+  --fg: #f4f1f8;
+  --muted: #a49cb3;
+  --purple: #7c4dff;
+  --gold: #fdb927;
+  --head: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif;
+  --text: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--text); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 36px 72px; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 56px; }
+header { display: grid; gap: 12px; max-width: 720px; }
+.kicker { font-family: var(--head); font-size: 13px; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); }
+h1 { font-family: var(--head); font-weight: 700; font-size: clamp(34px, 5.4vw, 58px); line-height: 1.02; margin: 0; letter-spacing: -.02em; text-wrap: balance; }
+header p { margin: 0; color: var(--muted); max-width: 62ch; }
+.dir { display: grid; gap: 20px; padding-top: 28px; border-top: 1px solid var(--line); }
+.dir-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 18px; align-items: baseline; }
+.letter { font-family: var(--head); font-weight: 700; font-size: 44px; line-height: 1; color: var(--gold); grid-row: span 2; }
+.dir h2 { font-family: var(--head); font-weight: 700; font-size: 26px; margin: 0; letter-spacing: -.01em; }
+.dir p { margin: 0; color: var(--muted); max-width: 70ch; }
+.frames { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 720px) { .frames { grid-template-columns: minmax(0, 1fr); max-width: 360px; } }
+figure { margin: 0; display: grid; gap: 8px; min-width: 0; }
+figure canvas { width: 100%; aspect-ratio: 9 / 16; display: block; border-radius: 14px; background: #000; }
+figcaption { font-size: 13.5px; color: var(--muted); }
+figcaption b { color: var(--fg); font-weight: 600; }
+.ask { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 22px 24px; display: grid; gap: 8px; }
+.ask h3 { font-family: var(--head); margin: 0; font-size: 20px; }
+.ask p { margin: 0; color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="kicker">Lakers · The Last Three-Peat · pick a direction</div>
+    <h1>Three modern looks for the same 60 seconds</h1>
+    <p>Same script and voice. Each direction shows three key moments: the hook, the 14-3 stats, and the obstacles. Frames loop the way they would move in the video. Pick one, or mix parts, and I'll rebuild the full storyboard in it.</p>
+  </header>
+
+  <section class="dir" data-dir="broadcast">
+    <div class="dir-head"><span class="letter">A</span><h2>Broadcast</h2><p>Modern NBA on-air graphics: angled purple and gold panels that slide in hard, condensed italic type, stat tiles, a score bug and a running ticker. Feels like a TNT or ESPN package.</p></div>
+    <div class="frames"></div>
+  </section>
+
+  <section class="dir" data-dir="kinetic">
+    <div class="dir-head"><span class="letter">B</span><h2>Kinetic type</h2><p>The words are the visuals. Huge type fills the screen, slams in on the beat, colour blocks wipe between lines, film grain on top. The fast, loud look of viral sports edits on TikTok and Reels.</p></div>
+    <div class="frames"></div>
+  </section>
+
+  <section class="dir" data-dir="glass">
+    <div class="dir-head"><span class="letter">C</span><h2>Glass and glow</h2><p>Premium and cinematic: drifting purple and gold light, frosted glass cards, glowing rings and numbers in 3D perspective. Closer to a polished product launch than a sports show.</p></div>
+    <div class="frames"></div>
+  </section>
+
+  <div class="ask">
+    <h3>Which one?</h3>
+    <p>Reply with A, B or C, or mix them (for example "B for the hook, A for the stats"). Teams and players still appear as names and numbers only, with no logos or photos. If you'd rather use real game footage or photos you have the rights to, send them and any of these can be built around them.</p>
+  </div>
+</div>
+
+<script>
+const W = 1080, H = 1920, CX = 540;
+const P = '#7c4dff', P2 = '#552583', G = '#fdb927', WH = '#ffffff';
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const eo = x => 1 - Math.pow(1 - clamp(x), 4);                 // ease out quart
+const eio = x => { x = clamp(x); return x < .5 ? 8 * x ** 4 : 1 - Math.pow(-2 * x + 2, 4) / 2; };
+const ob = x => { x = clamp(x); const c = 1.9; return 1 + (c + 1) * (x - 1) ** 3 + c * (x - 1) ** 2; };
+const w_ = (p, a, b) => clamp((p - a) / (b - a));
+function font(g, w, px, fam, it) { g.font = `${it ? 'italic ' : ''}${w} ${px}px ${fam}`; }
+function fit(g, str, max, w, px, fam, it) { font(g, w, px, fam, it); while (g.measureText(str).width > max && px > 10) { px *= .96; font(g, w, px, fam, it); } return px; }
+function grain(g, t, a = .07) {
+  const n = 900; g.save(); g.globalAlpha = a; let s = Math.floor(t * 24) * 9973;
+  for (let i = 0; i < n; i++) { s = (s * 16807) % 2147483647; const x = s % W; s = (s * 16807) % 2147483647; const y = s % H; g.fillStyle = i % 2 ? '#fff' : '#000'; g.fillRect(x, y, 3, 3); }
+  g.restore();
+}
+
+// ================= A · BROADCAST =================
+const BC = "'Barlow Condensed', 'Arial Narrow', sans-serif";
+function bcBg(g, t) {
+  const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#1a0b33'); gr.addColorStop(.55, '#0b0614'); gr.addColorStop(1, '#050308');
+  g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  // moving diagonal light streaks
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 5; i++) {
+    const x = ((t * 180 + i * 420) % 2400) - 600;
+    const lg = g.createLinearGradient(x, 0, x + 260, 0); lg.addColorStop(0, 'rgba(124,77,255,0)'); lg.addColorStop(.5, 'rgba(124,77,255,.10)'); lg.addColorStop(1, 'rgba(124,77,255,0)');
+    g.fillStyle = lg; g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 260, 0); g.lineTo(x - 340, H); g.lineTo(x - 600, H); g.closePath(); g.fill();
+  }
+  g.restore();
+  // fine grid
+  g.strokeStyle = 'rgba(255,255,255,.035)'; g.lineWidth = 1;
+  for (let x = 0; x < W; x += 60) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); }
+}
+function slant(g, x, y, w, h, fill, sk = 40) { g.beginPath(); g.moveTo(x + sk, y); g.lineTo(x + w + sk, y); g.lineTo(x + w, y + h); g.lineTo(x, y + h); g.closePath(); g.fillStyle = fill; g.fill(); }
+function bug(g) { // score bug
+  slant(g, 60, 90, 300, 74, P2, 18); slant(g, 340, 90, 170, 74, G, 18);
+  g.fillStyle = WH; font(g, 800, 44, BC, true); g.fillText('LAKERS', 90, 143);
+  g.fillStyle = '#140a24'; g.fillText('14-3', 375, 143);
+}
+function ticker(g, t, str) {
+  g.fillStyle = 'rgba(8,4,14,.92)'; g.fillRect(0, 1780, W, 80); slant(g, -20, 1780, 250, 80, G, 20);
+  g.fillStyle = '#140a24'; font(g, 800, 40, BC, true); g.fillText('3-PEAT WATCH', 22, 1834);
+  g.save(); g.beginPath(); g.rect(260, 1780, W - 260, 80); g.clip();
+  g.fillStyle = WH; font(g, 600, 38, BC); const s = str + '   •   ' + str + '   •   '; const tw = g.measureText(s).width / 2;
+  g.fillText(s, 280 - (t * 120 % tw), 1834); g.restore();
+}
+const A = {
+  hook(g, p, t) {
+    bcBg(g, t); bug(g);
+    const k1 = eo(w_(p, 0, .12)); slant(g, -60 + (k1 - 1) * 900, 300, 820, 120, P, 50);
+    g.fillStyle = WH; font(g, 800, 86, BC, true); if (k1 > .5) g.fillText('THE LAST TEAM TO WIN', 40 + (k1 - 1) * 900, 390);
+    const k2 = ob(w_(p, .1, .3));
+    g.save(); g.translate(CX, 1120); g.scale(k2, k2); g.transform(1, 0, -.18, 1, 0, 0);
+    const gg = g.createLinearGradient(0, -520, 0, 0); gg.addColorStop(0, '#ffe08a'); gg.addColorStop(1, '#e09a00');
+    g.fillStyle = gg; font(g, 900, 860, BC, true); g.textAlign = 'center'; g.shadowColor = 'rgba(253,185,39,.45)'; g.shadowBlur = 60; g.fillText('3', 0, 0); g.restore();
+    const k3 = eo(w_(p, .32, .45)); slant(g, W - 820 * k3, 1170, 840, 130, WH, 50);
+    g.fillStyle = '#140a24'; font(g, 900, 104, BC, true); if (k3 > .6) g.fillText('STRAIGHT TITLES?', W - 790 * k3 + 30, 1272);
+    const k4 = eo(w_(p, .5, .62)); g.globalAlpha = k4; g.fillStyle = G; font(g, 800, 64, BC, true); g.fillText('NOBODY SINCE 2002.', 80, 1440); g.globalAlpha = 1;
+    ticker(g, t, 'LAKERS 2000 · 2001 · 2002   ·   SHAQ & KOBE   ·   15-1 IN THE 2001 PLAYOFFS');
+  },
+  stats(g, p, t) {
+    bcBg(g, t); bug(g);
+    const k = eo(w_(p, 0, .15)); g.save(); g.translate((k - 1) * W, 0);
+    slant(g, 40, 300, 960, 90, P, 30); g.fillStyle = WH; font(g, 800, 64, BC, true); g.fillText('2026-27 · LUKA’S TEAM', 90, 368); g.restore();
+    const k2 = eo(w_(p, .1, .3)); g.globalAlpha = k2;
+    g.fillStyle = WH; font(g, 900, 420, BC, true); g.fillText(`${Math.round(14 * k2)}-3`, 70, 810 + (1 - k2) * 80);
+    g.fillStyle = G; font(g, 800, 70, BC, true); g.fillText('1ST IN THE WEST', 80, 900); g.globalAlpha = 1;
+    const tiles = [['37.2', 'PPG · DONČIĆ'], ['14.3 / 10.7', 'PTS / REB · KESSLER'], ['+2500', 'TITLE ODDS']];
+    tiles.forEach(([v, l], i) => {
+      const kk = eo(w_(p, .35 + i * .1, .5 + i * .1)), y = 1010 + i * 230, x = (kk - 1) * -W;
+      g.save(); g.translate(x, 0);
+      g.fillStyle = 'rgba(255,255,255,.06)'; g.fillRect(80, y, 920, 200); g.fillStyle = i === 0 ? G : P; g.fillRect(80, y, 14, 200);
+      g.fillStyle = WH; font(g, 900, 120, BC, true); g.fillText(v, 130, y + 130); g.fillStyle = '#c9bfe0'; font(g, 600, 42, BC); g.fillText(l, 130, y + 180);
+      // bar
+      const bw = [.92, .7, .2][i] * 300 * eo(w_(p, .5 + i * .1, .8)); g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(660, y + 86, 300, 18); g.fillStyle = i === 0 ? G : P; g.fillRect(660, y + 86, bw, 18);
+      g.restore();
+    });
+    ticker(g, t, 'AS OF NOV. 21, 2026   ·   LAKERS 106, KINGS 104');
+  },
+  rivals(g, p, t) {
+    bcBg(g, t); bug(g);
+    const k = eo(w_(p, 0, .12)); g.globalAlpha = k; g.fillStyle = WH; font(g, 900, 130, BC, true); g.fillText('THE ROAD', 70, 420); g.fillStyle = G; g.fillText('IS BRUTAL', 70, 540); g.globalAlpha = 1;
+    const rows = [['SPURS', 'TITLE FAVORITES · +300', '#9aa3ad'], ['KNICKS', 'DEFENDING CHAMPIONS', '#2f6bff'], ['76ERS', 'LEBRON JAMES · +900', '#e0234e']];
+    rows.forEach(([n, s, c], i) => {
+      const kk = ob(w_(p, .18 + i * .14, .34 + i * .14)), y = 680 + i * 310, x = (1 - kk) * W;
+      g.save(); g.translate(x, 0);
+      slant(g, 60, y, 940, 260, 'rgba(255,255,255,.07)', 40); slant(g, 60, y, 30, 260, c, 40);
+      g.fillStyle = WH; font(g, 900, 150, BC, true); g.fillText(n, 140, y + 150);
+      g.fillStyle = '#c9bfe0'; font(g, 600, 46, BC); g.fillText(s, 146, y + 215);
+      g.fillStyle = c; font(g, 900, 90, BC, true); g.textAlign = 'right'; g.fillText(`0${i + 1}`, 960, y + 150); g.textAlign = 'left';
+      g.restore();
+    });
+    ticker(g, t, 'PLUS: THIN AT FORWARD   ·   NO REAL BACKUP CENTER');
+  },
+};
+
+// ================= B · KINETIC TYPE =================
+const KT = "'Big Shoulders Display', 'Arial Black', Impact, sans-serif";
+function slam(g, str, y, color, k, o = {}) {
+  if (k <= 0) return;
+  const px = fit(g, str, o.max || 1000, 900, o.px || 300, KT);
+  const s = 1 + .35 * (1 - eo(k));
+  g.save(); g.translate(CX, y); g.rotate(o.rot || 0); g.scale(s, s); g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.globalAlpha = clamp(k * 3);
+  if (o.outline) { g.lineWidth = 8; g.strokeStyle = color; g.strokeText(str, 0, 0); } else { g.fillStyle = color; g.fillText(str, 0, 0); }
+  g.restore();
+}
+function block(g, y, h, color, k, dir = 1) { if (k <= 0) return; const w = W * eio(k); g.fillStyle = color; g.fillRect(dir > 0 ? 0 : W - w, y, w, h); }
+const B = {
+  hook(g, p, t) {
+    g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+    // beat cuts: the background flips to purple on the big word
+    if (p > .32 && p < .62) { block(g, 0, H, P2, w_(p, .32, .38)); }
+    slam(g, 'THE LAST', 420, WH, w_(p, 0, .1), { px: 230 });
+    slam(g, 'TEAM TO WIN', 640, WH, w_(p, .1, .2), { px: 200 });
+    slam(g, '3', 1040, p > .32 && p < .62 ? G : P, w_(p, .22, .32), { px: 760 });
+    block(g, 1320, 220, G, w_(p, .4, .5), -1);
+    slam(g, 'IN A ROW?', 1430, '#000', w_(p, .46, .56), { px: 190, max: 960 });
+    slam(g, 'NOBODY SINCE 2002', 1680, WH, w_(p, .62, .72), { px: 110, max: 900 });
+    grain(g, t);
+  },
+  stats(g, p, t) {
+    g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+    slam(g, '14', 560, WH, w_(p, 0, .1), { px: 640 });
+    slam(g, '–3', 1000, P, w_(p, .1, .2), { px: 520 });
+    block(g, 1250, 200, G, w_(p, .3, .4));
+    slam(g, '1ST IN THE WEST', 1350, '#000', w_(p, .36, .46), { px: 150, max: 980 });
+    slam(g, 'LUKA: 37.2 A NIGHT', 1620, WH, w_(p, .55, .65), { px: 120, max: 980, rot: -.03 });
+    grain(g, t);
+  },
+  rivals(g, p, t) {
+    g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+    slam(g, 'BUT THE ROAD', 330, WH, w_(p, 0, .08), { px: 150 });
+    slam(g, 'IS BRUTAL', 500, G, w_(p, .08, .16), { px: 170 });
+    const names = [['SPURS.', '#d9dde2', .25], ['KNICKS.', '#2f6bff', .42], ['LEBRON.', '#e0234e', .59]];
+    names.forEach(([n, c, a], i) => {
+      const y = 860 + i * 330;
+      slam(g, n, y, c, w_(p, a, a + .08), { px: 330, rot: -.05 });
+      // strike bar
+      const k = eio(w_(p, a + .1, a + .16)); if (k > 0) { g.save(); g.translate(CX, y); g.rotate(-.05); g.fillStyle = WH; g.fillRect(-520, -14, 1040 * k, 28); g.restore(); }
+    });
+    grain(g, t);
+  },
+};
+
+// ================= C · GLASS & GLOW =================
+const SG = "'Space Grotesk', 'Helvetica Neue', Arial, sans-serif";
+function glassBg(g, t) {
+  g.fillStyle = '#07050d'; g.fillRect(0, 0, W, H);
+  g.save(); g.globalCompositeOperation = 'lighter';
+  [[P, 300 + Math.sin(t * .6) * 160, 500 + Math.cos(t * .5) * 120, 620, .55], [G, 800 + Math.cos(t * .4) * 140, 1300 + Math.sin(t * .7) * 140, 520, .28], [P2, 600, 1700, 700, .5]].forEach(([c, x, y, r, a]) => {
+    const rg = g.createRadialGradient(x, y, 0, x, y, r); rg.addColorStop(0, c + Math.round(a * 255).toString(16).padStart(2, '0')); rg.addColorStop(1, c + '00');
+    g.fillStyle = rg; g.fillRect(0, 0, W, H);
+  });
+  g.restore();
+  // particles
+  g.fillStyle = 'rgba(255,255,255,.5)';
+  for (let i = 0; i < 40; i++) { const x = (i * 271 % W), y = (H - ((t * 40 + i * 137) % H)); g.globalAlpha = .2 + (i % 5) / 10; g.fillRect(x, y, 3, 3); }
+  g.globalAlpha = 1;
+}
+function glass(g, x, y, w, h, k = 1, r = 36) {
+  g.save(); g.globalAlpha = k;
+  g.beginPath(); g.roundRect(x, y, w, h, r); g.fillStyle = 'rgba(255,255,255,.07)'; g.fill();
+  const lg = g.createLinearGradient(x, y, x, y + h); lg.addColorStop(0, 'rgba(255,255,255,.35)'); lg.addColorStop(1, 'rgba(255,255,255,.06)');
+  g.strokeStyle = lg; g.lineWidth = 2; g.stroke(); g.restore();
+}
+function gtext(g, str, x, y, px, w, fill, o = {}) {
+  g.save(); font(g, w, px, SG); g.textAlign = o.align || 'center'; g.globalAlpha = o.alpha ?? 1;
+  if (o.glow) { g.shadowColor = o.glow; g.shadowBlur = o.blur || 40; }
+  if (fill === 'gold') { const gr = g.createLinearGradient(0, y - px, 0, y); gr.addColorStop(0, '#fff1c4'); gr.addColorStop(1, '#f2a800'); g.fillStyle = gr; } else g.fillStyle = fill;
+  if (o.ls) g.letterSpacing = o.ls + 'px';
+  g.fillText(str, x, y); g.restore();
+}
+const C = {
+  hook(g, p, t) {
+    glassBg(g, t);
+    gtext(g, 'The last team to win', CX, 330, 72, 500, 'rgba(255,255,255,.75)', { alpha: eo(w_(p, 0, .12)) });
+    gtext(g, 'three in a row.', CX, 430, 96, 700, WH, { alpha: eo(w_(p, .05, .18)) });
+    // three rings on a tilted 3D arc
+    [[2000, -1], [2001, 0], [2002, 1]].forEach(([yr, i], j) => {
+      const k = ob(w_(p, .2 + j * .1, .35 + j * .1)), x = CX + i * 300, y = 940 - (i === 0 ? 60 : 0), r = (i === 0 ? 190 : 150) * Math.max(0.01, k);
+      g.save(); g.translate(x, y); g.scale(1, .92);
+      g.shadowColor = G; g.shadowBlur = 60 * k; g.strokeStyle = G; g.lineWidth = 16; g.beginPath(); g.arc(0, 0, r, 0, Math.PI * 2); g.stroke();
+      g.shadowBlur = 0; g.lineWidth = 3; g.strokeStyle = 'rgba(255,241,196,.8)'; g.beginPath(); g.arc(0, 0, Math.max(1, r - 24), 0, Math.PI * 2); g.stroke();
+      g.restore();
+      gtext(g, String(yr), x, y + 22, i === 0 ? 70 : 56, 700, 'gold', { alpha: k });
+    });
+    glass(g, 120, 1290, 840, 220, eo(w_(p, .55, .68)));
+    gtext(g, 'Shaq & Kobe · 15–1 in 2001', CX, 1385, 50, 500, WH, { alpha: eo(w_(p, .6, .72)) });
+    gtext(g, 'Nobody has done it since.', CX, 1455, 44, 400, 'rgba(255,255,255,.7)', { alpha: eo(w_(p, .64, .76)) });
+  },
+  stats(g, p, t) {
+    glassBg(g, t);
+    gtext(g, 'Luka’s Lakers · 2026-27', CX, 300, 52, 500, 'rgba(255,255,255,.75)', { alpha: eo(w_(p, 0, .12)), ls: 2 });
+    // donut 14 of 17
+    const k = eo(w_(p, .08, .4)), cy = 760, r = 300;
+    g.lineCap = 'round'; g.lineWidth = 46; g.strokeStyle = 'rgba(255,255,255,.08)'; g.beginPath(); g.arc(CX, cy, r, 0, Math.PI * 2); g.stroke();
+    g.save(); g.shadowColor = P; g.shadowBlur = 50; g.strokeStyle = P; g.beginPath(); g.arc(CX, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * 14 / 17 * k); g.stroke(); g.restore();
+    gtext(g, `${Math.round(14 * k)}–3`, CX, cy + 70, 210, 700, WH, { glow: 'rgba(124,77,255,.8)', blur: 50 });
+    gtext(g, '1st in the West', CX, cy + 150, 46, 500, 'gold');
+    [['37.2', 'PPG · Dončić'], ['+2500', 'Title odds']].forEach(([v, l], i) => {
+      const kk = eo(w_(p, .45 + i * .12, .6 + i * .12)), x = 110 + i * 440, y = 1240 + (1 - kk) * 80;
+      glass(g, x, y, 420, 300, kk);
+      gtext(g, v, x + 210, y + 170, i ? 104 : 130, 700, i ? WH : 'gold', { alpha: kk, glow: i ? null : 'rgba(253,185,39,.5)' });
+      gtext(g, l, x + 210, y + 240, 38, 400, 'rgba(255,255,255,.7)', { alpha: kk });
+    });
+  },
+  rivals(g, p, t) {
+    glassBg(g, t);
+    gtext(g, 'But the road is brutal.', CX, 330, 78, 700, WH, { alpha: eo(w_(p, 0, .12)) });
+    const cards = [['Spurs', 'Title favorites · +300'], ['Knicks', 'Defending champions'], ['76ers', 'LeBron James · +900']];
+    cards.forEach(([n, s], i) => {
+      const k = eo(w_(p, .15 + i * .14, .35 + i * .14)), y = 560 + i * 380;
+      g.save(); g.translate(CX, y + 160); const sx = .82 + .18 * k; g.transform(sx, (1 - k) * .25 * (i % 2 ? -1 : 1), 0, 1, 0, 0); g.translate(-CX, -(y + 160));
+      glass(g, 110, y, 860, 320, k);
+      g.restore();
+      gtext(g, n, 190, y + 170, 120, 700, WH, { align: 'left', alpha: k });
+      gtext(g, s, 194, y + 245, 42, 400, 'rgba(255,255,255,.7)', { align: 'left', alpha: k });
+      gtext(g, `0${i + 1}`, 900, y + 170, 90, 700, 'gold', { align: 'right', alpha: k * .9 });
+    });
+    gtext(g, 'Plus: thin at forward, no backup center.', CX, 1760, 42, 500, 'rgba(255,255,255,.8)', { alpha: eo(w_(p, .7, .82)) });
+  },
+};
+
+const DIRS = { broadcast: A, kinetic: B, glass: C };
+const LABELS = [['hook', 'Hook', '“The last team to win three NBA titles in a row?”'], ['stats', 'Now', '“14 and 3. First in the West. Luka is dropping 37 a night.”'], ['rivals', 'Obstacles', '“Wemby’s Spurs… the Knicks… and LeBron, now in Philly.”']];
+const items = [];
+document.querySelectorAll('.dir').forEach(sec => {
+  const d = DIRS[sec.dataset.dir], box = sec.querySelector('.frames');
+  LABELS.forEach(([id, name, line]) => {
+    const f = document.createElement('figure');
+    f.innerHTML = `<canvas width="540" height="960" aria-label="${sec.querySelector('h2').textContent}: ${name} frame"></canvas><figcaption><b>${name}</b> · ${line}</figcaption>`;
+    box.appendChild(f);
+    const g = f.querySelector('canvas').getContext('2d'); g.scale(540 / W, 960 / H);
+    items.push({ g, fn: d[id], el: f, vis: true, off: items.length * .37 });
+  });
+});
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const LOOP = 4.2, ACT = 3.2;
+const draw = (it, t) => { const lt = (t + it.off) % LOOP; it.fn(it.g, reduce ? 1 : Math.min(1, lt / ACT), t); };
+function rest() { items.forEach(it => it.fn(it.g, 1, 0)); }
+rest();
+if ('IntersectionObserver' in window) { const io = new IntersectionObserver(es => es.forEach(e => { const it = items.find(i => i.el === e.target); if (it) it.vis = e.isIntersecting; })); items.forEach(it => io.observe(it.el)); }
+function loop(now) { const t = now / 1000; items.forEach(it => it.vis && draw(it, t)); requestAnimationFrame(loop); }
+const ready = document.fonts ? Promise.race([Promise.all(["800 40px 'Barlow Condensed'", "italic 900 40px 'Barlow Condensed'", "900 40px 'Big Shoulders Display'", "700 40px 'Space Grotesk'", "400 40px 'Space Grotesk'"].map(f => document.fonts.load(f))), new Promise(r => setTimeout(r, 2500))]) : Promise.resolve();
+ready.then(() => { rest(); if (!reduce) requestAnimationFrame(loop); });
+</script>
