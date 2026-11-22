@@ -119,8 +119,12 @@ function txt(g, str, x, y, o = {}) {
   g.save(); fitFont(g, str, o.w || 700, o.px || 40, o.fam || SANS(), o.max || 2000);
   g.textAlign = o.align || 'left'; g.textBaseline = o.base || 'alphabetic'; if (o.ls) g.letterSpacing = o.ls + 'px';
   g.globalAlpha = o.a ?? 1; if (o.glow) { g.shadowColor = o.glow; g.shadowBlur = o.blur || 24; }
-  g.fillStyle = o.color || C.white; g.fillText(str, x, y); g.restore();
+  g.fillStyle = o.color || C.white; dir(g, str); g.fillText(bidi(str), x, y); g.restore();
 }
+// numbers, scores and odds always read left to right, also inside Arabic text
+const HAS_AR = /[\u0600-\u06FF]/;
+function bidi(str) { if (!AR || !HAS_AR.test(str)) return str; return str.replace(/([+\-]?[0-9٠-٩][0-9٠-٩.,%×–+\-]*)/g, '\u2066$1\u2069'); }
+function dir(g, str) { g.direction = AR && HAS_AR.test(str) ? 'rtl' : 'ltr'; }
 const START = () => AR ? W - 64 : 64;          // reading-start edge
 const SIDE = () => AR ? 'right' : 'left';
 
@@ -208,7 +212,7 @@ function slamStamp(g, t, t0, str, x, y, color = C.red, rot = -.08, px = 92) {
   g.save(); g.translate(x, y); g.rotate(rot); g.scale(s, s); g.globalAlpha = clamp(k * 1.6);
   font(g, 900, px, SANS()); const tw = g.measureText(str).width;
   g.strokeStyle = color; g.lineWidth = 8; g.strokeRect(-tw / 2 - 26, -px * .82, tw + 52, px * 1.18);
-  g.fillStyle = color; g.textAlign = 'center'; g.fillText(str, 0, px * .14); g.restore();
+  g.fillStyle = color; g.textAlign = 'center'; dir(g, str); g.fillText(bidi(str), 0, px * .14); g.restore();
 }
 // a pin with a leader line and a tag, placed on a point of the card image
 function pin(g, t, t0, u, v, z, label, sub, color = C.gold, side = 1) {
@@ -237,7 +241,7 @@ function pill(g, t) {   // caption pill (reference A): the spoken phrase, dark r
   for (const w of words) { const tt = cur ? cur + ' ' + w : w; if (g.measureText(tt).width > 860 && cur) { lines.push(cur); cur = w; } else cur = tt; } lines.push(cur);
   const lh = 50, bw = Math.max(...lines.map(l => g.measureText(l).width)) + 44, bh = lines.length * lh + 24, y = CARD.y + CARD.h + 180;
   g.globalAlpha = k; rr(g, W / 2 - bw / 2, y, bw, bh, 16); g.fillStyle = C.pill; g.fill();
-  g.fillStyle = '#fff'; g.textAlign = 'center'; lines.forEach((l, i) => g.fillText(l, W / 2, y + 48 + i * lh)); g.restore();
+  g.fillStyle = '#fff'; g.textAlign = 'center'; lines.forEach((l, i) => { dir(g, l); g.fillText(bidi(l), W / 2, y + 48 + i * lh); }); g.restore();
 }
 function charBg(g, glow = C.gold, a = .10) {
   g.fillStyle = C.char; g.fillRect(0, 0, W, H);
@@ -254,7 +258,7 @@ function nodePill(g, cx, cy, label, k, color = C.gold, o = {}) {   // glowing ou
   font(g, 800, o.px || 46, o.serif && !AR ? "'Instrument Serif', serif" : SANS()); const tw = g.measureText(label).width, bw = tw + 56, bh = (o.px || 46) * 1.7;
   rr(g, -bw / 2, -bh / 2, bw, bh, 18); g.fillStyle = o.fill || 'rgba(20,18,24,.95)'; g.fill();
   g.shadowColor = color; g.shadowBlur = 26; g.strokeStyle = color; g.lineWidth = 3.5; g.stroke(); g.shadowBlur = 0;
-  g.fillStyle = o.text || color; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(label, 0, 2); g.restore();
+  g.fillStyle = o.text || color; g.textAlign = 'center'; g.textBaseline = 'middle'; dir(g, label); g.fillText(bidi(label), 0, 2); g.restore();
 }
 function tile(g, cx, cy, size, k, draw) {   // white rounded "app icon" tile that pops in from the side (reference B)
   if (k <= 0) return; const s = back(k);
