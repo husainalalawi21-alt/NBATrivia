@@ -1,557 +1,299 @@
 <title>Lakers Dynasty Storyboard</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Limelight&family=Poiret+One&family=Josefin+Sans:wght@400;600;700&family=Italiana&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: an animatic player on the left (sticky on wide screens), the 13-frame storyboard to its right; stacks on phones. */
+/* Layout: animatic player pinned left on wide screens, 13-frame storyboard grid on the right; stacks on phones. */
 :root {
-  --lacquer: #0f0b07;
-  --lacquer-2: #1a140c;
-  --gold: #d2ac57;
-  --gold-dim: #7d6330;
-  --ivory: #f2e8d2;
-  --ivory-dim: #b9ad94;
-  --purple: #6b3fa8;
-  --display: 'Limelight', 'Didot', Georgia, serif;
-  --numerals: 'Italiana', 'Didot', Georgia, serif;
-  --label: 'Poiret One', 'Futura', 'Avenir Next', sans-serif;
-  --body: 'Josefin Sans', 'Futura', 'Avenir Next', system-ui, sans-serif;
+  --bg: #08070b;
+  --panel: #121019;
+  --line: #2a2533;
+  --fg: #f4f1f8;
+  --muted: #a49cb3;
+  --purple: #7c4dff;
+  --gold: #fdb927;
+  --head: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif;
+  --text: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --poster: 'Big Shoulders Display', 'Arial Black', Impact, sans-serif;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
-body {
-  background: var(--lacquer);
-  color: var(--ivory);
-  font-family: var(--body);
-  font-size: 16px;
-  line-height: 1.5;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 28px 64px;
-}
-.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 40px; }
-header { display: grid; gap: 10px; text-align: center; justify-items: center; }
-.eyebrow { font-family: var(--label); letter-spacing: .28em; text-transform: uppercase; color: var(--gold); font-size: 13px; }
-h1 { font-family: var(--display); font-weight: 400; font-size: clamp(34px, 6vw, 64px); line-height: 1.05; margin: 0; color: var(--gold); text-wrap: balance; }
-.lede { max-width: 62ch; color: var(--ivory-dim); margin: 0; text-wrap: pretty; }
-.rule { width: min(420px, 80%); height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+body { background: var(--bg); color: var(--fg); font-family: var(--text); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 32px 72px; }
+.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 44px; }
+header { display: grid; gap: 12px; max-width: 760px; }
+.kicker { font-family: var(--head); font-size: 13px; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); }
+h1 { font-family: var(--poster); font-weight: 900; text-transform: uppercase; font-size: clamp(48px, 8vw, 96px); line-height: .9; margin: 0; text-wrap: balance; }
+h1 span { color: var(--purple); }
+header p { margin: 0; color: var(--muted); max-width: 64ch; }
 
-.main { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 40px; align-items: start; }
-@media (max-width: 860px) { .main { grid-template-columns: minmax(0, 1fr); } }
-
+.main { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 40px; align-items: start; }
+@media (max-width: 880px) { .main { grid-template-columns: minmax(0, 1fr); } }
 .player { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); display: grid; gap: 14px; justify-items: center; }
-@media (max-width: 860px) { .player { position: static; } }
-.screen { width: 100%; max-width: 360px; aspect-ratio: 9 / 16; border: 1px solid var(--gold-dim); outline: 1px solid var(--gold-dim); outline-offset: 4px; background: #000; }
+@media (max-width: 880px) { .player { position: static; } }
+.screen { width: 100%; max-width: 340px; aspect-ratio: 9 / 16; border-radius: 18px; overflow: hidden; background: #000; box-shadow: 0 0 0 1px var(--line), 0 30px 80px -30px rgba(124,77,255,.45); }
 .screen canvas { width: 100%; height: 100%; display: block; }
-.controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; width: 100%; max-width: 360px; }
-button {
-  font-family: var(--body); font-weight: 700; font-size: 14px; letter-spacing: .14em; text-transform: uppercase;
-  color: var(--lacquer); background: var(--gold); border: 0; padding: 11px 18px; cursor: pointer;
-  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
-}
-button.ghost { background: transparent; color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
-button:focus-visible { outline: 2px solid var(--ivory); outline-offset: 3px; }
-.time { font-family: var(--label); color: var(--ivory-dim); font-variant-numeric: tabular-nums; letter-spacing: .1em; min-width: 92px; text-align: center; }
-.bar { width: 100%; max-width: 360px; height: 3px; background: var(--lacquer-2); position: relative; cursor: pointer; }
-.bar i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--gold); }
-.takes { width: 100%; max-width: 360px; display: grid; gap: 8px; border-top: 1px solid var(--gold-dim); padding-top: 14px; }
-.takes h2 { font-family: var(--label); font-weight: 400; font-size: 13px; letter-spacing: .24em; text-transform: uppercase; color: var(--gold); margin: 0; }
-.takes p { margin: 0; font-size: 14px; color: var(--ivory-dim); }
+.controls { display: flex; gap: 12px; align-items: center; justify-content: center; width: 100%; max-width: 340px; }
+button { font-family: var(--head); font-weight: 700; font-size: 15px; color: #0b0812; background: var(--gold); border: 0; border-radius: 999px; padding: 11px 22px; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+.time { font-family: var(--head); color: var(--muted); font-variant-numeric: tabular-nums; min-width: 90px; text-align: center; }
+.bar { width: 100%; max-width: 340px; height: 4px; border-radius: 4px; background: var(--line); position: relative; cursor: pointer; }
+.bar i { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 4px; background: var(--gold); }
+.takes { width: 100%; max-width: 340px; display: grid; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+.takes h2 { font-family: var(--head); font-size: 14px; margin: 0; letter-spacing: .06em; }
+.takes p, .takes label { margin: 0; font-size: 13px; color: var(--muted); }
 .takes audio { width: 100%; height: 36px; }
-.takes label { font-size: 13px; color: var(--ivory-dim); letter-spacing: .06em; }
 
-.board { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 28px 22px; }
-.card { display: grid; gap: 10px; align-content: start; min-width: 0; }
-.card .thumb { aspect-ratio: 9 / 16; width: 100%; border: 1px solid var(--gold-dim); background: #000; cursor: pointer; padding: 0; display: block; }
-.card .thumb canvas { width: 100%; height: 100%; display: block; }
-.card.on .thumb { border-color: var(--gold); box-shadow: 0 0 0 3px var(--lacquer), 0 0 0 4px var(--gold); }
-.meta { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-family: var(--label); letter-spacing: .16em; text-transform: uppercase; font-size: 12px; color: var(--gold); }
-.meta b { font-weight: 400; color: var(--ivory-dim); font-variant-numeric: tabular-nums; }
-.card h3 { font-family: var(--display); font-weight: 400; font-size: 21px; line-height: 1.1; margin: 0; color: var(--ivory); text-wrap: balance; }
-.vo { margin: 0; font-size: 15px; color: var(--ivory); border-left: 2px solid var(--purple); padding-left: 10px; text-wrap: pretty; }
-.notes { margin: 0; font-size: 13.5px; color: var(--ivory-dim); text-wrap: pretty; }
-.notes span { color: var(--gold); font-family: var(--label); letter-spacing: .12em; text-transform: uppercase; font-size: 11.5px; margin-right: 4px; }
+.board { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 30px 20px; }
+.card { display: grid; gap: 9px; align-content: start; min-width: 0; }
+.thumb { display: block; padding: 0; width: 100%; aspect-ratio: 9 / 16; border-radius: 14px; overflow: hidden; background: #000; border: 0; cursor: pointer; box-shadow: 0 0 0 1px var(--line); }
+.thumb canvas { width: 100%; height: 100%; display: block; }
+.card.on .thumb { box-shadow: 0 0 0 3px var(--gold); }
+.meta { display: flex; justify-content: space-between; gap: 8px; font-family: var(--head); font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.meta span:first-child { color: var(--gold); font-weight: 700; letter-spacing: .08em; }
+.card h3 { font-family: var(--poster); font-weight: 900; text-transform: uppercase; font-size: 28px; line-height: .95; margin: 0; }
+.vo { margin: 0; font-size: 14.5px; border-left: 3px solid var(--purple); padding-left: 10px; text-wrap: pretty; }
+.notes { margin: 0; font-size: 13px; color: var(--muted); text-wrap: pretty; }
+.notes b { color: var(--fg); font-weight: 600; }
 
-.specs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 18px; border-top: 1px solid var(--gold-dim); padding-top: 26px; }
-.specs div { display: grid; gap: 4px; align-content: start; min-width: 0; }
-.specs h4 { font-family: var(--label); font-weight: 400; letter-spacing: .24em; text-transform: uppercase; font-size: 12px; color: var(--gold); margin: 0; }
-.specs p { margin: 0; font-size: 14.5px; color: var(--ivory-dim); }
-.sw { display: flex; gap: 8px; flex-wrap: wrap; }
-.sw i { width: 34px; height: 34px; display: block; border: 1px solid var(--gold-dim); }
-.src { font-size: 13px; color: var(--ivory-dim); text-align: center; max-width: 80ch; margin: 0 auto; }
+.specs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 16px; }
+.specs div { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.specs h4 { font-family: var(--head); margin: 0; font-size: 15px; }
+.specs p { margin: 0; font-size: 14px; color: var(--muted); }
+.sw { display: flex; gap: 8px; }
+.sw i { width: 30px; height: 30px; border-radius: 8px; display: block; box-shadow: 0 0 0 1px var(--line); }
+.src { font-size: 13px; color: var(--muted); max-width: 90ch; margin: 0; }
 .src a { color: var(--gold); }
-@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">Mockup · 9:16 · ~60 s · ElevenLabs eleven_v4</div>
-    <h1>The Last Three-Peat</h1>
-    <p class="lede">The Lakers were the last team to win three titles in a row. Can Luka's 14-3 team start the next dynasty? Press play to hear take A over a rough animatic, or tap any frame to jump to it. The final video adds full motion, music and sound effects.</p>
-    <div class="rule"></div>
+    <div class="kicker">Storyboard · Kinetic type · 9:16 · ~60 s · ElevenLabs eleven_v4</div>
+    <h1>The last <span>three</span>-peat</h1>
+    <p>The Lakers were the last team to win three titles in a row. Can Luka's 14-3 team start the next dynasty? Press play to hear the voiceover over the animatic, or tap a frame to jump to it. The final video adds beat-synced music, hit sounds on every slam and smoother motion.</p>
   </header>
 
   <div class="main">
     <section class="player" aria-label="Animatic player">
       <div class="screen"><canvas id="big" width="540" height="960" aria-label="Animatic preview"></canvas></div>
       <div class="bar" id="bar" role="slider" aria-label="Seek" aria-valuemin="0" aria-valuemax="60" aria-valuenow="0" tabindex="0"><i id="fill"></i></div>
-      <div class="controls">
-        <button id="play" type="button">Play animatic</button>
-        <span class="time" id="clock">0:00 / 1:00</span>
-      </div>
+      <div class="controls"><button id="play" type="button">▶ Play animatic</button><span class="time" id="clock">0:00 / 1:00</span></div>
       <div class="takes">
-        <h2>Voice takes</h2>
-        <p>Ian (deep, punchy social voice), eleven_v4. Same script, two performances. The animatic is timed to take A.</p>
+        <h2>Voice takes · Ian, eleven_v4</h2>
+        <p>Same script, two performances. The animatic follows take A.</p>
         <label for="takeA">Take A · 60.0 s</label>
         <audio id="takeA" src="takeA.mp3" preload="auto" controls></audio>
         <label for="takeB">Take B · 59.0 s</label>
         <audio id="takeB" src="takeB.mp3" preload="none" controls></audio>
       </div>
     </section>
-
-    <section class="board" id="board" aria-label="Storyboard"></section>
+    <section class="board" id="board" aria-label="Storyboard frames"></section>
   </div>
 
   <section class="specs" aria-label="Look and sound">
-    <div><h4>Look</h4><p>Art Deco: black lacquer, engraved gold line, bulb marquees and sunbursts. Everything opens from the centre line. Lakers purple is the only bright colour.</p><div class="sw"><i style="background:#0f0b07"></i><i style="background:#d2ac57"></i><i style="background:#f2e8d2"></i><i style="background:#6b3fa8"></i></div></div>
-    <div><h4>Type</h4><p>Limelight for titles, Italiana for the big numbers, Poiret One for labels, Josefin Sans for captions. All free (OFL).</p></div>
-    <div><h4>Sound</h4><p>Original 1930s-style jazz fanfare written in code: brass stabs, stride piano, walking bass. A bulb "chunk" for every light that switches on. Music drops under the voice.</p></div>
-    <div><h4>Rules</h4><p>No logos, photos or player likenesses. Teams and players appear as names and jersey numbers. Burned-in captions, plus an SRT file.</p></div>
+    <div><h4>Look</h4><p>Black screen, huge condensed type, Lakers purple and gold. Words slam in on the beat, colour blocks wipe across, rivals get struck through. Film grain and a progress line along the top.</p><div class="sw"><i style="background:#000"></i><i style="background:#fff"></i><i style="background:#7c4dff"></i><i style="background:#fdb927"></i></div></div>
+    <div><h4>Sound</h4><p>Original hard-hitting trap beat written in code (808s, claps, risers). A hit on every slam, a whoosh on every wipe, a record stop before "But the road is brutal". Music dips under the voice.</p></div>
+    <div><h4>Captions</h4><p>The big words follow the voice, and a small caption line underneath carries the full sentence for sound-off viewers. An SRT file comes with the video.</p></div>
+    <div><h4>Rules</h4><p>No logos, photos or player likenesses: teams and players as names and numbers. Every number is checked (sources below).</p></div>
   </section>
 
-  <p class="src">Facts checked 22 Nov 2026: Lakers titles 2000–02 (15-1 in the 2001 playoffs); no team has won three straight since. 2026-27: 14-3 and 1st in the West after the 106-104 win over Sacramento (<a href="https://www.espn.com/nba/game/_/gameId/401909313/kings-lakers">ESPN</a>); Dončić 37.2 ppg, Kessler 14.3 pts / 10.7 reb (<a href="https://sports.yahoo.com/nba/teams/la-lakers/">Yahoo Sports</a>); first season without LeBron since 2017-18 (<a href="https://en.wikipedia.org/wiki/2026%E2%80%9327_Los_Angeles_Lakers_season">Wikipedia</a>); thin forwards, no backup center (<a href="https://www.espn.com/nba/story/_/id/49671088/los-angeles-lakers-offseason-recap-2026-27-season-preview-stats-roster-depth-chart">ESPN</a>); Spurs favourites, Lakers +2500 (<a href="https://www.foxsports.com/stories/nba/2026-27-nba-finals-odds">Fox Sports</a>, <a href="https://www.cbssports.com/betting/news/nba-2026-27-championship-futures-odds-thunder-spurs-favored-but-knicks-lebron-james-76ers-not-far-behind/">CBS Sports</a>); Knicks won the 2026 title (<a href="https://www.nbcsports.com/nba/news/knicks-end-53-year-title-drought-behind-masterpiece-by-jalen-brunson">NBC Sports</a>).</p>
+  <p class="src">Facts checked 22 Nov 2026. Lakers won 2000, 2001, 2002 (15-1 in the 2001 playoffs); no team has three-peated since. 2026-27: 14-3, 1st in the West after the 106-104 win over Sacramento (<a href="https://www.espn.com/nba/game/_/gameId/401909313/kings-lakers">ESPN</a>); Dončić 37.2 ppg, Kessler 14.3 pts and 10.7 reb (<a href="https://sports.yahoo.com/nba/teams/la-lakers/">Yahoo Sports</a>); first season without LeBron since 2017-18 (<a href="https://en.wikipedia.org/wiki/2026%E2%80%9327_Los_Angeles_Lakers_season">Wikipedia</a>); Reaves re-signed July 2026, thin at forward and no backup center (<a href="https://www.espn.com/nba/story/_/id/49671088/los-angeles-lakers-offseason-recap-2026-27-season-preview-stats-roster-depth-chart">ESPN</a>); Spurs favourites at +300, 76ers +900, Lakers +2500 (<a href="https://www.foxsports.com/stories/nba/2026-27-nba-finals-odds">Fox Sports</a>, <a href="https://www.cbssports.com/betting/news/nba-2026-27-championship-futures-odds-thunder-spurs-favored-but-knicks-lebron-james-76ers-not-far-behind/">CBS Sports</a>); Knicks won the 2026 title (<a href="https://www.nbcsports.com/nba/news/knicks-end-53-year-title-drought-behind-masterpiece-by-jalen-brunson">NBC Sports</a>).</p>
 </div>
 
 <script>
 const W = 1080, H = 1920, CX = 540;
-const COL = { bg: '#0f0b07', bg2: '#1b140b', ivory: '#f2e8d2', dim: '#7d6330', purple: '#6b3fa8', purpleHot: '#9b6be0' };
-const F = { display: "'Limelight', Georgia, serif", num: "'Italiana', Georgia, serif", label: "'Poiret One', sans-serif", body: "'Josefin Sans', sans-serif" };
+const P = '#7c4dff', PD = '#552583', G = '#fdb927', WH = '#ffffff', BK = '#000000', RED = '#ff3b4e';
+const KT = "'Big Shoulders Display', 'Arial Black', Impact, sans-serif";
+const IN = "'Inter', 'Helvetica Neue', Arial, sans-serif";
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const eo = x => 1 - Math.pow(1 - clamp(x), 4);
+const eio = x => { x = clamp(x); return x < .5 ? 8 * x ** 4 : 1 - Math.pow(-2 * x + 2, 4) / 2; };
+const w_ = (p, a, b) => clamp((p - a) / (b - a));
 
+// ---- primitives
+function fitPx(g, str, max, px, wt = 900) { g.font = `${wt} ${px}px ${KT}`; while (g.measureText(str).width > max && px > 10) { px *= .96; g.font = `${wt} ${px}px ${KT}`; } return px; }
+function slam(g, str, y, color, k, o = {}) {
+  if (k <= 0) return;
+  fitPx(g, str, o.max || 1000, o.px || 300, o.wt || 900);
+  const s = 1 + (o.big ? .6 : .32) * (1 - eo(k));
+  g.save(); g.translate(o.x ?? CX, y); g.rotate(o.rot || 0); g.scale(s, s);
+  g.textAlign = o.align || 'center'; g.textBaseline = 'middle'; g.globalAlpha = clamp(k * 3) * (o.alpha ?? 1);
+  if (o.outline) { g.lineWidth = o.lw || 7; g.strokeStyle = color; g.strokeText(str, 0, 0); } else { g.fillStyle = color; g.fillText(str, 0, 0); }
+  g.restore();
+}
+function block(g, y, h, color, k, dir = 1, rot = 0) {
+  if (k <= 0) return; const w = (W + 200) * eio(k);
+  g.save(); g.translate(CX, y + h / 2); g.rotate(rot); g.fillStyle = color; g.fillRect(dir > 0 ? -W / 2 - 100 : W / 2 + 100 - w, -h / 2, w, h); g.restore();
+}
+function strike(g, y, k, color = WH, rot = -.05, len = 1000, th = 26) {
+  k = eio(k); if (k <= 0) return; g.save(); g.translate(CX, y); g.rotate(rot); g.fillStyle = color; g.fillRect(-len / 2, -th / 2, len * k, th); g.restore();
+}
+function flash(g, k, color) { if (k <= 0 || k >= 1) return; g.save(); g.globalAlpha = (1 - k) * .85; g.fillStyle = color; g.fillRect(0, 0, W, H); g.restore(); }
+function small(g, str, y, color, k, px = 46, o = {}) {
+  if (k <= 0) return; g.save(); g.font = `${o.wt || 700} ${px}px ${IN}`; g.textAlign = 'center'; g.letterSpacing = (o.ls ?? 6) + 'px';
+  g.globalAlpha = eo(k) * (o.alpha ?? 1); g.fillStyle = color; g.fillText(str, CX, y + (1 - eo(k)) * 30); g.restore();
+}
+function grain(g, t, a = .07) {
+  g.save(); g.globalAlpha = a; let s = (Math.floor(t * 24) * 9973) % 2147483647 || 1;
+  for (let i = 0; i < 1100; i++) { s = (s * 16807) % 2147483647; const x = s % W; s = (s * 16807) % 2147483647; g.fillStyle = i % 2 ? '#fff' : '#000'; g.fillRect(x, s % H, 3, 3); }
+  g.restore();
+}
+function shake(g, p, hits, amp = 14) { let dx = 0, dy = 0; hits.forEach(h => { const d = p - h; if (d > 0 && d < .05) { const a = (1 - d / .05) * amp; dx += Math.sin(d * 900) * a; dy += Math.cos(d * 700) * a; } }); g.translate(dx, dy); }
+function bg(g, color = BK) { g.fillStyle = color; g.fillRect(-40, -40, W + 80, H + 80); }
+
+// ---- scenes (p = 0..1 across the scene; timings follow take A)
 const SCENES = [
-  { id: 'hook', t: 0.0, title: 'The hook', vo: 'The last team to win three NBA titles in a row?', screen: 'THE LAST · giant gold "3" in a ring of bulbs · IN A ROW?', motion: 'Sunburst turns behind the 3; bulbs switch on one per beat, counting to the question.' },
-  { id: 'reveal', t: 3.26, title: 'The answer', vo: 'The Los Angeles Lakers.', screen: 'LOS ANGELES over a giant LAKERS in gold, purple glow', motion: 'Two black doors split down the centre; the name unfolds from the middle with a gold sheen.' },
-  { id: 'rings', t: 5.0, title: '2000 · 2001 · 2002', vo: '2000. 2001. 2002. Shaq and Kobe. Three straight rings.', screen: 'Three trophies, one per year · SHAQ & KOBE', motion: 'Each trophy lights on its year, a bulb chunk on every hit.' },
-  { id: 'record', t: 11.46, title: '15 and 1', vo: 'In 2001, they went 15 and 1 in the playoffs. One loss — the whole postseason.', screen: '15–1 · a dial of 16 games, one purple tick · ONE LOSS', motion: 'Numerals count up to 15; the dial fills game by game and stops on the single loss.' },
-  { id: 'drought', t: 17.57, title: '24 years', vo: 'Since then? 24 years… and nobody has done it again.', screen: 'A clock face, years 2002 → 2026 · 24 YEARS · NOBODY SINCE', motion: 'Clock hands spin; the year counter races; gold dims as the music drops to a ticking clock.' },
-  { id: 'newera', t: 21.94, title: "Luka's team", vo: "Now, for the first time since 2018, there's no LeBron in LA. This is Luka's team.", screen: 'No. 23 plaque goes dark → purple No. 77 medallion · THIS IS LUKA’S TEAM', motion: 'The 23 flickers out; a door splits to reveal the 77; the music comes back in.' },
-  { id: 'working', t: 29.09, title: "It's working", vo: "And it's working. 14 and 3. First in the West. Luka is dropping 37 a night.", screen: '14–3 marquee · 1ST IN THE WEST ribbon · 37.2 PPG', motion: 'Scoreboard bulbs chase; the ribbon unrolls; 37.2 counts up on the beat.' },
-  { id: 'cast', t: 34.16, title: 'The help', vo: 'Austin Reaves is back. Walker Kessler is owning the paint.', screen: 'REAVES · BACK (re-signed July 2026) · KESSLER · 14.3 PTS 10.7 REB', motion: 'Two gold plaques swing down on chains, one per name.' },
-  { id: 'brutal', t: 37.79, title: 'The turn', vo: 'But the road is brutal.', screen: 'Lights go out · a stepped road climbing into the dark · BUT THE ROAD IS BRUTAL', motion: 'Every bulb cuts at once; one bulb left; the floor tilts into deep perspective.' },
-  { id: 'rivals', t: 39.53, title: 'The obstacles', vo: "Wemby's Spurs — the title favorites. The Knicks — the defending champs. And LeBron, now in Philly, standing in the way.", screen: 'Three arches on the road: SPURS · FAVORITES / KNICKS · CHAMPIONS / 76ERS · LEBRON', motion: 'Each arch slams shut across the road as its name is said.' },
-  { id: 'holes', t: 48.0, title: 'Their own problems', vo: 'Plus their own problems: thin at forward, and no real backup center.', screen: 'THIN AT FORWARD · NO BACKUP CENTER on cracked gold', motion: 'Cracks run through the gold bar, two warning plaques drop in.' },
-  { id: 'odds', t: 51.28, title: 'The odds', vo: 'Vegas? About 25 to 1.', screen: 'A gauge needle sweeps to 25–1 · TITLE ODDS', motion: 'Needle overshoots and settles; a single bell hit.' },
-  { id: 'cta', t: 52.73, title: 'Your call', vo: 'So… can Luka start the next Lakers dynasty? One ring. Then two. Then three. Drop your pick in the comments.', screen: 'Three empty medallions light 1 · 2 · 3? · DROP YOUR PICK', motion: 'Medallions light one per word; the third glows purple with a question mark; final fanfare.' },
+  { id: 'hook', t: 0.0, title: 'The hook', vo: 'The last team to win three NBA titles in a row?', screen: 'THE LAST · TEAM TO WIN · a giant gold 3 · IN A ROW? on a gold bar',
+    motion: 'Each line slams in on a beat; the screen flips to purple with a white flash when the 3 lands.',
+    draw(g, p, t) { bg(g); if (p > .34) bg(g, PD); shake(g, p, [.34]);
+      slam(g, 'THE LAST', 360, WH, w_(p, 0, .1), { px: 220 }); slam(g, 'TEAM TO WIN', 560, WH, w_(p, .1, .2), { px: 200 });
+      slam(g, '3', 1010, G, w_(p, .26, .36), { px: 600, big: true }); flash(g, w_(p, .34, .44), WH);
+      block(g, 1330, 210, G, w_(p, .5, .6), -1); slam(g, 'IN A ROW?', 1440, BK, w_(p, .56, .66), { px: 190, max: 960 }); } },
+  { id: 'reveal', t: 3.26, title: 'The answer', vo: 'The Los Angeles Lakers.', screen: 'THE · LOS ANGELES · LAKERS filling the screen in gold',
+    motion: 'Hard cut to black, then LAKERS punches in full-width with a camera shake and a gold flash.',
+    draw(g, p, t) { bg(g); shake(g, p, [.32]);
+      slam(g, 'THE', 590, WH, w_(p, 0, .1), { px: 110 }); slam(g, 'LOS ANGELES', 790, WH, w_(p, .1, .22), { px: 190, max: 980 });
+      slam(g, 'LAKERS', 1060, G, w_(p, .24, .36), { px: 420, max: 1020, big: true }); flash(g, w_(p, .32, .45), G);
+      block(g, 1250, 24, P, w_(p, .4, .6)); } },
+  { id: 'rings', t: 5.0, title: '2000 · 2001 · 2002', vo: '2000. 2001. 2002. Shaq and Kobe. Three straight rings.', screen: 'Three years stack up, one per beat · SHAQ + KOBE · 3 STRAIGHT on purple',
+    motion: 'The years slam in on the voice, a gold bar under each; the last line wipes in on a purple block.',
+    draw(g, p, t) { bg(g); shake(g, p, [.04, .16, .28]);
+      [['2000', .0], ['2001', .12], ['2002', .24]].forEach(([y, a], i) => { slam(g, y, 400 + i * 300, i === 2 ? G : WH, w_(p, a, a + .08), { px: 250 }); block(g, 535 + i * 300, 14, G, w_(p, a + .04, a + .12)); });
+      slam(g, 'SHAQ + KOBE', 1340, WH, w_(p, .42, .52), { px: 160 });
+      block(g, 1480, 220, P, w_(p, .62, .72)); slam(g, '3 STRAIGHT', 1592, WH, w_(p, .68, .78), { px: 190 }); } },
+  { id: 'record', t: 11.46, title: '15 and 1', vo: 'In 2001, they went 15 and 1 in the playoffs. One loss — the whole postseason.', screen: '15–1 huge · IN THE 2001 PLAYOFFS · ONE LOSS. on gold · THE WHOLE POSTSEASON',
+    motion: 'The 15 counts up fast; ONE LOSS hits with a red flash.',
+    draw(g, p, t) { bg(g); shake(g, p, [.5]);
+      small(g, 'IN THE 2001 PLAYOFFS', 330, P, w_(p, 0, .1), 50);
+      slam(g, `${Math.round(clamp(p / .35) * 15)}–1`, 700, WH, w_(p, .05, .12), { px: 560, max: 1000 });
+      block(g, 1000, 260, G, w_(p, .46, .54)); slam(g, 'ONE LOSS.', 1132, BK, w_(p, .5, .58), { px: 230 }); flash(g, w_(p, .5, .62), RED);
+      slam(g, 'THE WHOLE POSTSEASON', 1420, WH, w_(p, .7, .8), { px: 130, max: 960 }); } },
+  { id: 'drought', t: 17.57, title: '24 years', vo: 'Since then? 24 years… and nobody has done it again.', screen: 'SINCE THEN? · years roll 2002 → 2026 · 24 YEARS in outline · NOBODY.',
+    motion: 'The year counter spins like a slot machine; the music drops to a single tick before NOBODY.',
+    draw(g, p, t) { bg(g);
+      slam(g, 'SINCE THEN?', 380, WH, w_(p, 0, .1), { px: 170 });
+      const yr = 2002 + Math.round(eio(clamp((p - .12) / .4)) * 24); slam(g, String(yr), 720, G, w_(p, .1, .16), { px: 330 });
+      slam(g, '24 YEARS', 1080, WH, w_(p, .4, .5), { px: 300, outline: true, lw: 8 });
+      slam(g, 'NOBODY.', 1420, P, w_(p, .68, .78), { px: 300, big: true }); } },
+  { id: 'newera', t: 21.94, title: "Luka's team", vo: "Now, for the first time since 2018, there's no LeBron in LA. This is Luka's team.", screen: 'NO LEBRON IN LA. (LEBRON struck through) · then on purple: THIS IS LUKA’S TEAM. over a giant outlined 77',
+    motion: 'LEBRON gets struck through in red; the screen flips to purple and LUKA’S slams in.',
+    draw(g, p, t) { const flip = p > .5; bg(g, flip ? PD : BK); shake(g, p, [.62]);
+      if (!flip) { small(g, 'FIRST TIME SINCE 2018', 380, G, w_(p, 0, .1), 50);
+        slam(g, 'NO', 640, WH, w_(p, .06, .14), { px: 260 }); slam(g, 'LEBRON', 940, WH, w_(p, .14, .24), { px: 330 }); strike(g, 940, w_(p, .28, .36), RED, -.06);
+        slam(g, 'IN LA.', 1240, WH, w_(p, .3, .4), { px: 220 }); }
+      else { slam(g, '77', 960, 'rgba(255,255,255,.18)', w_(p, .5, .56), { px: 1100, outline: true, lw: 10 });
+        slam(g, 'THIS IS', 640, WH, w_(p, .52, .6), { px: 200 }); slam(g, 'LUKA’S', 930, G, w_(p, .6, .68), { px: 400, big: true }); slam(g, 'TEAM.', 1240, WH, w_(p, .7, .78), { px: 300 }); } } },
+  { id: 'working', t: 29.09, title: "It's working", vo: "And it's working. 14 and 3. First in the West. Luka is dropping 37 a night.", screen: '14 · –3 · 1ST IN THE WEST on gold · LUKA: 37.2 A NIGHT · as of Nov. 21',
+    motion: '14 and 3 punch in on the words; the gold bar wipes; 37.2 rolls up.',
+    draw(g, p, t) { bg(g); shake(g, p, [.12, .24]);
+      slam(g, "IT'S WORKING.", 250, P, w_(p, 0, .08), { px: 130 });
+      slam(g, '14', 640, WH, w_(p, .08, .16), { px: 460, big: true }); slam(g, '–3', 1010, P, w_(p, .2, .28), { px: 420 });
+      block(g, 1220, 200, G, w_(p, .36, .44)); slam(g, '1ST IN THE WEST', 1320, BK, w_(p, .4, .48), { px: 150, max: 980 });
+      slam(g, `LUKA: ${(clamp((p - .6) / .25) * 37.2).toFixed(1)} A NIGHT`, 1580, WH, w_(p, .58, .66), { px: 120, max: 980, rot: -.03 });
+      small(g, 'AS OF NOV. 21, 2026', 1720, '#8f86a3', w_(p, .7, .8), 32); } },
+  { id: 'cast', t: 34.16, title: 'The help', vo: 'Austin Reaves is back. Walker Kessler is owning the paint.', screen: 'REAVES IS BACK. · KESSLER OWNS THE PAINT · 14.3 PTS · 10.7 REB',
+    motion: 'Each name slams in with its line; a gold wipe, then a purple wipe from the other side.',
+    draw(g, p, t) { bg(g); shake(g, p, [.1, .55]);
+      slam(g, 'REAVES', 420, WH, w_(p, 0, .1), { px: 300 }); block(g, 570, 170, G, w_(p, .1, .2)); slam(g, 'IS BACK.', 656, BK, w_(p, .14, .24), { px: 150 });
+      slam(g, 'KESSLER', 1000, WH, w_(p, .45, .55), { px: 300 }); block(g, 1150, 170, P, w_(p, .55, .65), -1); slam(g, 'OWNS THE PAINT', 1236, WH, w_(p, .6, .7), { px: 130, max: 960 });
+      small(g, '14.3 PTS · 10.7 REB', 1430, G, w_(p, .72, .82), 50); } },
+  { id: 'brutal', t: 37.79, title: 'The turn', vo: 'But the road is brutal.', screen: 'BUT · THE ROAD IS · BRUTAL. in red with a glitch split',
+    motion: 'Record stop: the music cuts, the screen glitches, BRUTAL. lands in red.',
+    draw(g, p, t) { bg(g); shake(g, p, [.55], 22);
+      slam(g, 'BUT', 520, WH, w_(p, 0, .12), { px: 300 }); slam(g, 'THE ROAD IS', 860, WH, w_(p, .2, .32), { px: 200 });
+      const k = w_(p, .5, .6); if (k > 0) { g.save(); g.globalCompositeOperation = 'lighter'; slam(g, 'BRUTAL.', 1200, 'rgba(0,200,255,.7)', k, { px: 340, x: CX - 10 * (1 - k) - 6 }); slam(g, 'BRUTAL.', 1200, 'rgba(255,59,78,.9)', k, { px: 340, x: CX + 10 * (1 - k) + 6 }); g.restore(); slam(g, 'BRUTAL.', 1200, RED, k, { px: 340 }); }
+      flash(g, w_(p, .5, .62), RED); } },
+  { id: 'rivals', t: 39.53, title: 'The obstacles', vo: "Wemby's Spurs — the title favorites. The Knicks — the defending champs. And LeBron, now in Philly, standing in the way.", screen: 'SPURS. / KNICKS. / LEBRON. stacked, each with its tag (TITLE FAVORITES · DEFENDING CHAMPS · NOW IN PHILLY), then struck through',
+    motion: 'Each name slams in as it is said; at the end all three get struck through, one after another.',
+    draw(g, p, t) { bg(g); shake(g, p, [.02, .3, .6]);
+      [['SPURS.', '#d9dde2', 'TITLE FAVORITES · +300', 0], ['KNICKS.', '#3d7bff', 'DEFENDING CHAMPS', .28], ['LEBRON.', RED, 'NOW IN PHILLY · +900', .58]].forEach(([n, c, s, a], i) => {
+        const y = 520 + i * 440; slam(g, n, y, c, w_(p, a, a + .08), { px: 330, rot: -.04 }); small(g, s, y + 190, WH, w_(p, a + .06, a + .14), 42, { alpha: .85 });
+        strike(g, y, w_(p, .86 + i * .03, .92 + i * .03), WH, -.05); }); } },
+  { id: 'holes', t: 48.0, title: 'Their own problems', vo: 'Plus their own problems: thin at forward, and no real backup center.', screen: 'PLUS… THEIR OWN PROBLEMS · THIN AT FORWARD. · NO BACKUP CENTER. on hazard tape',
+    motion: 'Black-and-yellow hazard stripes wipe in under each problem.',
+    draw(g, p, t) { bg(g); shake(g, p, [.35, .7]);
+      slam(g, 'PLUS…', 360, WH, w_(p, 0, .1), { px: 160 }); slam(g, 'THEIR OWN PROBLEMS', 560, G, w_(p, .1, .2), { px: 150, max: 980 });
+      [[900, .3, 'THIN AT FORWARD.'], [1300, .62, 'NO BACKUP CENTER.']].forEach(([y, a, s]) => {
+        const k = eio(w_(p, a, a + .1)); if (k > 0) { g.save(); g.beginPath(); g.rect(0, y - 130, W * k, 260); g.clip(); g.fillStyle = G; g.fillRect(0, y - 130, W, 260); g.fillStyle = BK; g.globalAlpha = .18;
+          for (let x = -300; x < W + 300; x += 120) { g.beginPath(); g.moveTo(x, y - 130); g.lineTo(x + 60, y - 130); g.lineTo(x - 40, y + 130); g.lineTo(x - 100, y + 130); g.closePath(); g.fill(); } g.restore(); }
+        slam(g, s, y, BK, w_(p, a + .04, a + .12), { px: 150, max: 980 }); }); } },
+  { id: 'odds', t: 51.28, title: 'The odds', vo: 'Vegas? About 25 to 1.', screen: 'VEGAS? · 25–1 in gold · ABOUT +2500 TO WIN IT ALL',
+    motion: 'The number rolls like a slot machine, then lands on 25–1 with a gold flash.',
+    draw(g, p, t) { bg(g); shake(g, p, [.5]);
+      slam(g, 'VEGAS?', 520, WH, w_(p, 0, .12), { px: 280 });
+      const n = p < .5 ? 1 + Math.floor((t * 40) % 60) : 25; slam(g, `${n}–1`, 1000, G, w_(p, .3, .38), { px: 520, big: true });
+      flash(g, w_(p, .5, .62), G); small(g, 'ABOUT +2500 TO WIN IT ALL', 1330, WH, w_(p, .6, .7), 44); } },
+  { id: 'cta', t: 52.73, title: 'Your call', vo: 'So… can Luka start the next Lakers dynasty? One ring. Then two. Then three. Drop your pick in the comments.', screen: 'CAN LUKA START THE NEXT DYNASTY? · 1. · 2. · 3? · DROP YOUR PICK on gold · COMMENT 1, 2 OR 3',
+    motion: 'The question builds line by line; 1, 2 and 3? hit fast on the words; it ends on the comment prompt.',
+    draw(g, p, t) { const late = p > .42; bg(g, late ? PD : BK); shake(g, p, [.46, .54, .62]);
+      if (!late) { slam(g, 'CAN LUKA', 520, WH, w_(p, 0, .08), { px: 260 }); slam(g, 'START THE NEXT', 790, WH, w_(p, .1, .18), { px: 190 }); slam(g, 'DYNASTY?', 1080, G, w_(p, .2, .3), { px: 330, big: true }); }
+      else { const step = p < .52 ? 0 : p < .6 ? 1 : 2, a = [.44, .52, .6][step];
+        slam(g, ['1.', '2.', '3?'][step], 640, step === 2 ? G : WH, w_(p, a, a + .06), { px: 760, big: true });
+        block(g, 1080, 230, G, w_(p, .72, .8)); slam(g, 'DROP YOUR PICK', 1195, BK, w_(p, .76, .84), { px: 170, max: 980 });
+        small(g, 'COMMENT 1, 2 OR 3', 1430, WH, w_(p, .84, .92), 52); } } },
 ];
 const DUR = 60;
 SCENES.forEach((s, i) => { s.t1 = i < SCENES.length - 1 ? SCENES[i + 1].t : DUR; });
 
-// ---------- helpers
-const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
-const ease = x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
-const back = x => { x = clamp(x); const c = 1.6; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
-const win = (p, a, b) => ease((p - a) / (b - a));
-function gold(g, y0, y1, sheen = 0) {
-  const gr = g.createLinearGradient(0, y0, 0, y1);
-  const s = (sheen % 1 + 1) % 1;
-  gr.addColorStop(0, '#6e4f1c'); gr.addColorStop(.35, '#c9a04a'); gr.addColorStop(.5, '#f6df98');
-  gr.addColorStop(.62, '#c9a04a'); gr.addColorStop(1, '#5c4116');
-  if (sheen) { const p = clamp(s); gr.addColorStop(clamp(p * .96), '#c9a04a'); gr.addColorStop(clamp(p * .96 + .02), '#fff6cf'); gr.addColorStop(clamp(p * .96 + .04), '#c9a04a'); }
-  return gr;
+function caption(g, str) {
+  g.save(); g.font = `600 40px ${IN}`; const words = str.split(' '), lines = []; let cur = '';
+  for (const w of words) { const tt = cur ? cur + ' ' + w : w; if (g.measureText(tt).width > 880 && cur) { lines.push(cur); cur = w; } else cur = tt; }
+  lines.push(cur); const lh = 52, y0 = 1830 - (lines.length - 1) * lh;
+  g.fillStyle = 'rgba(0,0,0,.6)'; g.fillRect(70, y0 - 48, 940, (lines.length - 1) * lh + 70);
+  g.fillStyle = WH; g.textAlign = 'center'; lines.forEach((l, i) => g.fillText(l, CX, y0 + i * lh)); g.restore();
 }
-function ground(g, glow = COL.purple, glowA = .35) {
-  g.fillStyle = COL.bg; g.fillRect(0, 0, W, H);
-  const r = g.createRadialGradient(CX, 820, 40, CX, 820, 1100);
-  r.addColorStop(0, hexA(glow, glowA)); r.addColorStop(1, hexA(COL.bg, 0));
-  g.fillStyle = r; g.fillRect(0, 0, W, H);
-}
-function hexA(h, a) { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16},${n >> 8 & 255},${n & 255},${a})`; }
-function sunburst(g, cy, rot, alpha = .18, n = 36) {
-  g.save(); g.translate(CX, cy); g.rotate(rot);
-  for (let i = 0; i < n; i++) {
-    if (i % 2) continue;
-    const a0 = i / n * Math.PI * 2, a1 = (i + 1) / n * Math.PI * 2;
-    g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, 1600, a0, a1); g.closePath();
-    g.fillStyle = `rgba(210,172,87,${alpha})`; g.fill();
-  }
-  g.restore();
-}
-function border(g, k = 1) {
-  const m = 46, s = 44;
-  g.save(); g.globalAlpha = k; g.strokeStyle = gold(g, 0, H); g.lineWidth = 3;
-  const path = (o) => { g.beginPath();
-    g.moveTo(m + o + s, m + o); g.lineTo(W - m - o - s, m + o); g.lineTo(W - m - o - s, m + o + s * .0); g.lineTo(W - m - o, m + o + s);
-    g.lineTo(W - m - o, H - m - o - s); g.lineTo(W - m - o - s, H - m - o); g.lineTo(m + o + s, H - m - o); g.lineTo(m + o, H - m - o - s);
-    g.lineTo(m + o, m + o + s); g.closePath(); g.stroke(); };
-  path(0); g.lineWidth = 1.5; path(14);
-  g.restore();
-}
-function txt(g, str, y, px, font, fill, o = {}) {
-  g.save(); g.font = `${o.weight || 400} ${px}px ${font}`; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
-  if (o.spacing) g.letterSpacing = o.spacing + 'px';
-  let size = px; while (g.measureText(str).width > (o.max || 920) && size > 20) { size *= .95; g.font = `${o.weight || 400} ${size}px ${font}`; }
-  if (o.alpha != null) g.globalAlpha = o.alpha;
-  if (o.glow) { g.shadowColor = o.glow; g.shadowBlur = o.blur || 40; }
-  g.fillStyle = fill === 'gold' ? gold(g, y - size * .8, y + size * .1, o.sheen || 0) : fill;
-  g.fillText(str, o.x || CX, y);
-  g.restore();
-}
-// rising text from a clip box
-function rise(g, str, y, px, font, fill, k, o = {}) {
-  if (k <= 0) return;
-  g.save(); g.beginPath(); g.rect(0, y - px * 1.0, W, px * 1.25); g.clip();
-  txt(g, str, y + (1 - ease(k)) * px * 1.2, px, font, fill, o); g.restore();
-}
-function titleBar(g, str, y, k, o = {}) {
-  if (k <= 0) return;
-  const w = (o.w || 760) * ease(k), h = o.h || 104, x0 = CX - w / 2, st = 18;
-  g.save();
-  g.beginPath();
-  g.moveTo(x0 + st, y - h / 2); g.lineTo(x0 + w - st, y - h / 2); g.lineTo(x0 + w - st, y - h / 2 + st); g.lineTo(x0 + w, y - h / 2 + st);
-  g.lineTo(x0 + w, y + h / 2 - st); g.lineTo(x0 + w - st, y + h / 2 - st); g.lineTo(x0 + w - st, y + h / 2); g.lineTo(x0 + st, y + h / 2);
-  g.lineTo(x0 + st, y + h / 2 - st); g.lineTo(x0, y + h / 2 - st); g.lineTo(x0, y - h / 2 + st); g.lineTo(x0 + st, y - h / 2 + st); g.closePath();
-  g.fillStyle = o.fill || 'rgba(15,11,7,.9)'; g.fill();
-  g.strokeStyle = gold(g, y - h / 2, y + h / 2); g.lineWidth = 3; g.stroke();
-  g.restore();
-  if (k > .55) rise(g, str, y + (o.px || 46) * .36, o.px || 46, o.font || F.label, o.color || COL.ivory, (k - .55) / .45, { spacing: o.spacing ?? 8, weight: o.weight, max: w - 60 });
-}
-function bulbRing(g, cx, cy, r, n, lit, flash = 0) {
-  for (let i = 0; i < n; i++) {
-    const a = -Math.PI / 2 + i / n * Math.PI * 2, x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
-    const on = i < lit;
-    g.save();
-    if (on) { g.shadowColor = '#ffd98a'; g.shadowBlur = 26 + (i === lit - 1 ? flash * 40 : 0); }
-    g.beginPath(); g.arc(x, y, 13, 0, Math.PI * 2);
-    g.fillStyle = on ? (i === lit - 1 && flash > .2 ? '#fffbe8' : '#ffe2a0') : '#3a2c16'; g.fill();
-    g.restore();
-  }
-}
-function trophy(g, cx, base, s, k) {
-  // deco cup: bowl, stem, stepped base; gold when lit, engraved outline when dark
-  g.save(); g.translate(cx, base); g.scale(s, s);
-  g.beginPath();
-  g.moveTo(-90, -360); g.lineTo(90, -360); g.quadraticCurveTo(95, -200, 22, -170); g.lineTo(16, -80); g.lineTo(60, -60); g.lineTo(60, -36);
-  g.lineTo(84, -36); g.lineTo(84, 0); g.lineTo(-84, 0); g.lineTo(-84, -36); g.lineTo(-60, -36); g.lineTo(-60, -60); g.lineTo(-16, -80); g.lineTo(-22, -170);
-  g.quadraticCurveTo(-95, -200, -90, -360); g.closePath();
-  if (k > 0) { g.globalAlpha = k; g.shadowColor = '#f1c96a'; g.shadowBlur = 40 * k; g.fillStyle = gold(g, -360, 0); g.fill(); g.globalAlpha = 1; g.shadowBlur = 0; }
-  g.strokeStyle = k > 0 ? '#f6df98' : COL.dim; g.lineWidth = 4 / s; g.stroke();
-  // ball on top
-  g.beginPath(); g.arc(0, -410, 46, 0, Math.PI * 2);
-  if (k > 0) { g.globalAlpha = k; g.fillStyle = gold(g, -456, -364); g.fill(); g.globalAlpha = 1; }
-  g.stroke();
-  g.restore();
-}
-function plaque(g, y, w, h, k, fill = 'rgba(15,11,7,.92)', stroke = null) {
-  if (k <= 0) return;
-  const x0 = CX - w / 2;
-  g.save(); g.globalAlpha = clamp(k * 1.5);
-  g.fillStyle = fill; g.fillRect(x0, y - h / 2, w, h);
-  g.strokeStyle = stroke || gold(g, y - h / 2, y + h / 2); g.lineWidth = 3; g.strokeRect(x0, y - h / 2, w, h);
-  g.lineWidth = 1.2; g.strokeRect(x0 + 12, y - h / 2 + 12, w - 24, h - 24);
-  g.restore();
-}
-function floor(g, k, tilt = 1) {
-  // one-point-perspective floor (mode-7 lines) receding to the centre
-  const hy = 760, by = H;
-  g.save(); g.globalAlpha = k;
-  g.strokeStyle = 'rgba(210,172,87,.55)'; g.lineWidth = 2;
-  for (let i = -8; i <= 8; i++) { g.beginPath(); g.moveTo(CX + i * 18, hy); g.lineTo(CX + i * 260 * tilt, by); g.stroke(); }
-  for (let j = 1; j < 14; j++) { const z = Math.pow(j / 14, 2.2); const y = hy + (by - hy) * z; g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
-  g.restore();
-}
-function arch(g, cx, by, w, h, k, label, sub, colr) {
-  if (k <= 0) return;
-  g.save(); g.globalAlpha = clamp(k * 1.6);
-  const x0 = cx - w / 2, st = w * .12;
-  g.beginPath();
-  g.moveTo(x0, by); g.lineTo(x0, by - h + st * 2); g.lineTo(x0 + st, by - h + st * 2); g.lineTo(x0 + st, by - h + st); g.lineTo(x0 + st * 2, by - h + st);
-  g.lineTo(x0 + st * 2, by - h); g.lineTo(x0 + w - st * 2, by - h); g.lineTo(x0 + w - st * 2, by - h + st); g.lineTo(x0 + w - st, by - h + st);
-  g.lineTo(x0 + w - st, by - h + st * 2); g.lineTo(x0 + w, by - h + st * 2); g.lineTo(x0 + w, by); g.closePath();
-  g.fillStyle = 'rgba(10,7,4,.94)'; g.fill(); g.strokeStyle = gold(g, by - h, by); g.lineWidth = 4; g.stroke();
-  // doors closing
-  const d = ease(k); g.fillStyle = colr || '#24190c';
-  g.fillRect(x0 + 10, by - h + st * 2 + 10, (w / 2 - 12) * d, h - st * 2 - 10);
-  g.fillRect(x0 + w - 10 - (w / 2 - 12) * d, by - h + st * 2 + 10, (w / 2 - 12) * d, h - st * 2 - 10);
-  g.restore();
-  if (k > .5) { txt(g, label, by - h * .52, w * .2, F.display, 'gold', { max: w - 50, alpha: clamp((k - .5) * 2) }); txt(g, sub, by - h * .36, w * .085, F.label, COL.ivory, { spacing: 4, max: w - 40, alpha: clamp((k - .5) * 2) }); }
-}
-function caption(g, str, k = 1) {
-  if (!str) return;
-  g.save(); g.font = `600 42px ${F.body}`;
-  const words = str.split(' '), lines = []; let cur = '';
-  for (const w of words) { const t = cur ? cur + ' ' + w : w; if (g.measureText(t).width > 860 && cur) { lines.push(cur); cur = w; } else cur = t; }
-  lines.push(cur);
-  const lh = 54, h = lines.length * lh + 44, y0 = 1700 - h / 2;
-  g.globalAlpha = k;
-  g.fillStyle = 'rgba(10,7,4,.9)'; g.fillRect(CX - 470, y0, 940, h);
-  g.strokeStyle = gold(g, y0, y0 + h); g.lineWidth = 2; g.strokeRect(CX - 470, y0, 940, h); g.strokeRect(CX - 460, y0 + 8, 920, h - 16);
-  g.fillStyle = COL.ivory; g.textAlign = 'center';
-  lines.forEach((l, i) => g.fillText(l, CX, y0 + 22 + lh * (i + .78)));
-  g.restore();
-}
-
-// ---------- scenes: draw(g, p, t) with p = 0..1 across the scene
-const DRAW = {
-  hook(g, p, t) {
-    ground(g, COL.purple, .25); sunburst(g, 860, t * .15, .12);
-    rise(g, 'THE LAST', 300, 84, F.label, COL.ivory, win(p, 0, .15), { spacing: 22, weight: 400 });
-    const lit = Math.floor(clamp(p / .8) * 24);
-    bulbRing(g, CX, 860, 360, 24, lit, (p * 30) % 1);
-    txt(g, '3', 1080, 640, F.num, 'gold', { sheen: p, glow: 'rgba(241,201,106,.5)', blur: 60, alpha: win(p, .05, .3) });
-    rise(g, 'IN A ROW?', 1400, 110, F.display, COL.ivory, win(p, .45, .65), {});
-  },
-  reveal(g, p, t) {
-    ground(g, COL.purple, .55); sunburst(g, 860, -t * .1, .1);
-    rise(g, 'LOS ANGELES', 700, 70, F.label, COL.ivory, win(p, .2, .45), { spacing: 18 });
-    txt(g, 'LAKERS', 930, 250, F.display, 'gold', { sheen: p * 1.2, glow: 'rgba(155,107,224,.8)', blur: 80, alpha: win(p, .25, .5), max: 960 });
-    titleBar(g, 'THE LAST THREE-PEAT', 1110, win(p, .45, .75), { w: 720, px: 40 });
-    // doors split along the centre seam
-    const d = win(p, 0, .3);
-    g.fillStyle = '#060402'; g.fillRect(0, 0, CX * (1 - d), H); g.fillRect(CX + CX * d, 0, CX, H);
-    g.fillStyle = gold(g, 0, H); if (d < 1) { g.fillRect(CX * (1 - d) - 4, 0, 4, H); g.fillRect(CX + CX * d, 0, 4, H); }
-  },
-  rings(g, p, t) {
-    ground(g, COL.purple, .18);
-    titleBar(g, 'SHAQ & KOBE', 300, win(p, 0, .15), { w: 640, px: 52 });
-    [[230, 2000, .15], [540, 2001, .32], [850, 2002, .49]].forEach(([x, y, a]) => {
-      const k = win(p, a, a + .08);
-      trophy(g, x, 1080, .78, k);
-      txt(g, String(y), 1180, 78, F.num, k > 0 ? 'gold' : COL.dim, { max: 280 });
-    });
-    rise(g, 'THREE STRAIGHT', 1400, 92, F.display, COL.ivory, win(p, .65, .8), {});
-  },
-  record(g, p, t) {
-    ground(g, COL.purple, .2);
-    rise(g, '2001 PLAYOFFS', 280, 54, F.label, COL.ivory, win(p, 0, .12), { spacing: 14 });
-    const n = Math.round(clamp(p / .45) * 15);
-    txt(g, `${n}–1`, 720, 380, F.num, 'gold', { glow: 'rgba(241,201,106,.45)', blur: 50 });
-    // dial of 16 games
-    const cy = 1180, r = 300, games = Math.floor(clamp(p / .55) * 16);
-    for (let i = 0; i < 16; i++) {
-      const a = Math.PI + i / 15 * Math.PI, x0 = CX + Math.cos(a) * (r - 40), y0 = cy + Math.sin(a) * (r - 40), x1 = CX + Math.cos(a) * r, y1 = cy + Math.sin(a) * r;
-      const loss = i === 10;
-      g.save(); g.lineCap = 'round'; g.lineWidth = loss ? 18 : 12;
-      g.strokeStyle = i < games ? (loss ? COL.purpleHot : '#f1c96a') : '#3a2c16';
-      if (i < games) { g.shadowColor = loss ? COL.purpleHot : '#f1c96a'; g.shadowBlur = 18; }
-      g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); g.restore();
-    }
-    rise(g, 'ONE LOSS', 1290, 96, F.display, COL.purpleHot, win(p, .6, .72), {});
-    rise(g, 'THE WHOLE POSTSEASON', 1390, 46, F.label, COL.ivory, win(p, .68, .8), { spacing: 10 });
-  },
-  drought(g, p, t) {
-    const dimk = 1 - .55 * win(p, .3, .9);
-    ground(g, '#2a2012', .4 * dimk);
-    const cy = 860, r = 330;
-    g.save(); g.globalAlpha = dimk;
-    g.strokeStyle = gold(g, cy - r, cy + r); g.lineWidth = 6; g.beginPath(); g.arc(CX, cy, r, 0, Math.PI * 2); g.stroke();
-    g.lineWidth = 2; g.beginPath(); g.arc(CX, cy, r - 22, 0, Math.PI * 2); g.stroke();
-    for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; g.fillStyle = '#d2ac57'; g.fillRect(CX + Math.cos(a) * (r - 60) - 5, cy + Math.sin(a) * (r - 60) - 5, 10, 10); }
-    const spin = ease(clamp(p / .8)) * Math.PI * 2 * 24;
-    g.lineCap = 'round'; g.strokeStyle = '#f2e8d2';
-    g.lineWidth = 12; g.beginPath(); g.moveTo(CX, cy); g.lineTo(CX + Math.sin(spin / 12) * 170, cy - Math.cos(spin / 12) * 170); g.stroke();
-    g.lineWidth = 6; g.beginPath(); g.moveTo(CX, cy); g.lineTo(CX + Math.sin(spin) * 260, cy - Math.cos(spin) * 260); g.stroke();
-    g.restore();
-    const yr = 2002 + Math.round(ease(clamp(p / .8)) * 24);
-    txt(g, String(yr), 1340, 150, F.num, 'gold', {});
-    rise(g, '24 YEARS', 300, 120, F.display, COL.ivory, win(p, .05, .2), {});
-    rise(g, 'NOBODY SINCE', 1480, 76, F.label, COL.ivory, win(p, .6, .75), { spacing: 16 });
-  },
-  newera(g, p, t) {
-    ground(g, COL.purple, .2 + .4 * win(p, .5, .8));
-    rise(g, 'FIRST SEASON WITHOUT LEBRON', 260, 44, F.label, COL.ivory, win(p, 0, .12), { spacing: 6 });
-    rise(g, 'SINCE 2018', 330, 44, F.label, COL.ivory, win(p, .05, .17), { spacing: 6 });
-    // No. 23 plaque flickers out
-    const out = win(p, .2, .4), fl = out > 0 && out < 1 ? (Math.sin(p * 220) > 0 ? 1 : .3) : 1;
-    if (out < 1) { g.save(); g.globalAlpha = (1 - out) * fl; plaque(g, 620, 360, 300, 1); txt(g, '23', 700, 220, F.num, 'gold', {}); g.restore(); }
-    // purple 77 medallion behind a split door
-    const k = win(p, .4, .62);
-    if (k > 0) {
-      const cy = 820, r = Math.max(1, 270 * back(k));
-      g.save(); g.shadowColor = COL.purpleHot; g.shadowBlur = 80; g.fillStyle = COL.purple; g.beginPath(); g.arc(CX, cy, r, 0, Math.PI * 2); g.fill(); g.restore();
-      g.strokeStyle = gold(g, cy - r, cy + r); g.lineWidth = 8; g.beginPath(); g.arc(CX, cy, r, 0, Math.PI * 2); g.stroke();
-      if (r > 30) { g.lineWidth = 2; g.beginPath(); g.arc(CX, cy, r - 24, 0, Math.PI * 2); g.stroke(); }
-      txt(g, '77', cy + 105, 300, F.num, 'gold', { alpha: k });
-      txt(g, 'DONČIĆ', cy + 190, 44, F.label, COL.ivory, { spacing: 12, alpha: k });
-    }
-    titleBar(g, 'THIS IS LUKA’S TEAM', 1280, win(p, .66, .86), { w: 860, px: 48, spacing: 6 });
-  },
-  working(g, p, t) {
-    ground(g, COL.purple, .3);
-    // marquee box with chasing bulbs
-    const x0 = 140, y0 = 380, w = 800, h = 470;
-    g.save(); g.fillStyle = 'rgba(10,7,4,.92)'; g.fillRect(x0, y0, w, h); g.strokeStyle = gold(g, y0, y0 + h); g.lineWidth = 5; g.strokeRect(x0, y0, w, h); g.restore();
-    const per = [];
-    for (let i = 0; i < 20; i++) per.push([x0 + i * w / 19, y0], [x0 + i * w / 19, y0 + h]);
-    for (let j = 1; j < 11; j++) per.push([x0, y0 + j * h / 11], [x0 + w, y0 + j * h / 11]);
-    const chase = Math.floor(t * 12);
-    per.forEach(([x, y], i) => { const on = win(p, 0, .15) > 0 && (i + chase) % 3 !== 0; g.save(); if (on) { g.shadowColor = '#ffd98a'; g.shadowBlur = 16; } g.fillStyle = on ? '#ffe2a0' : '#3a2c16'; g.beginPath(); g.arc(x, y, 9, 0, Math.PI * 2); g.fill(); g.restore(); });
-    const n = Math.round(clamp(p / .25) * 14);
-    txt(g, `${n}–3`, y0 + 330, 300, F.num, 'gold', { glow: 'rgba(241,201,106,.45)', blur: 40 });
-    titleBar(g, '1ST IN THE WEST', 960, win(p, .25, .45), { w: 700, px: 50, fill: COL.purple });
-    const ppg = (clamp((p - .5) / .3) * 37.2).toFixed(1);
-    if (p > .5) txt(g, ppg, 1300, 260, F.num, 'gold', { glow: 'rgba(241,201,106,.45)', blur: 40 });
-    rise(g, 'POINTS A NIGHT · DONČIĆ', 1390, 44, F.label, COL.ivory, win(p, .6, .75), { spacing: 8 });
-    txt(g, 'AS OF NOV. 21, 2026', 1520, 30, F.label, COL.ivory, { spacing: 6, alpha: .6 * win(p, .7, .8) });
-  },
-  cast(g, p, t) {
-    ground(g, COL.purple, .2);
-    const drop = (k) => -400 * (1 - back(k));
-    const k1 = win(p, .02, .28), k2 = win(p, .45, .7);
-    [[560, k1, 'REAVES', 'BACK · RE-SIGNED JULY 2026', '15'], [1080, k2, 'KESSLER', '14.3 PTS · 10.7 REB', '']].forEach(([y, k, name, sub]) => {
-      if (k <= 0) return;
-      const yy = y + drop(k);
-      g.strokeStyle = gold(g, 0, yy); g.lineWidth = 3; g.beginPath(); g.moveTo(CX - 280, 0); g.lineTo(CX - 280, yy - 170); g.moveTo(CX + 280, 0); g.lineTo(CX + 280, yy - 170); g.stroke();
-      plaque(g, yy, 820, 340, 1);
-      txt(g, name, yy + 20, 150, F.display, 'gold', {});
-      txt(g, sub, yy + 100, 42, F.label, COL.ivory, { spacing: 6 });
-    });
-  },
-  brutal(g, p, t) {
-    const off = win(p, 0, .08);
-    ground(g, '#140f08', .2 * (1 - off));
-    floor(g, win(p, .1, .5));
-    // stepped road
-    g.save(); g.globalAlpha = win(p, .15, .5);
-    for (let i = 0; i < 9; i++) { const z = i / 9, w = 760 * (1 - z * .85), y = 1800 - z * 1000; g.fillStyle = `rgba(210,172,87,${.08 + .05 * (1 - z)})`; g.fillRect(CX - w / 2, y - 40, w, 34); }
-    g.restore();
-    // one last bulb
-    g.save(); g.shadowColor = '#ffd98a'; g.shadowBlur = 50; g.fillStyle = '#ffe2a0'; g.beginPath(); g.arc(CX, 600, 18, 0, Math.PI * 2); g.fill(); g.restore();
-    rise(g, 'BUT THE ROAD', 300, 110, F.display, COL.ivory, win(p, .2, .4), {});
-    rise(g, 'IS BRUTAL', 440, 140, F.display, 'gold', win(p, .35, .55), {});
-  },
-  rivals(g, p, t) {
-    ground(g, '#140f08', .2); floor(g, 1);
-    rise(g, 'THE ROAD', 230, 54, F.label, COL.ivory, win(p, 0, .08), { spacing: 18 });
-    arch(g, CX, 620, 620, 320, win(p, .04, .2), 'SPURS', 'TITLE FAVORITES', '#2a2a2a');
-    arch(g, CX, 1010, 680, 340, win(p, .3, .46), 'KNICKS', 'DEFENDING CHAMPS', '#1d2a44');
-    arch(g, CX, 1420, 740, 360, win(p, .62, .78), '76ERS', 'LEBRON STANDS IN THE WAY', '#2a1a1a');
-  },
-  holes(g, p, t) {
-    ground(g, COL.purple, .15);
-    const y = 560; g.save(); g.fillStyle = gold(g, y - 50, y + 50); g.fillRect(140, y - 50, 800, 100); g.restore();
-    // cracks
-    const c = win(p, .05, .4);
-    g.save(); g.strokeStyle = '#0f0b07'; g.lineWidth = 7; g.lineJoin = 'bevel';
-    [[300, [[-20, 30], [25, 60], [-10, 100]]], [700, [[30, 25], [-15, 55], [20, 100]]]].forEach(([x, pts]) => {
-      g.beginPath(); g.moveTo(x, y - 50); const m = Math.max(1, Math.round(pts.length * c));
-      for (let i = 0; i < m; i++) g.lineTo(x + pts[i][0], y - 50 + pts[i][1]); g.stroke();
-    });
-    g.restore();
-    rise(g, 'THEIR OWN PROBLEMS', 380, 64, F.label, COL.ivory, win(p, 0, .12), { spacing: 10 });
-    plaque(g, 900, 860, 230, win(p, .3, .45)); if (p > .38) txt(g, 'THIN AT FORWARD', 930, 84, F.display, 'gold', { alpha: win(p, .38, .5), max: 760 });
-    plaque(g, 1220, 860, 230, win(p, .58, .72)); if (p > .66) txt(g, 'NO BACKUP CENTER', 1250, 84, F.display, 'gold', { alpha: win(p, .66, .78), max: 760 });
-  },
-  odds(g, p, t) {
-    ground(g, COL.purple, .25);
-    rise(g, 'TITLE ODDS', 300, 90, F.display, COL.ivory, win(p, 0, .15), {});
-    const cy = 1000, r = 380;
-    g.save(); g.lineWidth = 6; g.strokeStyle = gold(g, cy - r, cy); g.beginPath(); g.arc(CX, cy, r, Math.PI, 0); g.stroke();
-    for (let i = 0; i <= 10; i++) { const a = Math.PI + i / 10 * Math.PI; g.lineWidth = i % 5 ? 3 : 7; g.beginPath(); g.moveTo(CX + Math.cos(a) * (r - 20), cy + Math.sin(a) * (r - 20)); g.lineTo(CX + Math.cos(a) * (r - 70), cy + Math.sin(a) * (r - 70)); g.stroke(); }
-    g.restore();
-    txt(g, 'LONG SHOT', 1060, 32, F.label, COL.ivory, { x: CX + 300, spacing: 4, alpha: .7 });
-    txt(g, 'FAVORITE', 1060, 32, F.label, COL.ivory, { x: CX - 300, spacing: 4, alpha: .7 });
-    const target = Math.PI + .78 * Math.PI, a = Math.PI + (target - Math.PI) * back(clamp(p / .5));
-    g.save(); g.lineCap = 'round'; g.strokeStyle = COL.purpleHot; g.shadowColor = COL.purpleHot; g.shadowBlur = 30; g.lineWidth = 12;
-    g.beginPath(); g.moveTo(CX, cy); g.lineTo(CX + Math.cos(a) * (r - 60), cy + Math.sin(a) * (r - 60)); g.stroke();
-    g.fillStyle = '#f2e8d2'; g.beginPath(); g.arc(CX, cy, 22, 0, Math.PI * 2); g.fill(); g.restore();
-    rise(g, '25–1', 1370, 300, F.num, 'gold', win(p, .35, .55), { glow: 'rgba(241,201,106,.45)', blur: 40 });
-    txt(g, 'ABOUT +2500 · NOV. 2026', 1470, 36, F.label, COL.ivory, { spacing: 6, alpha: .7 * win(p, .5, .6) });
-  },
-  cta(g, p, t) {
-    ground(g, COL.purple, .45); sunburst(g, 820, t * .12, .1);
-    rise(g, 'THE NEXT', 260, 70, F.label, COL.ivory, win(p, 0, .1), { spacing: 22 });
-    rise(g, 'DYNASTY?', 400, 150, F.display, 'gold', win(p, .05, .18), {});
-    [[260, .3, '1'], [540, .42, '2'], [820, .54, '3?']].forEach(([x, a, s], i) => {
-      const k = win(p, a, a + .08), cy = 820, r = 120;
-      g.save();
-      if (k > 0) { g.shadowColor = i === 2 ? COL.purpleHot : '#f1c96a'; g.shadowBlur = 50 * k; g.fillStyle = i === 2 ? COL.purple : 'rgba(210,172,87,.25)'; g.beginPath(); g.arc(x, cy, r, 0, Math.PI * 2); g.fill(); }
-      g.restore();
-      g.strokeStyle = k > 0 ? gold(g, cy - r, cy + r) : COL.dim; g.lineWidth = 6; g.beginPath(); g.arc(x, cy, r, 0, Math.PI * 2); g.stroke();
-      if (k > 0) txt(g, s, cy + 52, i === 2 ? 130 : 150, F.num, 'gold', { x, alpha: k, max: 220 });
-    });
-    titleBar(g, 'DROP YOUR PICK', 1160, win(p, .66, .82), { w: 800, px: 54, fill: COL.purple });
-    rise(g, '1 · 2 · 3 ?  IN THE COMMENTS', 1300, 40, F.label, COL.ivory, win(p, .75, .88), { spacing: 6 });
-  },
-};
-
-function renderScene(g, s, p, t, withCaption = true) {
+function render(g, s, p, t, clock, withCap) {
   g.save(); g.setTransform(g.canvas.width / W, 0, 0, g.canvas.height / H, 0, 0);
-  DRAW[s.id](g, clamp(p), t);
-  border(g, 1);
-  if (withCaption) caption(g, s.vo, 1);
+  g.save(); s.draw(g, clamp(p), t); g.restore();
+  grain(g, t);
+  g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(0, 0, W, 10); g.fillStyle = G; g.fillRect(0, 0, W * (clock / DUR), 10);
+  if (withCap) caption(g, s.vo);
   g.restore();
 }
 
-// ---------- storyboard cards
+// ---- board
 const board = document.getElementById('board');
 const fmt = x => `${Math.floor(x / 60)}:${String(Math.floor(x % 60)).padStart(2, '0')}`;
 const cards = SCENES.map((s, i) => {
   const el = document.createElement('article'); el.className = 'card';
   el.innerHTML = `<button class="thumb" type="button" aria-label="Jump to frame ${i + 1}: ${s.title}"><canvas width="360" height="640"></canvas></button>
-    <div class="meta"><span>Frame ${String(i + 1).padStart(2, '0')}</span><b>≈ ${fmt(s.t)}–${fmt(s.t1)}</b></div>
-    <h3>${s.title}</h3>
-    <p class="vo">${s.vo}</p>
-    <p class="notes"><span>On screen</span>${s.screen}</p>
-    <p class="notes"><span>Motion</span>${s.motion}</p>`;
+    <div class="meta"><span>${String(i + 1).padStart(2, '0')}</span><span>≈ ${fmt(s.t)}–${fmt(s.t1)}</span></div>
+    <h3>${s.title}</h3><p class="vo">${s.vo}</p>
+    <p class="notes"><b>On screen:</b> ${s.screen}</p><p class="notes"><b>Motion:</b> ${s.motion}</p>`;
   board.appendChild(el);
-  const cv = el.querySelector('canvas');
   el.querySelector('.thumb').addEventListener('click', () => seek(s.t + .01, true));
-  return { el, g: cv.getContext('2d'), s, visible: false };
+  return { el, g: el.querySelector('canvas').getContext('2d'), s, vis: true };
 });
 
-// ---------- player
-const big = document.getElementById('big').getContext('2d');
-const audio = document.getElementById('takeA');
-const playBtn = document.getElementById('play'), clock = document.getElementById('clock'), fill = document.getElementById('fill'), bar = document.getElementById('bar');
+// ---- player
+const big = document.getElementById('big').getContext('2d'), audio = document.getElementById('takeA');
+const playBtn = document.getElementById('play'), clockEl = document.getElementById('clock'), fill = document.getElementById('fill'), bar = document.getElementById('bar');
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-let clockT = 0, playing = false, last = 0;
+let clockT = 2.6, playing = false, last = 0;
 const sceneAt = t => SCENES.find(s => t >= s.t && t < s.t1) || SCENES[SCENES.length - 1];
-function drawBig(t) {
-  const s = sceneAt(t), p = (t - s.t) / (s.t1 - s.t);
-  renderScene(big, s, playing || t > 0 ? p : 1, t);
-  cards.forEach(c => c.el.classList.toggle('on', c.s === s));
-  clock.textContent = `${fmt(t)} / 1:00`; fill.style.width = `${t / DUR * 100}%`; bar.setAttribute('aria-valuenow', t.toFixed(1));
-}
-function seek(t, autoplay) {
-  clockT = clamp(t, 0, DUR - .01);
-  try { audio.currentTime = clockT; } catch (e) {}
-  drawBig(clockT);
-  if (autoplay && !playing) toggle();
-}
-function toggle() {
-  playing = !playing;
-  playBtn.textContent = playing ? 'Pause' : 'Play animatic';
-  if (playing) { const pr = audio.play(); if (pr && pr.catch) pr.catch(() => {}); last = performance.now(); }
-  else audio.pause();
-}
+function drawBig(t) { const s = sceneAt(t); render(big, s, (t - s.t) / (s.t1 - s.t), t, t, true);
+  cards.forEach(c => c.el.classList.toggle('on', c.s === s)); clockEl.textContent = `${fmt(t)} / 1:00`; fill.style.width = `${t / DUR * 100}%`; bar.setAttribute('aria-valuenow', t.toFixed(1)); }
+function seek(t, auto) { clockT = clamp(t, 0, DUR - .01); try { audio.currentTime = clockT; } catch (e) {} drawBig(clockT); if (auto && !playing) toggle(); }
+function toggle() { playing = !playing; playBtn.textContent = playing ? '❚❚ Pause' : '▶ Play animatic';
+  if (playing) { if (clockT >= DUR - .1) seek(0); const pr = audio.play(); if (pr && pr.catch) pr.catch(() => {}); last = performance.now(); } else audio.pause(); }
 playBtn.addEventListener('click', toggle);
-audio.addEventListener('play', () => { if (!playing) { playing = true; playBtn.textContent = 'Pause'; } });
-audio.addEventListener('pause', () => { if (playing) { playing = false; playBtn.textContent = 'Play animatic'; } });
-audio.addEventListener('ended', () => { playing = false; playBtn.textContent = 'Play animatic'; });
+audio.addEventListener('play', () => { if (!playing) { playing = true; playBtn.textContent = '❚❚ Pause'; } });
+audio.addEventListener('pause', () => { if (playing) { playing = false; playBtn.textContent = '▶ Play animatic'; } });
 bar.addEventListener('click', e => { const r = bar.getBoundingClientRect(); seek((e.clientX - r.left) / r.width * DUR); });
 bar.addEventListener('keydown', e => { if (e.key === 'ArrowRight') seek(clockT + 2); if (e.key === 'ArrowLeft') seek(clockT - 2); });
-
-const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { const c = cards.find(c => c.el.contains(e.target)); if (c) c.visible = e.isIntersecting; })) : null;
-cards.forEach(c => io && io.observe(c.el.querySelector('.thumb')));
+if ('IntersectionObserver' in window) { const io = new IntersectionObserver(es => es.forEach(e => { const c = cards.find(c => c.el.contains(e.target)); if (c) c.vis = e.isIntersecting; })); cards.forEach(c => io.observe(c.el.querySelector('.thumb'))); }
 
 function frame(now) {
-  const t0 = now / 1000;
-  if (playing) {
-    if (!audio.paused && isFinite(audio.currentTime)) clockT = audio.currentTime;
-    else { clockT += (now - last) / 1000; }
-    if (clockT >= DUR) { clockT = DUR - .01; playing = false; playBtn.textContent = 'Play animatic'; }
-    drawBig(clockT);
-  }
+  const t = now / 1000;
+  if (playing) { if (!audio.paused && isFinite(audio.currentTime)) clockT = audio.currentTime; else clockT += (now - last) / 1000;
+    if (clockT >= DUR) { clockT = DUR - .01; toggle(); } drawBig(clockT); }
   last = now;
-  if (!reduce) cards.forEach(c => {
-    if (!c.visible) return;
-    const span = Math.min(4, c.s.t1 - c.s.t) + 1.2, local = (t0 % span) / Math.min(4, c.s.t1 - c.s.t);
-    renderScene(c.g, c.s, local, t0, false);
-  });
+  cards.forEach(c => { if (!c.vis) return; const d = Math.min(4.2, c.s.t1 - c.s.t), span = d + 1.3, lt = t % span;
+    render(c.g, c.s, lt / d, t, c.s.t + Math.min(lt, d), false); });
   requestAnimationFrame(frame);
 }
-
-function drawRest() { cards.forEach(c => renderScene(c.g, c.s, 1, 0, false)); drawBig(SCENES[0].t + 2.4); }
-drawRest();
-const fontsReady = document.fonts ? Promise.race([Promise.all(["Limelight", "Italiana", "Poiret One", "Josefin Sans"].map(f => document.fonts.load(`40px '${f}'`))), new Promise(r => setTimeout(r, 2500))]) : Promise.resolve();
-fontsReady.then(() => { drawRest(); requestAnimationFrame(frame); });
+function rest() { cards.forEach(c => render(c.g, c.s, 1, 0, c.s.t1, false)); drawBig(clockT); }
+rest();
+const ready = document.fonts ? Promise.race([Promise.all(["900 40px 'Big Shoulders Display'", "700 40px 'Inter'", "600 40px 'Inter'"].map(f => document.fonts.load(f))), new Promise(r => setTimeout(r, 2500))]) : Promise.resolve();
+ready.then(() => { rest(); if (!reduce) requestAnimationFrame(frame); });
 </script>
