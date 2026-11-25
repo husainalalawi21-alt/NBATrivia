@@ -134,9 +134,10 @@ export function fromRegularSeason(games, season, { inProgress = false, asOf = nu
   if (!table.length) return kps;
   if (inProgress) {
     // Live standings: true for about a week, then the next update replaces them.
-    if (table[0].w + table[0].l < 8 || table[0].pct === table[1].pct) return kps;
+    if (table[0].w + table[0].l < 8) return kps;
     const until = new Date(Date.parse(asOf) + 8 * 864e5).toISOString().slice(0, 10);
-    kps.push({ knowledge_point_id: `KP-${s}-LIVE-BEST-RECORD`, column: 'team', era: e, season: s, category: 'This Season',
+    // A tie at the top has no single answer: skip that question, keep the rest.
+    if (table[0].pct !== table[1].pct) kps.push({ knowledge_point_id: `KP-${s}-LIVE-BEST-RECORD`, column: 'team', era: e, season: s, category: 'This Season',
       fact: table[0].name, wrongs: table.slice(1, 4).map(r => r.name),
       question: `Which team has the NBA's best record so far this season (as of ${longDate(asOf)})?`,
       explanation: `The ${table[0].name} were ${table[0].w}–${table[0].l}.`,
