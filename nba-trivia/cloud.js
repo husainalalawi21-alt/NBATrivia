@@ -70,7 +70,9 @@ export async function saveProfile(uid, { username, favoriteTeam, stats }) {
     stats, games: stats.games || 0, total_q: stats.totalQ || 0, total_correct: stats.totalCorrect || 0,
     best_streak: stats.bestStreak || 0, team_best: stats.teamBest || 0, team_correct: stats.teamCorrect || 0,
     mystery_solved: stats.mysterySolved || 0, badges: stats.badges || [] });
-  const { error } = await sb.from('profiles').upsert(row);
+  // Claiming a username creates the row; everything after updates it (an
+  // upsert without the username would fail the NOT NULL check first).
+  const { error } = username !== undefined ? await sb.from('profiles').upsert(row) : await sb.from('profiles').update(row).eq('id', uid);
   if (error) return { error: /duplicate key|unique/i.test(msg(error)) ? 'Already taken' : msg(error) };
   return {};
 }

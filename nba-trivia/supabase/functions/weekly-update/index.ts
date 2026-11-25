@@ -76,8 +76,11 @@ Deno.serve(async req => {
   try {
     [run] = await dbJson('sync_runs', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ source: 'weekly-update' }) });
     // ── 1. new games ───────────────────────────────────────────────
-    if (BDL) {
-      const [latest] = await dbJson(`games?season=eq.${season}&select=game_date&order=game_date.desc&limit=1`);
+    // A failed download is recorded, and the run carries on with what the
+    // database already holds (standings, retirements still happen).
+    if (BDL) try {
+      // Resume from the last FINISHED game: the schedule's future games are on file too.
+      const [latest] = await dbJson(`games?season=eq.${season}&status=eq.Final&select=game_date&order=game_date.desc&limit=1`);
       const floor = new Date(now.getTime() - 21 * 864e5);
       const start = latest ? new Date(Math.max(Date.parse(latest.game_date) - 2 * 864e5, floor.getTime())) : floor;
       const games: any[] = []; let cursor = null, pages = 0;
@@ -94,7 +97,11 @@ Deno.serve(async req => {
           postponed: !!g.postponed, home_team_id: g.home_team.id, visitor_team_id: g.visitor_team.id, home_score: g.home_team_score || 0, visitor_score: g.visitor_team_score || 0, updated_at: now.toISOString() }))) });
       result.fetched = { from: iso(start), games: games.length, pages };
       await dbJson(`sync_runs?id=eq.${run!.id}`, { method: 'PATCH', body: JSON.stringify({ from_date: iso(start), through_date: today, games: games.length }) });
-    } else result.fetched = 'skipped: BALLDONTLIE_API_KEY is not set';
+    } catch (e) {
+      result.fetched = 'failed: ' + String(e).slice(0, 200);
+      await dbJson(`sync_runs?id=eq.${run!.id}`, { method: 'PATCH', body: JSON.stringify({ error: 'download: ' + String(e).slice(0, 500) }) }).catch(() => {});
+    }
+    else result.fetched = 'skipped: BALLDONTLIE_API_KEY is not set';
 
     // ── 2. regenerate live questions from the database ───────────
     const teamRows = await selectAll('teams?select=*');

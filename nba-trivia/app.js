@@ -39,13 +39,12 @@ export class App extends Logic {
   async componentDidMount() {
     const [lib, mys, teams, eng, facts] = await Promise.all([import('./data/questions.js'), import('./data/mystery.js'), import('./data/teams.js'), import('./data/engine.js'), import('./data/facts.js')]);
     // The live bank from Supabase; the built-in one if the device is offline.
-    const live = await cloud.loadQuestions();
+    const [live, user] = await Promise.all([cloud.loadQuestions(), cloud.currentUser()]);
     if (live && live.length) eng.setBank(live);
     else { eng.buildBank({ questions: lib, mystery: mys, teams, facts }); eng.hydrateOverrides(); eng.refreshTemporal(); }
     this.eng = eng;
     const profile = this.localProfile(null);
     this.setState({ lib, mys, teams, eng, profile, account: null, challenges: [], online: !!(live && live.length), screen: 'welcome', teamDraft: profile.favoriteTeam });
-    const user = await cloud.currentUser();
     if (user) await this.signedIn(user);
     // A shared challenge link (…?c=NBA7X92) opens that battle.
     const code = new URLSearchParams(location.search).get('c');
@@ -85,6 +84,8 @@ export class App extends Logic {
     this.eng.mergeHistory(await cloud.loadHistory(user.id));
     const profile = this.localProfile(user.id, row && row.stats);
     if (row && row.favorite_team) profile.favoriteTeam = row.favorite_team;
+    // A team picked just before the app closed may not have reached the server.
+    else if (row && profile.favoriteTeam) { row.favorite_team = profile.favoriteTeam; cloud.saveProfile(user.id, { favoriteTeam: profile.favoriteTeam }); }
     const account = row ? { username: row.username, email: user.email, provider: (user.app_metadata || {}).provider || 'email', favoriteTeam: row.favorite_team || null } : null;
     this.setState({ user, account, profile, isAdmin: !!(row && row.is_admin), guest: false, unameDraft: account ? account.username : '', teamDraft: profile.favoriteTeam,
       screen: account ? 'home' : 'username', reg: !account });
