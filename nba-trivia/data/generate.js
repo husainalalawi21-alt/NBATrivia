@@ -75,9 +75,9 @@ export function finalsOf(games, season) {
 export function fromPostseason(games, season) {
   const kps = [], y = finalsYear(season), s = seasonLabel(season), e = era(season), rnd = rng('post' + season);
   const series = seriesOf(games, season), f = finalsOf(games, season);
-  const finals = f ? { season: s, champion: f.winnerName, runnerUp: f.loserName, score: f.score, end: f.last } : null;
-  if (gapsIn(games)) return { kps, finals: finals && { ...finals, score: null, partial: true } };
   const playoffTeams = [...new Set(series.flatMap(x => [x.winnerName, x.loserName]))];
+  const finals = f ? { season: s, champion: f.winnerName, runnerUp: f.loserName, score: f.score, end: f.last, teams: playoffTeams } : null;
+  if (gapsIn(games)) return { kps, finals: finals && { ...finals, score: null, partial: true } };
   if (f) {
     const n = f.games.length;
     kps.push({ knowledge_point_id: `KP-${s}-FINALS-LENGTH`, column: 'value', era: e, season: s, category: 'Finals',
@@ -206,7 +206,10 @@ export function reigningChampion(finals, season) {
   if (!finals) return [];
   const nextFinalsEnd = `${finalsYear(season) + 1}-06-30`;
   return [{ knowledge_point_id: 'KP-REIGNING-CHAMPION', column: 'team', era: era(season), season: finals.season, category: 'Championships',
-    fact: finals.champion, wrongs: null,
+    fact: finals.champion,
+    // the beaten finalist plus two other playoff teams from that season
+    wrongs: [finals.runnerUp, ...pick(finals.teams || [], 2, rng('reign' + season), [finals.champion, finals.runnerUp])].length === 3
+      ? [finals.runnerUp, ...pick(finals.teams || [], 2, rng('reign' + season), [finals.champion, finals.runnerUp])] : null,
     question: 'Which team are the reigning NBA champions?',
     explanation: `The ${finals.champion} beat the ${finals.runnerUp}${finals.score ? ' ' + finals.score : ''} in the ${finalsYear(season)} Finals.`,
     difficulty: 'beginner', temporal: 'dynamic', valid_from: finals.end.slice(0, 10), valid_until: nextFinalsEnd }];

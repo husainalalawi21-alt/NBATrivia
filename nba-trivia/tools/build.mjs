@@ -163,4 +163,25 @@ if (LOAD) {
     process.stdout.write(`\rloaded ${Math.min(i + 400, rows.length)} / ${rows.length}`);
   }
   console.log();
+
+  // Teams and every downloaded game, so the weekly job can compute standings
+  // and series from the database instead of re-downloading history.
+  const query = async sql => {
+    const res = await fetch(`https://api.supabase.com/v1/projects/${PROJECT}/database/query`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer proxy-injected' }, body: JSON.stringify({ query: sql }) });
+    if (!res.ok) throw new Error(`${res.status} ${(await res.text()).slice(0, 300)}`);
+  };
+  const teamRows = read('teams.json').map(t => ({ id: t.id, abbreviation: t.abbreviation, full_name: t.full_name, conference: t.conference || null, division: t.division || null }));
+  await query(`insert into public.teams select * from jsonb_populate_recordset(null::public.teams, $J$${JSON.stringify(teamRows)}$J$::jsonb)
+    on conflict (id) do update set abbreviation = excluded.abbreviation, full_name = excluded.full_name, conference = excluded.conference, division = excluded.division`);
+  const games = readdirSync(CACHE).filter(f => /^games-\d{4}-(post|reg)\.json$/.test(f)).flatMap(f => read(f)).map(g => ({
+    id: g.id, season: g.season, game_date: g.date.slice(0, 10), postseason: g.postseason, status: g.status, period: g.period, postponed: !!g.postponed,
+    home_team_id: g.home_team.id, visitor_team_id: g.visitor_team.id, home_score: g.home_team_score || 0, visitor_score: g.visitor_team_score || 0 }));
+  const GC = ['id', 'season', 'game_date', 'postseason', 'status', 'period', 'postponed', 'home_team_id', 'visitor_team_id', 'home_score', 'visitor_score'];
+  for (let i = 0; i < games.length; i += 3000) {
+    await query(`insert into public.games (${GC.join(', ')}) select ${GC.join(', ')} from jsonb_populate_recordset(null::public.games, $J$${JSON.stringify(games.slice(i, i + 3000))}$J$::jsonb)
+      on conflict (id) do update set ${GC.slice(1).map(c => `${c} = excluded.${c}`).join(', ')}, updated_at = now()`);
+    process.stdout.write(`\rgames ${Math.min(i + 3000, games.length)} / ${games.length}`);
+  }
+  console.log();
 }
