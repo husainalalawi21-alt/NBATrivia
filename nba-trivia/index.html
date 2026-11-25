@@ -290,6 +290,7 @@
       <div style="padding:var(--space-4);display:grid;gap:10px">
         <button class="btn btn-primary btn-block" onClick="{{ playAgain }}" style="min-height:60px;font-size:17px;margin:0;padding-inline:var(--space-4)">PLAY AGAIN</button>
         <button class="btn btn-secondary btn-block" onClick="{{ goBoard }}" style="min-height:50px;padding-inline:var(--space-4)">VIEW LEADERBOARD</button>
+        <sc-if value="{{ canChallenge }}"><button class="btn btn-secondary btn-block" onClick="{{ challengeFriend }}" style="min-height:50px;padding-inline:var(--space-4);margin:0">CHALLENGE A FRIEND</button></sc-if>
         <button class="btn btn-ghost" onClick="{{ goShare }}" style="min-height:46px;justify-content:flex-start;padding-inline:var(--space-2)">Share result</button>
       </div>
       <sc-if value="{{ hasNewBadges }}" hint-placeholder-val="{{ false }}">
@@ -358,6 +359,12 @@
           <div style="font-family:var(--font-heading);font-weight:800;font-size:28px;letter-spacing:-0.03em">YOUR SQUAD IS EMPTY.</div>
           <div style="font-size:15px;color:var(--color-neutral-300);margin-top:var(--space-2);text-wrap:pretty">Challenge someone head to head — whoever plays it shows up here.</div>
           <button class="btn btn-primary" onClick="{{ goH2H }}" style="min-height:50px;justify-content:flex-start;padding-inline:var(--space-4);margin-top:var(--space-4)">FIND PLAYERS</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ boardNone }}">
+        <div style="padding:var(--space-6) var(--space-4) 0">
+          <div style="font-family:var(--font-heading);font-weight:800;font-size:28px;letter-spacing:-0.03em">NO RUNS YET.</div>
+          <div style="font-size:15px;color:var(--color-neutral-300);margin-top:var(--space-2);text-wrap:pretty">{{ boardNoneLine }}</div>
         </div>
       </sc-if>
       <sc-if value="{{ boardHasRows }}" hint-placeholder-val="{{ true }}">
@@ -522,7 +529,9 @@
     <div style="display:flex;flex-direction:column;flex:1">
       <div style="padding:var(--space-6) var(--space-4) var(--space-3)">
         <div style="font-family:var(--font-heading);font-weight:800;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--color-accent)">Master bank · {{ bankSeason }}</div>
-        <h2 style="font-size:36px;letter-spacing:-0.04em;line-height:1;margin:var(--space-2) 0 var(--space-3)">QUESTION ENGINE</h2>
+        <h2 style="font-size:36px;letter-spacing:-0.04em;line-height:1;margin:var(--space-2) 0 var(--space-2)">QUESTION ENGINE</h2>
+        <div style="font-size:12px;color:var(--color-neutral-400);margin-bottom:var(--space-3)">{{ adminRoleNote }}</div>
+        <sc-if value="{{ adminHasMsg }}"><div style="font-size:13px;color:var(--color-accent-300);border-left:3px solid var(--color-accent);padding:var(--space-2) var(--space-3);margin-bottom:var(--space-3)">{{ adminMsg }}</div></sc-if>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;border-top:2px solid var(--color-divider);border-bottom:2px solid var(--color-divider)">
           <sc-for list="{{ bankTotals }}" as="s" hint-placeholder-count="4"><div style="{{ s.style }}"><div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-400)">{{ s.label }}</div><div style="font-family:var(--font-heading);font-weight:800;font-size:20px;letter-spacing:-0.03em;margin-top:2px">{{ s.value }}</div></div></sc-for>
         </div>
@@ -663,6 +672,7 @@
 </div>
 </div>
 </template>
+<script src="vendor/supabase.js"></script>
 <script type="module">
   import { App } from './app.js';
   // Same props the design exposes. On a wide screen the app sits in a phone

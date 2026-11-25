@@ -2,6 +2,7 @@
 // Screen logic ported from the "20-0 v2" design. renderVals() returns every
 // value and handler the markup in index.html reads; dc.js draws it.
 import { Logic } from './dc.js';
+import * as cloud from './cloud.js';
 
 export class App extends Logic {
   state = {
@@ -13,7 +14,10 @@ export class App extends Logic {
     scope: 'Global', period: 'Today',
     challenges: [], activeChallenge: null, h2hCode: '', h2hError: '',
     copied: false, newBadges: [], sound: false, poolExhausted: false,
-    adminQ: '', adminStatus: 'All', adminMode: 'All', adminDiff: 'All', adminSel: null
+    adminQ: '', adminStatus: 'All', adminMode: 'All', adminDiff: 'All', adminSel: null,
+    // live data
+    user: null, isAdmin: false, busy: false, unameTakenFor: '', board: [], boardLoading: false,
+    ranks: { global: null, team: null }, adminMsg: '', online: false
   };
   PKEY = 'v2_profile'; AKEY = 'v2_account'; CKEY = 'v2_challenges';
   BADGES = [
@@ -28,30 +32,83 @@ export class App extends Logic {
     ['mystic', 'Detective', 'Solve 10 career mysteries', p => (p.mysterySolved || 0) >= 10],
     ['duel', 'Duelist', 'Win a head-to-head battle', p => (p.h2hWins || 0) >= 1]
   ];
-  LB_NAMES = ['BALLGOD', 'HOOPKING', 'NBAFREAK', 'Husain', 'Ahmed', 'Mariam', 'Yousef', 'Sara', 'Omar', 'Fatima', 'Khalid', 'Noor'];
   RESERVED = ['admin', 'nba', 'support', 'official', 'root'];
   Q_LIMIT = 24000; BUZZ_START = 24000; BUZZ_CAP = 30000; BUZZ_PENALTY = 3000;
   WAI_POINTS = [1000, 800, 600, 400, 200];
 
   async componentDidMount() {
     const [lib, mys, teams, eng, facts] = await Promise.all([import('./data/questions.js'), import('./data/mystery.js'), import('./data/teams.js'), import('./data/engine.js'), import('./data/facts.js')]);
-    eng.buildBank({ questions: lib, mystery: mys, teams, facts });
-    eng.hydrateOverrides();
-    eng.ingestCandidates();
-    eng.refreshTemporal();
+    // The live bank from Supabase; the built-in one if the device is offline.
+    const live = await cloud.loadQuestions();
+    if (live && live.length) eng.setBank(live);
+    else { eng.buildBank({ questions: lib, mystery: mys, teams, facts }); eng.hydrateOverrides(); eng.refreshTemporal(); }
     this.eng = eng;
-    let profile = null, account = null;
-    try { profile = JSON.parse(localStorage.getItem(this.PKEY)); } catch (e) {}
-    try { account = JSON.parse(localStorage.getItem(this.AKEY)); } catch (e) {}
-    profile = Object.assign({ games: 0, totalQ: 0, totalCorrect: 0, totalMs: 0, bestStreak: 0, lastStreak: null, fast: 0, teamCorrect: 0, teamBest: 0, mysterySolved: 0, h2hWins: 0, badges: [], records: {}, catCorrect: {}, favoriteTeam: null }, profile || {});
-    this.setState({ lib, mys, teams, eng, profile, account, challenges: this.loadChallenges(), screen: account || this.state.guest ? 'home' : 'welcome', unameDraft: account ? account.username : '', teamDraft: profile.favoriteTeam });
+    const profile = this.localProfile(null);
+    this.setState({ lib, mys, teams, eng, profile, account: null, challenges: [], online: !!(live && live.length), screen: 'welcome', teamDraft: profile.favoriteTeam });
+    const user = await cloud.currentUser();
+    if (user) await this.signedIn(user);
+    // A shared challenge link (…?c=NBA7X92) opens that battle.
+    const code = new URLSearchParams(location.search).get('c');
+    if (code) this.redeem(code.toUpperCase());
+    if (this._startWhenReady) { const [m, o] = this._startWhenReady; this._startWhenReady = null; this.startRun(m, o); }
+    this.refreshRanks();
     this._clock = setInterval(() => { const r = this.state.run; if (this.state.screen === 'game' && r && r.answered === null) this.tick(); }, 60);
   }
   componentWillUnmount() { clearInterval(this._clock); clearInterval(this._count); }
 
   fmt(n) { return Number(n || 0).toLocaleString('en-US'); }
-  save(p) { this.setState({ profile: p }); localStorage.setItem(this.PKEY, JSON.stringify(p)); }
-  saveAccount(a) { this.setState({ account: a }); if (a) localStorage.setItem(this.AKEY, JSON.stringify(a)); else localStorage.removeItem(this.AKEY); }
+  // Stats live on the device for guests and in the player's profile row once
+  // signed in (cached on the device so the app opens instantly).
+  profileKey(uid) { return uid ? this.PKEY + ':' + uid : this.PKEY; }
+  localProfile(uid, fromServer) {
+    let p = null; try { p = JSON.parse(localStorage.getItem(this.profileKey(uid))); } catch (e) {}
+    const base = { games: 0, totalQ: 0, totalCorrect: 0, totalMs: 0, bestStreak: 0, lastStreak: null, fast: 0, teamCorrect: 0, teamBest: 0, mysterySolved: 0, h2hWins: 0, badges: [], records: {}, catCorrect: {}, favoriteTeam: null };
+    // The server copy wins unless this device has seen more games.
+    const server = fromServer && Object.keys(fromServer).length ? fromServer : null;
+    return Object.assign(base, server && (!p || (server.games || 0) >= (p.games || 0)) ? server : (p || {}));
+  }
+  save(p) {
+    const uid = this.state.user && this.state.user.id;
+    this.setState({ profile: p });
+    try { localStorage.setItem(this.profileKey(uid), JSON.stringify(p)); } catch (e) {}
+    if (uid && this.state.account) cloud.saveProfile(uid, { stats: p });
+  }
+  saveAccount(a) {
+    this.setState({ account: a });
+    const uid = this.state.user && this.state.user.id;
+    if (uid && a) cloud.saveProfile(uid, { favoriteTeam: a.favoriteTeam || null });
+  }
+  // After any sign-in: profile, answer history, battles and ranks from the server.
+  async signedIn(user) {
+    const row = await cloud.loadProfile(user.id);
+    this.eng.useHistoryOf(user.id);
+    this.eng.mergeHistory(await cloud.loadHistory(user.id));
+    const profile = this.localProfile(user.id, row && row.stats);
+    if (row && row.favorite_team) profile.favoriteTeam = row.favorite_team;
+    const account = row ? { username: row.username, email: user.email, provider: (user.app_metadata || {}).provider || 'email', favoriteTeam: row.favorite_team || null } : null;
+    this.setState({ user, account, profile, isAdmin: !!(row && row.is_admin), guest: false, unameDraft: account ? account.username : '', teamDraft: profile.favoriteTeam,
+      screen: account ? 'home' : 'username', reg: !account });
+    // Admins also see pending, disabled and retired questions.
+    if (row && row.is_admin) { const all = await cloud.loadQuestions(); if (all && all.length) { this.eng.setBank(all); this.forceUpdate(); } }
+    this.refreshChallenges(); this.refreshRanks();
+  }
+  async refreshRanks() {
+    const uid = this.state.user && this.state.user.id; if (!uid) return this.setState({ ranks: { global: null, team: null } });
+    const tid = this.teamId();
+    const [g, t] = await Promise.all([cloud.leaderboard('all', null, 1000), tid ? cloud.leaderboard('all', tid, 1000) : Promise.resolve([])]);
+    const mine = list => { const r = list.find(x => x.user_id === uid); return r ? Number(r.rank) : null; };
+    this.setState({ ranks: { global: mine(g), team: mine(t) } });
+  }
+  async refreshBoard() {
+    const s = this.state;
+    if (s.scope === 'Friends') return this.setState({ board: [], boardLoading: false });
+    const period = { 'Today': 'today', 'Week': 'week', 'All time': 'all' }[s.period] || 'today';
+    const team = s.scope === 'Your Team' ? this.teamId() : null;
+    if (s.scope === 'Your Team' && !team) return this.setState({ board: [], boardLoading: false });
+    this.setState({ boardLoading: true });
+    const key = s.scope + s.period, rows = await cloud.leaderboard(period, team, 50);
+    if (this.state.scope + this.state.period === key) this.setState({ board: rows, boardLoading: false });
+  }
   teamId() { const s = this.state; return (s.account && s.account.favoriteTeam) || (s.profile && s.profile.favoriteTeam) || null; }
   team() { const id = this.teamId(); return id && this.state.teams ? this.state.teams.teamById(id) : null; }
   beep(f, d, type = 'square', vol = .07) {
@@ -68,39 +125,58 @@ export class App extends Logic {
     if (!/^[A-Za-z0-9_]+$/.test(v)) return { ok: false, msg: 'Letters, numbers and underscores only' };
     const low = v.toLowerCase();
     if (this.RESERVED.includes(low)) return { ok: false, msg: "That one's reserved" };
-    if (this.LB_NAMES.some(n => n.toLowerCase() === low) && low !== ((this.state.account || {}).username || '').toLowerCase()) return { ok: false, msg: 'Already taken' };
+    if (this.state.unameTakenFor === low) return { ok: false, msg: 'Already taken' };
     return { ok: true, msg: 'Available' };
   }
-  startSocial(provider) {
-    const email = provider === 'apple' ? 'relay-8f2c@privaterelay.appleid.com' : 'player@gmail.com';
-    this.setState({ screen: 'username', reg: true, pending: { provider, email }, unameDraft: '', guest: false });
+  async startSocial(provider) {
+    const res = await cloud.signInWith(provider);   // redirects away when the provider is set up
+    if (res.error) this.setState({ screen: 'auth', authMode: 'register', authErrs: [res.error] });
   }
-  submitEmailAuth() {
-    const { authEmail, authPass, authMode } = this.state, errs = [];
+  async submitEmailAuth() {
+    const { authEmail, authPass, authMode, busy } = this.state, errs = [];
+    if (busy) return;
     if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(authEmail)) errs.push('Enter a valid email address');
     if ((authPass || '').length < 8) errs.push('Password must be at least 8 characters');
     if (errs.length) return this.setState({ authErrs: errs });
-    if (authMode === 'signin') {
-      let saved = null; try { saved = JSON.parse(localStorage.getItem(this.AKEY)); } catch (e) {}
-      if (saved && saved.email === authEmail) { this.saveAccount(saved); return this.setState({ screen: 'home', guest: false, authErrs: [] }); }
-      return this.setState({ authErrs: ['No account on this device for that email'] });
-    }
-    this.setState({ screen: 'username', reg: true, pending: { provider: 'email', email: authEmail }, unameDraft: '', authErrs: [], guest: false });
+    this.setState({ busy: true, authErrs: [] });
+    const res = authMode === 'signin' ? await cloud.signIn(authEmail.trim(), authPass) : await cloud.signUp(authEmail.trim(), authPass);
+    this.setState({ busy: false });
+    if (res.error) return this.setState({ authErrs: [res.error] });
+    if (res.needsConfirm) return this.setState({ authMode: 'signin', authErrs: ['Almost there — open the link we emailed you, then sign in here.'] });
+    this.setState({ authPass: '' });
+    await this.signedIn(res.user);
   }
-  claimUsername() {
-    if (!this.unameCheck(this.state.unameDraft).ok) return;
-    const prev = this.state.account, pend = this.state.pending || {};
-    const acct = { username: this.state.unameDraft.trim(), email: prev ? prev.email : pend.email, provider: prev ? prev.provider : pend.provider, favoriteTeam: prev ? prev.favoriteTeam : null };
-    this.saveAccount(acct);
-    const hasTeam = !!(acct.favoriteTeam || this.state.profile.favoriteTeam);
-    this.setState({ screen: this.state.reg && !hasTeam ? 'teampick' : (this.state.reg ? 'ready' : 'profile'), pending: null, teamDraft: acct.favoriteTeam || this.state.profile.favoriteTeam });
+  async claimUsername() {
+    const name = this.state.unameDraft.trim(), uid = this.state.user && this.state.user.id;
+    if (!this.unameCheck(name).ok || this.state.busy) return;
+    if (!uid) return this.setState({ screen: 'welcome', reg: true });
+    this.setState({ busy: true });
+    if (await cloud.usernameTaken(name, uid)) return this.setState({ busy: false, unameTakenFor: name.toLowerCase() });
+    const prev = this.state.account, team = (prev && prev.favoriteTeam) || this.state.profile.favoriteTeam || null;
+    const res = await cloud.saveProfile(uid, { username: name, favoriteTeam: team, stats: this.state.profile });
+    this.setState({ busy: false });
+    if (res.error) return this.setState({ unameTakenFor: res.error === 'Already taken' ? name.toLowerCase() : '' });
+    const acct = { username: name, email: this.state.user.email, provider: prev ? prev.provider : 'email', favoriteTeam: team };
+    this.setState({ account: acct });
+    this.setState({ screen: this.state.reg && !team ? 'teampick' : (this.state.reg ? 'ready' : 'profile'), pending: null, teamDraft: team });
+    this.refreshRanks();
+  }
+  checkUsernameSoon(v) {
+    clearTimeout(this._unameT);
+    const low = String(v || '').trim().toLowerCase(); if (low.length < 3) return;
+    this._unameT = setTimeout(async () => {
+      const taken = await cloud.usernameTaken(low, this.state.user && this.state.user.id);
+      if (this.state.unameDraft.trim().toLowerCase() === low) this.setState({ unameTakenFor: taken ? low : '' });
+    }, 350);
   }
 
   // ── engine ──
   // Every mode is a view over the one bank: build a session, then pull from
   // the engine. Session + global history dedupe are the engine's job.
   startRun(mode, opts = {}) {
-    const eng = this.eng; if (!eng) return;
+    const eng = this.eng;
+    // Tapped before the bank finished loading: start as soon as it has.
+    if (!eng) { this._startWhenReady = [mode, opts]; return; }
     const teamId = mode === 'team' ? this.teamId() : null;
     if (mode === 'team' && !teamId) return this.setState({ screen: 'teampick', reg: false, hubFrom: 'home' });
     const dateKey = new Date().toISOString().slice(0, 10);
@@ -114,7 +190,7 @@ export class App extends Logic {
       time: this.BUZZ_START, qStart: Date.now(), started: Date.now(), fastest: null,
       clueIdx: 0, phase: 'idle', guess: '', wrongOpts: [], wrongCount: 0 };
     if (mode === 'daily') run.qs = eng.buildDaily(dateKey, session, 10);
-    else if (opts.challenge) run.qs = eng.buildMatchSet(seed, eng.getHistory(), opts.challenge.opponentHistory || {}, mode === 'buzz' ? 'buzz' : 'streak', 20).questions;
+    else if (opts.challenge) run.qs = (opts.challenge.questionIds || []).map(id => eng.byId(id)).filter(Boolean).map(rec => eng.serve(rec, session.rnd));
     else if (mode === 'q20') run.qs = eng.buildSet(session, 20, eng.Q20_SPREAD);
     else if (mode === 'wai') run.qs = eng.buildSet(session, 20, eng.TIER_ORDER);
     run.q = this.nextQ(run);
@@ -143,7 +219,7 @@ export class App extends Logic {
       else { time -= this.BUZZ_PENALTY; extra = '−3 SEC'; }
     } else if (ok) pts = Math.round(100 * lib.streakMult(r.streak));
     const streak = ok ? r.streak + 1 : 0;
-    const log = [...r.log, { q: q.text, type: q.type, cat: q.cat, chosen: opt, correct: q.correct, ok, ms, pts, exp: q.exp }];
+    const log = [...r.log, { qid: q.question_id, q: q.text, type: q.type, cat: q.cat, chosen: opt, correct: q.correct, ok, ms, pts, exp: q.exp }];
     const next = { ...r, answered: opt, time, score: r.score + pts, streak, best: Math.max(r.best, streak), correct: r.correct + (ok ? 1 : 0), answers: r.answers + 1, log, fastest: ok && (r.fastest == null || ms < r.fastest) ? ms : r.fastest };
     this.eng.recordAnswer(q.question_id, { correct: ok, ms, mode: r.mode });
     if (ok) { this.beep(700, .06); setTimeout(() => this.beep(1050, .09), 60); this.buzz(18); } else { this.beep(130, .3, 'sawtooth', .09); this.buzz([55, 40, 55]); }
@@ -172,7 +248,7 @@ export class App extends Logic {
     if (ok) {
       const pts = this.WAI_POINTS[r.clueIdx] || 200;
       this.eng.recordAnswer(q.question_id, { correct: true, ms: Date.now() - r.qStart, mode: 'wai' });
-      const log = [...r.log, { q: 'Who am I? — ' + q.name, ok: true, pts, clue: r.clueIdx + 1, correct: q.name, exp: `Solved on clue ${r.clueIdx + 1}.` }];
+      const log = [...r.log, { qid: q.question_id, q: 'Who am I? — ' + q.name, ok: true, pts, ms: Date.now() - r.qStart, clue: r.clueIdx + 1, correct: q.name, exp: `Solved on clue ${r.clueIdx + 1}.` }];
       const next = { ...r, phase: 'done', answered: text, score: r.score + pts, correct: r.correct + 1, answers: r.answers + 1, streak: r.streak + 1, best: Math.max(r.best, r.streak + 1), log };
       this.beep(700, .06); setTimeout(() => this.beep(1050, .1), 60); this.buzz(18);
       this.setState({ run: next, gain: { pts: '+' + this.fmt(pts), extra: null } });
@@ -188,7 +264,7 @@ export class App extends Logic {
   waiOut(timeout, guess) {
     const r = this.state.run, q = r.q;
     this.eng.recordAnswer(q.question_id, { correct: false, ms: Date.now() - r.qStart, mode: 'wai' });
-    const log = [...r.log, { q: 'Who am I? — ' + q.name, ok: false, pts: 0, correct: q.name, exp: timeout ? 'Time ran out.' : 'Out of clues.' }];
+    const log = [...r.log, { qid: q.question_id, q: 'Who am I? — ' + q.name, ok: false, pts: 0, ms: Date.now() - r.qStart, correct: q.name, exp: timeout ? 'Time ran out.' : 'Out of clues.' }];
     const next = { ...r, phase: 'done', answered: guess || '__timeout', answers: r.answers + 1, streak: 0, log };
     this.setState({ run: next, gain: null });
     setTimeout(() => r.idx + 1 >= r.qs.length ? this.endRun(next) : this.advance(next), 1800);
@@ -218,6 +294,8 @@ export class App extends Logic {
     this.save(p);
     this.beep(170, .45, 'triangle', .08);
     const done = { ...r, acc, isRecord, prevBest: prevMetric, survived: Math.round((Date.now() - (r.started || r.qStart)) / 1000) };
+    const uid = this.state.user && this.state.user.id;
+    if (uid && this.state.account) cloud.recordRun(uid, done).then(() => this.refreshRanks());
     if (r.challenge) { this.setState({ run: done }); return this.completeChallenge(done); }
     this.setState({ screen: 'result', run: done, newBadges, displayScore: 0, copied: false });
     clearInterval(this._count); const t0 = Date.now();
@@ -225,33 +303,65 @@ export class App extends Logic {
   }
 
   // ── challenges ──
-  loadChallenges() {
-    let list = []; try { list = JSON.parse(localStorage.getItem(this.CKEY)) || []; } catch (e) {}
-    if (!list.length) {
-      const now = Date.now();
-      list = [{ code: 'NBA7X92', creator: 'BALLGOD', mode: 'streak', teamId: null, seed: 'seed-7x92', creatorScore: 2960, creatorStat: 23, status: 'open', dir: 'in', createdAt: now - 36e5, expiresAt: now + 6 * 864e5 }];
-      localStorage.setItem(this.CKEY, JSON.stringify(list));
-    }
-    return list;
+  // A database row → what the screens show. `result` is from the viewer's
+  // side: the server stores it from the challenger's (the opponent's) side.
+  toChallenge(c, names = {}) {
+    const uid = this.state.user && this.state.user.id, out = c.creator_id === uid;
+    const flip = { won: 'lost', lost: 'won', tied: 'tied' };
+    return { code: c.code, creator: names[c.creator_id] || 'player', opponent: c.opponent_id ? (names[c.opponent_id] || 'player') : null,
+      mode: c.mode, teamId: c.team_id, seed: c.seed, questionIds: c.question_ids || [], creatorScore: c.creator_score, creatorStat: c.creator_stat,
+      opponentScore: c.opponent_score, opponentStat: c.opponent_stat, status: c.status, dir: out ? 'out' : 'in',
+      result: c.result ? (out ? flip[c.result] : c.result) : null, createdAt: Date.parse(c.created_at), expiresAt: Date.parse(c.expires_at) };
   }
-  saveChallenges(l) { this.setState({ challenges: l }); localStorage.setItem(this.CKEY, JSON.stringify(l)); }
-  createChallenge(r) {
-    const a = this.state.account; if (!a) return this.setState({ screen: 'welcome' });
-    const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let code = 'NBA'; for (let i = 0; i < 4; i++) code += c[Math.floor(Math.random() * c.length)];
-    const now = Date.now();
-    const ch = { code, creator: a.username, mode: r.mode, teamId: r.teamId, seed: r.seed, creatorScore: r.score, creatorStat: r.mode === 'buzz' ? r.answers : r.best, status: 'open', dir: 'out', createdAt: now, expiresAt: now + 7 * 864e5 };
-    this.saveChallenges([ch, ...this.state.challenges]);
-    this.setState({ screen: 'h2h-made', activeChallenge: ch, copied: false });
+  async refreshChallenges() {
+    const uid = this.state.user && this.state.user.id; if (!uid) return this.setState({ challenges: [] });
+    const rows = await cloud.myChallenges(uid);
+    const names = await cloud.usernamesFor(rows.flatMap(c => [c.creator_id, c.opponent_id]).filter(Boolean));
+    this.setState({ challenges: rows.map(c => this.toChallenge(c, names)) });
   }
-  completeChallenge(r) {
-    const ch = r.challenge, a = this.state.account;
-    const mine = r.mode === 'buzz' ? r.score : r.best, theirs = r.mode === 'buzz' ? ch.creatorScore : ch.creatorStat;
-    const result = mine > theirs ? 'won' : mine < theirs ? 'lost' : 'tied';
-    const done = { ...ch, status: 'completed', opponent: a ? a.username : 'YOU', opponentScore: r.score, opponentStat: r.mode === 'buzz' ? r.answers : r.best, result };
-    this.saveChallenges(this.state.challenges.map(c => c.code === ch.code ? done : c));
-    if (result === 'won') { const p = { ...this.state.profile, h2hWins: (this.state.profile.h2hWins || 0) + 1 }; this.save(p); }
+  async redeem(code) {
+    if (!this.state.user) return this.setState({ screen: 'welcome', reg: true, h2hError: '' });
+    const res = await cloud.challengeByCode(code);
+    if (res.error) return this.setState({ screen: 'h2h', h2hError: res.error });
+    const c = res.challenge;
+    if (c.creator_id === this.state.user.id) return this.setState({ screen: 'h2h', h2hError: "That's your own battle — send the code to a friend" });
+    if (c.status === 'completed') return this.setState({ screen: 'h2h', h2hError: 'Already played' });
+    if (Date.parse(c.expires_at) < Date.now()) return this.setState({ screen: 'h2h', h2hError: 'This battle has expired' });
+    const names = await cloud.usernamesFor([c.creator_id]);
+    this.setState({ screen: 'h2h-intro', activeChallenge: this.toChallenge(c, names), h2hError: '' });
+  }
+  async createChallenge(r) {
+    const uid = this.state.user && this.state.user.id; if (!uid || !this.state.account) return this.setState({ screen: 'welcome', reg: true });
+    // The challenger's exact questions, then spares from the same pool so
+    // the opponent can go further than the challenger did.
+    const ids = r.log.map(x => x.qid).filter(Boolean);
+    const poolMode = r.mode === 'streak' ? 'buzz' : r.mode;
+    const spares = this.eng.shuffle(this.eng.eligible({ mode: poolMode, teamId: r.teamId, sessionUsed: new Set(ids), ignoreHistory: true })).slice(0, 30).map(x => x.question_id);
+    this.setState({ busy: true });
+    const res = await cloud.createChallenge({ creator_id: uid, mode: r.mode, team_id: r.teamId || null, seed: r.seed, question_ids: [...ids, ...spares],
+      creator_score: r.score, creator_stat: r.mode === 'buzz' ? r.answers : r.best });
+    this.setState({ busy: false });
+    if (res.error) return this.setState({ screen: 'h2h', h2hError: res.error });
+    this.setState({ screen: 'h2h-made', activeChallenge: this.toChallenge(res.challenge, { [uid]: this.state.account.username }), copied: false });
+    this.refreshChallenges();
+  }
+  async completeChallenge(r) {
+    const ch = r.challenge;
+    const res = await cloud.completeChallenge(ch.code, r.score, r.best);
+    if (res.error) return this.setState({ screen: 'h2h', h2hError: res.error });
+    const names = await cloud.usernamesFor([res.challenge.creator_id, res.challenge.opponent_id]);
+    const done = this.toChallenge(res.challenge, names);
+    if (done.result === 'won') { const p = { ...this.state.profile, h2hWins: (this.state.profile.h2hWins || 0) + 1 }; this.save(p); }
     this.setState({ screen: 'h2h-result', activeChallenge: done, copied: false });
+    this.refreshChallenges();
   }
+  // Screens that show live data fetch it when you open them.
+  onEnter(screen) {
+    if (screen === 'board') this.refreshBoard();
+    if (screen === 'h2h' || screen === 'profile') this.refreshChallenges();
+    if (screen === 'home') this.refreshRanks();
+  }
+  challengeLink(code) { return `${location.origin}${location.pathname}?c=${code}`; }
   shareText() {
     const r = this.state.run, url = this.props.shareUrl ?? '20-0.app', name = this.props.appName ?? 'NBA TRIVIA';
     const a = this.state.account, who = a ? '@' + a.username : 'I';
@@ -262,20 +372,12 @@ export class App extends Logic {
 
   // ── leaderboard ──
   rows() {
-    const s = this.state, lib = s.lib, T = s.teams; if (!lib) return [];
-    if (s.scope === 'Friends') return [];
-    const teamMode = s.scope === 'Your Team';
-    const rnd = lib.seededRandom(s.scope + s.period);
-    const mult = { 'Today': 1, 'Week': 1.08, 'All time': 1.2 }[s.period] || 1;
-    const p = s.profile || {}, rec = p.records || {};
-    let list = this.LB_NAMES.map((n, i) => ({ name: '@' + n, value: Math.round((teamMode ? 14 + rnd() * 74 : 18 + rnd() * 82) * mult), teamIdx: i }));
-    const myBest = teamMode ? (p.teamBest || 0) : (p.bestStreak || 0);
-    if (s.account && myBest > 0) list.push({ name: '@' + s.account.username, value: myBest, me: true, teamIdx: 0 });
-    list.sort((a, b) => b.value - a.value);
-    return list.slice(0, 12).map((r, i) => {
-      const top = i < 3;
-      const tm = teamMode ? this.team() : (T ? T.TEAMS[(r.teamIdx * 7 + i) % T.TEAMS.length] : null);
-      return { rank: String(i + 1).padStart(2, '0'), name: r.name, initial: r.name.slice(1, 2).toUpperCase(), team: tm && T ? T.fullName(tm) : '', value: r.value, me: !!r.me,
+    const s = this.state, T = s.teams; if (!T || s.scope === 'Friends') return [];
+    const uid = s.user && s.user.id;
+    return (s.board || []).map((b, i) => {
+      const rank = Number(b.rank), top = rank <= 3, tm = b.favorite_team ? T.teamById(b.favorite_team) : null;
+      const r = { name: '@' + b.username, me: b.user_id === uid };
+      return { rank: String(rank).padStart(2, '0'), name: r.name, initial: String(b.username).slice(0, 1).toUpperCase(), team: tm ? T.fullName(tm) : '', value: b.value, me: r.me,
         rowStyle: `display:grid;grid-template-columns:38px 1fr auto;gap:10px;align-items:center;padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--color-divider);${r.me ? 'background:var(--color-accent-900)' : top ? 'background:var(--color-surface)' : ''}`,
         rankStyle: `font-family:var(--font-heading);font-weight:800;font-size:${top ? 22 : 16}px;letter-spacing:-0.03em;color:${top ? 'var(--color-accent)' : 'var(--color-neutral-500)'}`,
         avatarStyle: `width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;font-family:var(--font-heading);font-weight:800;font-size:14px;background:${top ? 'var(--color-accent)' : 'var(--color-neutral-800)'};color:${top ? '#120800' : 'var(--color-neutral-300)'}`,
@@ -316,12 +418,19 @@ export class App extends Logic {
       (s.adminDiff === 'All' || r.difficulty === s.adminDiff) &&
       (!term || (r.question_text + ' ' + r.correct_answer + ' ' + (r.players || []).join(' ') + ' ' + (r.teams || []).join(' ') + ' ' + r.question_id).toLowerCase().includes(term)));
     const act = (label, run, primary) => ({ label, run, style: `all:unset;cursor:pointer;padding:7px 11px;font-family:var(--font-heading);font-weight:800;font-size:11px;letter-spacing:.06em;border:1px solid ${primary ? 'var(--color-accent)' : 'var(--color-divider)'};color:${primary ? '#120800' : 'var(--color-neutral-300)'};background:${primary ? 'var(--color-accent)' : 'transparent'}` });
-    const flip = (id, patch) => () => { eng.applyOverride(id, patch); this.forceUpdate(); };
+    const flip = (id, patch) => async () => {
+      if (!this.state.online) { eng.applyOverride(id, patch); return this.forceUpdate(); }
+      const res = await cloud.setQuestionStatus(id, patch.status);
+      if (res.error) return this.setState({ adminMsg: res.error });
+      const rec = eng.byId(id); if (rec) Object.assign(rec, patch);
+      this.setState({ adminMsg: '' });
+    };
     const adminRows = matching.slice(0, 40).map(r => {
       const st = eng.statsFor(r.question_id);
       const dupes = r.duplicate_warnings || [];
       const actions = [];
-      if (r.status === 'pending' || r.status === 'draft') { actions.push(act('Approve', flip(r.question_id, { status: 'active', active: true }), true)); actions.push(act('Reject', flip(r.question_id, { status: 'disabled', active: false }))); }
+      if (!s.isAdmin && s.online) { /* players can look, only admins change */ }
+      else if (r.status === 'pending' || r.status === 'draft') { actions.push(act('Approve', flip(r.question_id, { status: 'active', active: true }), true)); actions.push(act('Reject', flip(r.question_id, { status: 'disabled', active: false }))); }
       else if (r.status === 'active') { actions.push(act('Disable', flip(r.question_id, { status: 'disabled', active: false }))); actions.push(act('Retire', flip(r.question_id, { status: 'outdated', active: false }))); }
       else { actions.push(act('Reactivate', flip(r.question_id, { status: 'active', active: true }), true)); }
       return { id: r.question_id, status: r.status.toUpperCase(), diff: r.difficulty, cat: r.category, text: r.question_text, correct: r.correct_answer,
@@ -353,7 +462,9 @@ export class App extends Logic {
       adminMode: s.adminMode, setAdminMode: e => this.setState({ adminMode: e.target.value }),
       adminDiff: s.adminDiff, setAdminDiff: e => this.setState({ adminDiff: e.target.value }),
       statusOpts, modeOpts, diffOpts, adminCount: this.fmt(matching.length), adminRows,
-      goAdmin: () => this.setState({ screen: 'admin' }), goProfileFromAdmin: () => this.setState({ screen: 'profile' })
+      goAdmin: () => this.setState({ screen: 'admin' }), goProfileFromAdmin: () => this.setState({ screen: 'profile' }),
+      adminHasMsg: !!s.adminMsg, adminMsg: s.adminMsg,
+      adminRoleNote: !s.online ? 'Offline — showing the built-in bank; changes stay on this device.' : s.isAdmin ? 'Admin — your changes apply for every player.' : 'Read-only — only admins can approve, disable or retire questions.'
     };
   }
 
@@ -364,10 +475,11 @@ export class App extends Logic {
     const accentGlow = this.props.streakGlow ?? true;
     const rec = p.records || {}, t = this.team();
     const sc = s.screen;
-    const go = x => () => this.setState({ screen: x, copied: false, h2hError: '' });
+    const go = x => () => { this.setState({ screen: x, copied: false, h2hError: '' }); this.onEnter(x); };
     const totalQ = p.totalQ || 0, acc = totalQ ? Math.round(p.totalCorrect / totalQ * 100) : 0;
     const level = 1 + Math.floor(totalQ / 25), xpInto = totalQ % 25;
-    const globalRank = p.bestStreak ? '#' + (1 + Math.max(0, Math.round((96 - p.bestStreak) * 2.6))) : '—';
+    const globalRank = s.ranks.global ? '#' + s.ranks.global : '—';
+    const teamRank = t && s.ranks.team ? '#' + s.ranks.team : '—';
     const REG = ['welcome', 'auth', 'username', 'teampick', 'ready'];
     const chList = (s.challenges || []).map(c => c.status === 'open' && c.expiresAt < Date.now() ? { ...c, status: 'expired' } : c);
     const inbox = chList.filter(c => c.dir === 'in' && c.status === 'open');
@@ -406,7 +518,7 @@ export class App extends Logic {
     const cell3 = i => `padding:var(--space-3) var(--space-4);${(i + 1) % 3 !== 0 ? 'border-right:1px solid var(--color-divider);' : ''}${i < 3 ? 'border-bottom:1px solid var(--color-divider);' : ''}`;
     const cell2 = i => `padding:var(--space-4);${i % 2 === 0 ? 'border-right:1px solid var(--color-divider);' : ''}${i < 2 ? 'border-bottom:1px solid var(--color-divider);' : ''}`;
     const resultStats = r ? (isStreaky
-      ? [['Accuracy', r.acc + '%'], ['Best streak', p.bestStreak || 0], ['Global rank', globalRank], ['Team rank', t ? '#' + (1 + Math.max(0, Math.round((80 - (p.teamBest || 0)) * 1.4))) : '—']]
+      ? [['Accuracy', r.acc + '%'], ['Best streak', p.bestStreak || 0], ['Global rank', globalRank], ['Team rank', teamRank]]
       : [['Questions', r.answers], ['Accuracy', r.acc + '%'], ['Longest streak', r.best], ['Fastest', r.fastest != null ? (r.fastest / 1000).toFixed(1) + 's' : '—']]
     ).map(([label, value], i) => ({ label, value, style: cell2(i) })) : [];
 
@@ -415,7 +527,7 @@ export class App extends Logic {
       const on = map[sc] === label, isPlay = label === 'PLAY';
       return { label, isHome: label === 'HOME', isPlay, isBoard: label === 'BOARD', isTeam: label === 'TEAM', isProfile: label === 'PROFILE',
         badge: label === 'PROFILE' && inbox.length > 0, badgeCount: inbox.length,
-        pick: () => this.setState({ screen: target, reg: false, hubFrom: 'home', copied: false }),
+        pick: () => { this.setState({ screen: target, reg: false, hubFrom: 'home', copied: false }); this.onEnter(target); },
         style: `all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:62px;padding:8px 2px;color:${on ? 'var(--color-accent)' : 'var(--color-neutral-500)'}`,
         iconWrap: `position:relative;display:flex;align-items:center;justify-content:center;${isPlay ? `width:34px;height:34px;background:${on ? 'var(--color-accent)' : 'var(--color-text)'};color:${on ? '#120800' : 'var(--color-bg)'};margin-top:-2px` : ''}` };
     });
@@ -428,8 +540,12 @@ export class App extends Logic {
     })) : [];
     const draftT = T && s.teamDraft ? T.teamById(s.teamDraft) : null;
     const ch = s.activeChallenge;
-    const chTheirs = ch ? (ch.mode === 'buzz' ? ch.creatorScore : ch.creatorStat) : 0;
-    const chMine = ch && ch.status === 'completed' ? (ch.mode === 'buzz' ? ch.opponentScore : ch.opponentStat) : 0;
+    const meIsCreator = !!(ch && ch.dir === 'out');
+    const creatorVal = ch ? (ch.mode === 'buzz' ? ch.creatorScore : ch.creatorStat) : 0;
+    const oppVal = ch && ch.status === 'completed' ? (ch.mode === 'buzz' ? ch.opponentScore : ch.opponentStat) : 0;
+    const chMine = meIsCreator ? creatorVal : oppVal, chTheirs = meIsCreator ? oppVal : creatorVal;
+    const theirName = ch ? (meIsCreator ? (ch.opponent || 'opponent') : ch.creator) : '';
+    const creatorWon = !!(ch && (meIsCreator ? ch.result === 'won' : ch.result === 'lost'));
     const hubCats = ['All', 'Team history', 'Franchise legends', 'Championships', 'Franchise records', 'Arenas'];
     const heroStreakVal = p.lastStreak != null ? p.lastStreak : (p.bestStreak || 0);
 
@@ -454,20 +570,20 @@ export class App extends Logic {
       playGuest: () => this.setState({ screen: 'home', guest: true }),
       isSignIn: s.authMode === 'signin', authTitle: s.authMode === 'signin' ? 'SIGN IN' : 'CREATE ACCOUNT',
       authSub: s.authMode === 'signin' ? 'Your records are waiting.' : 'Takes about ten seconds.',
-      authCta: s.authMode === 'signin' ? 'SIGN IN' : 'CONTINUE',
+      authCta: s.busy ? 'ONE MOMENT…' : s.authMode === 'signin' ? 'SIGN IN' : 'CONTINUE',
       authToggleLabel: s.authMode === 'signin' ? 'No account? Create one' : 'Already have an account? Sign in',
       toggleAuthMode: () => this.setState({ authMode: s.authMode === 'signin' ? 'register' : 'signin', authErrs: [] }),
       authEmail: s.authEmail, setAuthEmail: e => this.setState({ authEmail: e.target.value, authErrs: [] }),
       authPass: s.authPass, setAuthPass: e => this.setState({ authPass: e.target.value, authErrs: [] }),
       authHasErrors: s.authErrs.length > 0, authErrorList: s.authErrs, submitEmailAuth: () => this.submitEmailAuth(),
       regDots: [0, 1, 2].map(i => `width:${i === regStep ? 26 : 9}px;height:4px;background:${i === regStep ? 'var(--color-accent)' : 'var(--color-neutral-800)'}`),
-      unameDraft: s.unameDraft, setUname: e => this.setState({ unameDraft: e.target.value }),
+      unameDraft: s.unameDraft, setUname: e => { this.setState({ unameDraft: e.target.value }); this.checkUsernameSoon(e.target.value); },
       unameStatus: uchk.msg, unameInvalid: !uchk.ok,
       unameStatusStyle: `font-size:13px;font-weight:600;margin-top:10px;color:${s.unameDraft && uchk.ok ? 'var(--color-accent-400)' : 'var(--color-neutral-400)'}`,
       claimUsername: () => this.claimUsername(),
       regFlow: s.reg, teamSearch: s.teamSearch, setTeamSearch: e => this.setState({ teamSearch: e.target.value }), teamList,
       noTeamChosen: !draftT, teamCta: draftT ? `LOCK IN THE ${draftT.name.toUpperCase()}` : 'PICK A TEAM',
-      saveTeam: () => { if (!s.teamDraft) return; const prof = { ...p, favoriteTeam: s.teamDraft }; this.save(prof); if (a) this.saveAccount({ ...a, favoriteTeam: s.teamDraft }); this.setState({ screen: s.reg ? 'ready' : (s.hubFrom === 'profile' ? 'profile' : 'teamhub'), teamSearch: '' }); },
+      saveTeam: () => { if (!s.teamDraft) return; const prof = { ...p, favoriteTeam: s.teamDraft }; this.save(prof); if (a) this.saveAccount({ ...a, favoriteTeam: s.teamDraft }); this.setState({ screen: s.reg ? 'ready' : (s.hubFrom === 'profile' ? 'profile' : 'teamhub'), teamSearch: '' }); this.refreshRanks(); },
       readyMarkStyle: `width:76px;height:76px;display:flex;align-items:center;justify-content:center;font-family:var(--font-heading);font-weight:800;font-size:22px;background:var(--color-accent);color:#120800`,
       readyLine: t ? `Your first ${t.name} question is waiting. One mistake ends the run.` : 'One mistake ends the run. How long can you last?',
 
@@ -557,6 +673,8 @@ export class App extends Logic {
       resultStats,
       playAgain: () => r && this.startRun(r.mode, { cat: r.cat }),
       goBoard: go('board'), goShare: go('share'),
+      canChallenge: !!(r && !r.challenge && a && ['streak', 'buzz', 'team'].includes(r.mode) && r.log.length),
+      challengeFriend: () => r && this.createChallenge(r),
       hasNewBadges: s.newBadges.length > 0, newBadges: s.newBadges,
       isGuest: !a, isMember: !!a,
       reviewRows: r ? r.log.map((x, i) => ({ n: i + 1, q: x.q, detail: x.ok ? (x.exp || 'Correct') : (x.chosen === '__timeout' ? 'Ran out of time · ' : '') + 'Answer: ' + x.correct, pts: x.pts ? '+' + this.fmt(x.pts) : '0',
@@ -572,9 +690,11 @@ export class App extends Logic {
       copyShare: () => { navigator.clipboard && navigator.clipboard.writeText(this.shareText()); this.setState({ copied: true }); },
 
       // leaderboard
-      boardScopes: ['Global', 'Friends', 'Your Team'].map(x => ({ label: x.toUpperCase(), pick: () => this.setState({ scope: x }), style: `all:unset;box-sizing:border-box;cursor:pointer;padding:13px var(--space-3);font-family:var(--font-heading);font-weight:800;font-size:12px;letter-spacing:.06em;text-align:left;color:${s.scope === x ? '#120800' : 'var(--color-text)'};background:${s.scope === x ? 'var(--color-accent)' : 'transparent'};border-right:1px solid var(--color-divider)` })),
-      boardPeriods: ['Today', 'Week', 'All time'].map(x => ({ label: x.toUpperCase(), pick: () => this.setState({ period: x }), style: `all:unset;cursor:pointer;font-family:var(--font-heading);font-weight:800;font-size:11px;letter-spacing:.1em;color:${s.period === x ? 'var(--color-accent)' : 'var(--color-neutral-500)'};border-bottom:2px solid ${s.period === x ? 'var(--color-accent)' : 'transparent'};padding-bottom:3px` })),
+      boardScopes: ['Global', 'Friends', 'Your Team'].map(x => ({ label: x.toUpperCase(), pick: () => { this.setState({ scope: x }); this.refreshBoard(); }, style: `all:unset;box-sizing:border-box;cursor:pointer;padding:13px var(--space-3);font-family:var(--font-heading);font-weight:800;font-size:12px;letter-spacing:.06em;text-align:left;color:${s.scope === x ? '#120800' : 'var(--color-text)'};background:${s.scope === x ? 'var(--color-accent)' : 'transparent'};border-right:1px solid var(--color-divider)` })),
+      boardPeriods: ['Today', 'Week', 'All time'].map(x => ({ label: x.toUpperCase(), pick: () => { this.setState({ period: x }); this.refreshBoard(); }, style: `all:unset;cursor:pointer;font-family:var(--font-heading);font-weight:800;font-size:11px;letter-spacing:.1em;color:${s.period === x ? 'var(--color-accent)' : 'var(--color-neutral-500)'};border-bottom:2px solid ${s.period === x ? 'var(--color-accent)' : 'transparent'};padding-bottom:3px` })),
       boardEmpty: s.scope === 'Friends', boardHasRows: s.scope !== 'Friends', boardRows: this.rows(),
+      boardNone: s.scope !== 'Friends' && !s.boardLoading && !(s.board || []).length,
+      boardNoneLine: s.scope === 'Your Team' && !t ? 'Pick a team to see its board.' : `Nobody has finished a ${s.scope === 'Your Team' ? (t ? t.name + ' run' : 'team run') : 'streak'} ${s.period === 'Today' ? 'today' : s.period === 'Week' ? 'this week' : 'yet'}. Be the first.`,
       myRank: (() => { const me = this.rows().find(x => x.me); return me ? '#' + Number(me.rank) : '—'; })(),
       myRankSub: a ? '@' + a.username : 'Sign up to be ranked',
       myRankValue: (() => { const me = this.rows().find(x => x.me); return me ? me.value : '—'; })(),
@@ -584,7 +704,7 @@ export class App extends Logic {
       hubMarkStyle: `width:64px;height:64px;display:flex;align-items:center;justify-content:center;font-family:var(--font-heading);font-weight:800;font-size:19px;background:var(--color-accent);color:#120800`,
       hubHeadline: t ? `HOW WELL DO YOU KNOW YOUR ${t.name.toUpperCase()}?` : 'PICK A TEAM',
       goTeamPick: () => this.setState({ screen: 'teampick', reg: false, teamDraft: this.teamId(), hubFrom: 'teamhub' }),
-      hubStats: [['Best run', p.teamBest || 0], ['Answered', p.teamCorrect || 0], ['Team rank', t ? '#' + (1 + Math.max(0, Math.round((80 - (p.teamBest || 0)) * 1.4))) : '—']].map(([label, value], i) => ({ label, value, style: `padding:var(--space-3) var(--space-4);${i < 2 ? 'border-right:1px solid var(--color-divider)' : ''}` })),
+      hubStats: [['Best run', p.teamBest || 0], ['Answered', p.teamCorrect || 0], ['Team rank', teamRank]].map(([label, value], i) => ({ label, value, style: `padding:var(--space-3) var(--space-4);${i < 2 ? 'border-right:1px solid var(--color-divider)' : ''}` })),
       hubCats: hubCats.map(c => ({ label: c === 'All' ? 'EVERYTHING' : c.toUpperCase(), pick: () => this.setState({ teamCat: c }),
         style: `all:unset;cursor:pointer;padding:9px 13px;font-family:var(--font-heading);font-weight:800;font-size:11px;letter-spacing:.06em;border:1px solid ${s.teamCat === c ? 'var(--color-accent)' : 'var(--color-divider)'};color:${s.teamCat === c ? '#120800' : 'var(--color-neutral-300)'};background:${s.teamCat === c ? 'var(--color-accent)' : 'transparent'}` })),
       hubCta: t ? `PLAY ${t.name.toUpperCase()}` : 'PICK A TEAM',
@@ -603,7 +723,7 @@ export class App extends Logic {
           iconStyle: `width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-family:var(--font-heading);font-weight:800;font-size:17px;background:${on ? 'var(--color-accent)' : 'var(--color-neutral-800)'};color:${on ? '#120800' : 'var(--color-neutral-500)'}` }; }),
       engineSummaryLine: this.eng ? `${this.fmt(this.eng.bankSummary().active)} active · ${this.fmt(this.eng.bankSummary().seen)} seen` : '—',
       changeUsername: () => this.setState({ screen: 'username', reg: false, unameDraft: a ? a.username : '' }),
-      signOut: () => { this.saveAccount(null); this.setState({ screen: 'welcome', guest: false, authEmail: '', authPass: '' }); },
+      signOut: async () => { await cloud.signOut(); this.eng.useHistoryOf(null); this.setState({ screen: 'welcome', guest: false, authEmail: '', authPass: '', user: null, account: null, isAdmin: false, challenges: [], ranks: { global: null, team: null }, profile: this.localProfile(null) }); },
 
       // admin · question engine
       ...this.adminVals(),
@@ -611,24 +731,24 @@ export class App extends Logic {
       // head to head
       h2hRecord: `${wins}W · ${losses}L · ${ties}T`,
       h2hCode: s.h2hCode, setH2HCode: e => this.setState({ h2hCode: e.target.value.toUpperCase(), h2hError: '' }),
-      redeemCode: () => { const c = chList.find(x => x.code === s.h2hCode.trim()); if (!c) return this.setState({ h2hError: 'No battle with that code' }); if (c.status === 'completed') return this.setState({ h2hError: 'Already played' }); this.setState({ screen: 'h2h-intro', activeChallenge: c, h2hError: '' }); },
+      redeemCode: () => { const code = s.h2hCode.trim().toUpperCase(); if (code) this.redeem(code); },
       h2hHasError: !!s.h2hError, h2hError: s.h2hError,
       h2hEmpty: chList.length === 0,
       h2hRows: chList.map(c => ({ code: c.code, opponent: '@' + (c.dir === 'in' ? c.creator : (c.opponent || 'Pending')), mode: modeName(c.mode),
         result: c.status === 'completed' ? (c.result === 'won' ? 'WON' : c.result === 'lost' ? 'LOST' : 'TIE') : c.status === 'expired' ? 'EXPIRED' : c.dir === 'in' ? 'PLAY' : 'SENT',
         sub: c.status === 'completed' ? `${this.fmt(c.creatorScore)} vs ${this.fmt(c.opponentScore || 0)}` : c.code,
-        open: () => this.setState({ screen: c.status === 'completed' ? 'h2h-result' : 'h2h-intro', activeChallenge: c }),
+        open: () => this.setState({ screen: c.status === 'completed' ? 'h2h-result' : c.dir === 'out' ? 'h2h-made' : 'h2h-intro', activeChallenge: c, copied: false }),
         style: 'all:unset;box-sizing:border-box;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-top:1px solid var(--color-divider);color:var(--color-text)',
         pillStyle: `font-family:var(--font-heading);font-weight:800;font-size:11px;letter-spacing:.08em;padding:5px 9px;background:${c.result === 'won' || (c.status === 'open' && c.dir === 'in') ? 'var(--color-accent)' : 'transparent'};color:${c.result === 'won' || (c.status === 'open' && c.dir === 'in') ? '#120800' : 'var(--color-neutral-400)'};border:1px solid ${c.result === 'won' || (c.status === 'open' && c.dir === 'in') ? 'var(--color-accent)' : 'var(--color-divider)'}` })),
       chCreator: ch ? '@' + ch.creator : '', chModeLabel: ch ? modeName(ch.mode) : '', chCodeLabel: ch ? ch.code : '',
-      chDeepLink: ch ? `20-0.app/c/${ch.code}` : '',
-      chAccept: () => { if (!a) return this.setState({ screen: 'welcome', reg: true }); const l = s.challenges.map(c => c.code === ch.code ? { ...c, status: 'accepted' } : c); this.saveChallenges(l); this.startRun(ch.mode, { challenge: ch }); },
-      chShare: () => { const text = ch && ch.status === 'completed' ? `${appName} — @${ch.creator} ${this.fmt(chTheirs)} vs @${ch.opponent} ${this.fmt(chMine)}. ${this.props.shareUrl ?? '20-0.app'}/c/${ch.code}` : `Beat my ${ch ? this.fmt(ch.creatorScore) : ''} on ${appName}. Code ${ch ? ch.code : ''} · ${this.props.shareUrl ?? '20-0.app'}`; if (navigator.share) navigator.share({ text }).catch(() => {}); else { navigator.clipboard && navigator.clipboard.writeText(text); this.setState({ copied: true }); } },
-      chCopy: () => { navigator.clipboard && navigator.clipboard.writeText(ch ? `20-0.app/c/${ch.code}` : ''); this.setState({ copied: true }); },
+      chDeepLink: ch ? this.challengeLink(ch.code).replace(/^https?:\/\//, '') : '',
+      chAccept: () => { if (!a) return this.setState({ screen: 'welcome', reg: true }); this.startRun(ch.mode, { challenge: ch }); },
+      chShare: () => { const text = ch && ch.status === 'completed' ? `${appName} — @${ch.creator} ${this.fmt(creatorVal)} vs @${ch.opponent} ${this.fmt(oppVal)}. ${this.challengeLink(ch.code)}` : `Beat my ${ch ? this.fmt(creatorVal) : ''} on ${appName}. Code ${ch ? ch.code : ''} · ${ch ? this.challengeLink(ch.code) : ''}`; if (navigator.share) navigator.share({ text }).catch(() => {}); else { navigator.clipboard && navigator.clipboard.writeText(text); this.setState({ copied: true }); } },
+      chCopy: () => { navigator.clipboard && navigator.clipboard.writeText(ch ? this.challengeLink(ch.code) : ''); this.setState({ copied: true }); },
       chResultTitle: ch && ch.result === 'won' ? 'YOU WIN' : ch && ch.result === 'lost' ? 'YOU LOSE' : 'DEAD HEAT',
-      chResultSub: ch ? (ch.result === 'won' ? `You beat @${ch.creator} by ${this.fmt(Math.abs(chMine - chTheirs))}.` : ch.result === 'lost' ? `@${ch.creator} edged you by ${this.fmt(Math.abs(chTheirs - chMine))}.` : `Both of you finished on ${this.fmt(chMine)}.`) : '',
+      chResultSub: ch ? (ch.result === 'won' ? `You beat @${theirName} by ${this.fmt(Math.abs(chMine - chTheirs))}.` : ch.result === 'lost' ? `@${theirName} edged you by ${this.fmt(Math.abs(chTheirs - chMine))}.` : `Both of you finished on ${this.fmt(chMine)}.`) : '',
       chResultHeroStyle: `padding:var(--space-8) var(--space-4) var(--space-6);border-bottom:2px solid var(--color-divider);${ch && ch.result === 'won' ? 'background:var(--color-accent);color:#120800' : ''}`,
-      chScores: ch ? [{ name: '@' + ch.creator, value: this.fmt(chTheirs), style: `padding:var(--space-4);border-right:1px solid var(--color-divider);${ch.result === 'lost' ? 'background:var(--color-surface)' : ''}` }, { name: '@' + (ch.opponent || 'You'), value: this.fmt(chMine), style: `padding:var(--space-4);${ch.result === 'won' ? 'background:var(--color-surface)' : ''}` }] : [],
+      chScores: ch ? [{ name: '@' + ch.creator, value: this.fmt(creatorVal), style: `padding:var(--space-4);border-right:1px solid var(--color-divider);${creatorWon ? 'background:var(--color-surface)' : ''}` }, { name: '@' + (ch.opponent || 'You'), value: this.fmt(oppVal), style: `padding:var(--space-4);${ch.result !== 'tied' && !creatorWon ? 'background:var(--color-surface)' : ''}` }] : [],
       chRematch: () => ch && this.startRun(ch.mode)
     };
   }

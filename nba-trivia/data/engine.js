@@ -19,7 +19,20 @@ export const LIFECYCLE = ['draft', 'pending', 'approved', 'active', 'disabled', 
 export const RETENTION_OPTIONS = [7, 30, 60, 90, 180, 0]; // 0 = never repeat
 export const DAILY_LEDGER_KEY = 'v2_daily_ledger';
 
-const HKEY = 'v2_q_history', CKEY = 'v2_q_config', AKEY = 'v2_q_analytics', OKEY = 'v2_q_overrides';
+const CKEY = 'v2_q_config', AKEY = 'v2_q_analytics', OKEY = 'v2_q_overrides';
+// History is per player: a guest and each signed-in account keep their own.
+let HKEY = 'v2_q_history';
+export function useHistoryOf(userId) { HKEY = userId ? 'v2_q_history:' + userId : 'v2_q_history'; }
+// Fold a player's server-side answer log into the local history the
+// exclusion window reads, so "never repeat" holds across their devices.
+export function mergeHistory(rows) {
+  const h = getHistory();
+  for (const r of rows) {
+    const t = Date.parse(r.answered_at);
+    if (!h[r.question_id] || h[r.question_id].shown_at < t) h[r.question_id] = { shown_at: t, answered_at: t, game_mode: r.mode, result: r.correct ? 'correct' : 'incorrect' };
+  }
+  Store.write(HKEY, h);
+}
 
 // ── Store adapter ────────────────────────────────────────────────
 const Store = {
@@ -273,6 +286,13 @@ export function buildBank({ questions, mystery, teams, facts }) {
   return BANK;
 }
 export const getBank = () => BANK || [];
+// Use a bank loaded from the database instead of building one on the device.
+export function setBank(records) {
+  BANK = records;
+  BY_ID = new Map(records.map(r => [r.question_id, r]));
+  BUILD_STATS = { kpCollisions: 0, generated: records.filter(r => r.source_name === 'balldontlie').length, rejectedQuality: records.filter(r => r.status === 'pending').length };
+  return BANK;
+}
 export const byId = id => (BY_ID ? BY_ID.get(id) : null);
 
 // Admin edits (status flips, difficulty changes) persist as sparse overrides
@@ -438,6 +458,11 @@ export function nextQuestion(session, opts = {}) {
   const common = { mode: session.mode, teamId: session.teamId, category: session.category, sessionUsed: session.used, history: session.history };
   let pool = eligible({ ...common, band });
   let relaxed = null;
+  // Empty band: step up one difficulty at a time (beginner → easy → …)
+  // before giving up on difficulty altogether, so runs still start easy.
+  for (let top = Math.max(...band.map(t => TIER_ORDER.indexOf(t))); !pool.length && top < TIER_ORDER.length - 1; ) {
+    top++; pool = eligible({ ...common, band: TIER_ORDER.slice(TIER_ORDER.indexOf(band[0]), top + 1) }); relaxed = 'band';
+  }
   if (!pool.length) { pool = eligible(common); relaxed = 'band'; }
   if (!pool.length) { pool = eligible({ ...common, ignoreHistory: true }); relaxed = 'history'; }
   if (!pool.length) return null;
