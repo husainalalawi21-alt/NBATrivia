@@ -110,9 +110,27 @@ export function fromPostseason(games, season) {
 }
 
 // ── regular season ───────────────────────────────────────────────
+// balldontlie files two kinds of games as "regular season" that do not count
+// in the standings: play-in games (2019–20 onward, after the last full game
+// night) and the NBA Cup final (2023–24 onward: alone on its December night,
+// between two teams that end up past 82 games).
+export function standingsGames(games, season) {
+  let g = games.filter(final);
+  const perDay = list => list.reduce((m, x) => (m[x.date.slice(0, 10)] = (m[x.date.slice(0, 10)] || 0) + 1, m), {});
+  if (season >= 2019) {
+    const days = perDay(g), end = Object.keys(days).filter(d => days[d] >= 3).sort().pop();
+    if (end) g = g.filter(x => x.date.slice(0, 10) <= end);
+  }
+  if (season >= 2023) {
+    const gp = {}; g.forEach(x => [x.home_team.id, x.visitor_team.id].forEach(id => gp[id] = (gp[id] || 0) + 1));
+    const days = perDay(g);
+    g = g.filter(x => !(x.date.slice(5, 7) === '12' && days[x.date.slice(0, 10)] === 1 && gp[x.home_team.id] > 82 && gp[x.visitor_team.id] > 82));
+  }
+  return g;
+}
 export function standings(games, season) {
   const t = new Map();
-  for (const g of games.filter(final)) {
+  for (const g of standingsGames(games, season)) {
     for (const side of ['home', 'visitor']) {
       const team = g[side + '_team'], me = g[side + '_team_score'], them = g[(side === 'home' ? 'visitor' : 'home') + '_team_score'];
       if (!t.has(team.id)) t.set(team.id, { team, name: teamNameIn(team, season), w: 0, l: 0 });
