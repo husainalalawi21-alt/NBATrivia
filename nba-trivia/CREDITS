@@ -10,5 +10,6 @@ Images    None. The three photo areas (welcome, home team card, team hub) are em
 Data      NBA facts are used for trivia reference only. Accounts, leaderboards and challenges are local to the device
           (localStorage); there is no backend.
 
+Live      https://nba-trivia-20-0.netlify.app (Netlify project nba-trivia-20-0; data in Supabase).
 Run       Serve this folder over HTTP (ES modules don't load from file://), e.g.  python3 -m http.server  and open
           index.html.
