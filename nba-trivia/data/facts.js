@@ -11,7 +11,32 @@
 // ════════════════════════════════════════════════════════════════
 
 // [season, champion, runnerUp, finalsMVP, mvp, championCoach, roy, scoringLeader]
+// 1946–47 to 1948–49 were BAA seasons; the NBA counts them as its own history.
 export const SEASONS = [
+  ['1946-47', 'Philadelphia Warriors', 'Chicago Stags', null, null, 'Eddie Gottlieb', null, 'Joe Fulks'],
+  ['1947-48', 'Baltimore Bullets', 'Philadelphia Warriors', null, null, 'Buddy Jeannette', null, 'Max Zaslofsky'],
+  ['1948-49', 'Minneapolis Lakers', 'Washington Capitols', null, null, 'John Kundla', null, 'George Mikan'],
+  ['1949-50', 'Minneapolis Lakers', 'Syracuse Nationals', null, null, 'John Kundla', null, 'George Mikan'],
+  ['1950-51', 'Rochester Royals', 'New York Knicks', null, null, 'Les Harrison', null, 'George Mikan'],
+  ['1951-52', 'Minneapolis Lakers', 'New York Knicks', null, null, 'John Kundla', null, 'Paul Arizin'],
+  ['1952-53', 'Minneapolis Lakers', 'New York Knicks', null, null, 'John Kundla', 'Don Meineke', 'Neil Johnston'],
+  ['1953-54', 'Minneapolis Lakers', 'Syracuse Nationals', null, null, 'John Kundla', 'Ray Felix', 'Neil Johnston'],
+  ['1954-55', 'Syracuse Nationals', 'Fort Wayne Pistons', null, null, 'Al Cervi', 'Bob Pettit', 'Neil Johnston'],
+  ['1955-56', 'Philadelphia Warriors', 'Fort Wayne Pistons', null, 'Bob Pettit', 'George Senesky', 'Maurice Stokes', 'Bob Pettit'],
+  ['1956-57', 'Boston Celtics', 'St. Louis Hawks', null, 'Bob Cousy', 'Red Auerbach', 'Tom Heinsohn', 'Paul Arizin'],
+  ['1957-58', 'St. Louis Hawks', 'Boston Celtics', null, 'Bill Russell', 'Alex Hannum', 'Woody Sauldsberry', 'George Yardley'],
+  ['1958-59', 'Boston Celtics', 'Minneapolis Lakers', null, 'Bob Pettit', 'Red Auerbach', 'Elgin Baylor', 'Bob Pettit'],
+  ['1959-60', 'Boston Celtics', 'St. Louis Hawks', null, 'Wilt Chamberlain', 'Red Auerbach', 'Wilt Chamberlain', 'Wilt Chamberlain'],
+  ['1960-61', 'Boston Celtics', 'St. Louis Hawks', null, 'Bill Russell', 'Red Auerbach', 'Oscar Robertson', 'Wilt Chamberlain'],
+  ['1961-62', 'Boston Celtics', 'Los Angeles Lakers', null, 'Bill Russell', 'Red Auerbach', 'Walt Bellamy', 'Wilt Chamberlain'],
+  ['1962-63', 'Boston Celtics', 'Los Angeles Lakers', null, 'Bill Russell', 'Red Auerbach', 'Terry Dischinger', 'Wilt Chamberlain'],
+  ['1963-64', 'Boston Celtics', 'San Francisco Warriors', null, 'Oscar Robertson', 'Red Auerbach', 'Jerry Lucas', 'Wilt Chamberlain'],
+  ['1964-65', 'Boston Celtics', 'Los Angeles Lakers', null, 'Bill Russell', 'Red Auerbach', 'Willis Reed', 'Wilt Chamberlain'],
+  ['1965-66', 'Boston Celtics', 'Los Angeles Lakers', null, 'Wilt Chamberlain', 'Red Auerbach', 'Rick Barry', 'Wilt Chamberlain'],
+  ['1966-67', 'Philadelphia 76ers', 'San Francisco Warriors', null, 'Wilt Chamberlain', 'Alex Hannum', 'Dave Bing', 'Rick Barry'],
+  ['1967-68', 'Boston Celtics', 'Los Angeles Lakers', null, 'Wilt Chamberlain', 'Bill Russell', 'Earl Monroe', 'Dave Bing'],
+  ['1968-69', 'Boston Celtics', 'Los Angeles Lakers', 'Jerry West', 'Wes Unseld', 'Bill Russell', 'Wes Unseld', 'Elvin Hayes'],
+  ['1969-70', 'New York Knicks', 'Los Angeles Lakers', 'Willis Reed', 'Willis Reed', 'Red Holzman', 'Kareem Abdul-Jabbar', 'Jerry West'],
   ['1970-71', 'Milwaukee Bucks', 'Baltimore Bullets', 'Kareem Abdul-Jabbar', 'Kareem Abdul-Jabbar', 'Larry Costello', 'Dave Cowens', 'Kareem Abdul-Jabbar'],
   ['1971-72', 'Los Angeles Lakers', 'New York Knicks', 'Wilt Chamberlain', 'Kareem Abdul-Jabbar', 'Bill Sharman', 'Sidney Wicks', 'Kareem Abdul-Jabbar'],
   ['1972-73', 'New York Knicks', 'Los Angeles Lakers', 'Willis Reed', 'Dave Cowens', 'Red Holzman', 'Bob McAdoo', 'Nate Archibald'],
@@ -36,14 +61,14 @@ export const SEASONS = [
   ['1991-92', 'Chicago Bulls', 'Portland Trail Blazers', 'Michael Jordan', 'Michael Jordan', 'Phil Jackson', 'Larry Johnson', 'Michael Jordan'],
   ['1992-93', 'Chicago Bulls', 'Phoenix Suns', 'Michael Jordan', 'Charles Barkley', 'Phil Jackson', "Shaquille O'Neal", 'Michael Jordan'],
   ['1993-94', 'Houston Rockets', 'New York Knicks', 'Hakeem Olajuwon', 'Hakeem Olajuwon', 'Rudy Tomjanovich', 'Chris Webber', 'David Robinson'],
-  ['1994-95', 'Houston Rockets', 'Orlando Magic', 'Hakeem Olajuwon', 'David Robinson', 'Rudy Tomjanovich', 'Jason Kidd', "Shaquille O'Neal"],
+  ['1994-95', 'Houston Rockets', 'Orlando Magic', 'Hakeem Olajuwon', 'David Robinson', 'Rudy Tomjanovich', null, "Shaquille O'Neal"],
   ['1995-96', 'Chicago Bulls', 'Seattle SuperSonics', 'Michael Jordan', 'Michael Jordan', 'Phil Jackson', 'Damon Stoudamire', 'Michael Jordan'],
   ['1996-97', 'Chicago Bulls', 'Utah Jazz', 'Michael Jordan', 'Karl Malone', 'Phil Jackson', 'Allen Iverson', 'Michael Jordan'],
   ['1997-98', 'Chicago Bulls', 'Utah Jazz', 'Michael Jordan', 'Michael Jordan', 'Phil Jackson', 'Tim Duncan', 'Michael Jordan'],
   ['1998-99', 'San Antonio Spurs', 'New York Knicks', 'Tim Duncan', 'Karl Malone', 'Gregg Popovich', 'Vince Carter', 'Allen Iverson'],
-  ['1999-00', 'Los Angeles Lakers', 'Indiana Pacers', "Shaquille O'Neal", "Shaquille O'Neal", 'Phil Jackson', 'Elton Brand', "Shaquille O'Neal"],
+  ['1999-00', 'Los Angeles Lakers', 'Indiana Pacers', "Shaquille O'Neal", "Shaquille O'Neal", 'Phil Jackson', null, "Shaquille O'Neal"],
   ['2000-01', 'Los Angeles Lakers', 'Philadelphia 76ers', "Shaquille O'Neal", 'Allen Iverson', 'Phil Jackson', 'Mike Miller', 'Allen Iverson'],
-  ['2001-02', 'Los Angeles Lakers', 'New Jersey Nets', "Shaquille O'Neal", 'Tim Duncan', 'Phil Jackson', 'Pau Gasol', "Shaquille O'Neal"],
+  ['2001-02', 'Los Angeles Lakers', 'New Jersey Nets', "Shaquille O'Neal", 'Tim Duncan', 'Phil Jackson', 'Pau Gasol', 'Allen Iverson'],
   ['2002-03', 'San Antonio Spurs', 'New Jersey Nets', 'Tim Duncan', 'Tim Duncan', 'Gregg Popovich', "Amar'e Stoudemire", 'Tracy McGrady'],
   ['2003-04', 'Detroit Pistons', 'Los Angeles Lakers', 'Chauncey Billups', 'Kevin Garnett', 'Larry Brown', 'LeBron James', 'Tracy McGrady'],
   ['2004-05', 'San Antonio Spurs', 'Detroit Pistons', 'Tim Duncan', 'Steve Nash', 'Gregg Popovich', 'Emeka Okafor', 'Allen Iverson'],
@@ -66,7 +91,7 @@ export const SEASONS = [
   ['2021-22', 'Golden State Warriors', 'Boston Celtics', 'Stephen Curry', 'Nikola Jokić', 'Steve Kerr', 'Scottie Barnes', 'Joel Embiid'],
   ['2022-23', 'Denver Nuggets', 'Miami Heat', 'Nikola Jokić', 'Joel Embiid', 'Michael Malone', 'Paolo Banchero', 'Joel Embiid'],
   ['2023-24', 'Boston Celtics', 'Dallas Mavericks', 'Jaylen Brown', 'Nikola Jokić', 'Joe Mazzulla', 'Victor Wembanyama', 'Luka Dončić'],
-  ['2024-25', 'Oklahoma City Thunder', 'Indiana Pacers', 'Shai Gilgeous-Alexander', 'Shai Gilgeous-Alexander', 'Mark Daigneault', 'Stephon Castle', 'Shai Gilgeous-Alexander']
+  ['2024-25', 'Oklahoma City Thunder', 'Indiana Pacers', 'Shai Gilgeous-Alexander', 'Shai Gilgeous-Alexander', 'Mark Daigneault', 'Stephon Castle', 'Shai Gilgeous-Alexander'],
 ];
 
 // [draftYear, firstPick, draftingTeam, secondPick]
@@ -146,7 +171,7 @@ export const RECORDS = [
 // Era buckets used for distractor plausibility and coverage reporting.
 export const era = season => {
   const y = parseInt(String(season).slice(0, 4), 10);
-  return y < 1960 ? '1950s' : y < 1970 ? '1960s' : y < 1980 ? '1970s' : y < 1990 ? '1980s' : y < 2000 ? '1990s' : y < 2010 ? '2000s' : y < 2020 ? '2010s' : '2020s';
+  return y < 1950 ? '1940s' : y < 1960 ? '1950s' : y < 1970 ? '1960s' : y < 1980 ? '1970s' : y < 1990 ? '1980s' : y < 2000 ? '1990s' : y < 2010 ? '2000s' : y < 2020 ? '2010s' : '2020s';
 };
 
 // ── Fact extraction → knowledge points ──────────────────────────
