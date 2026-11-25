@@ -7,8 +7,10 @@ Code      index.html (screen markup), app.js (screen logic), dc.js (renderer). Q
 Fonts     Archivo (The Archivo Project Authors / Omnibus-Type), SIL Open Font License 1.1; files and licence in fonts/.
 Images    None. The three photo areas (welcome, home team card, team hub) are empty until images are set in
           SLOT_IMAGES in app.js. No team or league logos are used; teams appear as three-letter text marks.
-Data      NBA facts are used for trivia reference only. Accounts, leaderboards and challenges are local to the device
-          (localStorage); there is no backend.
+Data      NBA facts are used for trivia reference only. Games, teams and players from balldontlie (balldontlie.io),
+          1946-47 to the present; awards table hand-checked. Accounts, stats, leaderboards and head-to-head live in
+          Supabase (supabase/migrations); guests and offline play fall back to the device. supabase-js 2.118.0 (MIT)
+          is vendored in vendor/.
 
 Live      https://nba-trivia-20-0.netlify.app (Netlify project nba-trivia-20-0; data in Supabase).
 Run       Serve this folder over HTTP (ES modules don't load from file://), e.g.  python3 -m http.server  and open
