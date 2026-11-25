@@ -1,0 +1,14 @@
+NBA Trivia (20-0) — sources & licences
+
+Design    Built from the "20-0 v2" screens of the "Mobile app design decisions" design project, on the Modernist
+          design system retuned dark with an orange accent (modernist.css + app.css).
+Code      index.html (screen markup), app.js (screen logic), dc.js (renderer). Question bank and engine in data/
+          (engine.js, questions.js, mystery.js, teams.js, facts.js), carried over from the design project unchanged.
+Fonts     Archivo (The Archivo Project Authors / Omnibus-Type), SIL Open Font License 1.1; files and licence in fonts/.
+Images    None. The three photo areas (welcome, home team card, team hub) are empty until images are set in
+          SLOT_IMAGES in app.js. No team or league logos are used; teams appear as three-letter text marks.
+Data      NBA facts are used for trivia reference only. Accounts, leaderboards and challenges are local to the device
+          (localStorage); there is no backend.
+
+Run       Serve this folder over HTTP (ES modules don't load from file://), e.g.  python3 -m http.server  and open
+          index.html.
