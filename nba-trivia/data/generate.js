@@ -237,19 +237,30 @@ export function fromPlayers(players) {
     }
   }
   // Colleges and countries, for top-five picks only (recognisable names).
+  // The source's "college" field also holds high schools and overseas clubs
+  // (FC Barcelona, even NBA teams), so only names that are a college for at
+  // least three American NBA players count — real schools repeat, clubs and one-off
+  // entries don't.
+  const SCHOOLISH = /\b(HS|High School|Academy|Prep|Christian|FC|BC|KK|Club|Basket|Basketball Club|No College|G League|Overtime Elite)\b/i;
+  const alumni = new Map();
+  for (const q of players) if (q.college && HOME.has(q.country)) alumni.set(q.college, (alumni.get(q.college) || 0) + 1);   // US players only: clubs abroad drop out
+  const nbaTeams = new Set(players.map(q => q.team && q.team.full_name).filter(Boolean));
+  const isCollege = c => c && !/^(none|n\/a)$/i.test(c) && !SCHOOLISH.test(c) && !nbaTeams.has(c) && (alumni.get(c) || 0) >= 3;
+  const playerCount = new Map();
+  for (const q of players) if (!HOME.has(q.country)) playerCount.set(q.country, (playerCount.get(q.country) || 0) + 1);
+  const countries = [...playerCount].filter(([, n]) => n >= 3).map(([c]) => c);
   const notable = drafted.filter(p => p.draft_number <= 5 && p.draft_year >= 1960);
   for (const p of notable) {
     const name = fullName(p), y = p.draft_year, rnd = rng('pl' + p.id);
     const near = notable.filter(q => q.id !== p.id && Math.abs(q.draft_year - y) <= 6);
-    const college = p.college && !/^(none|n\/a)$/i.test(p.college) ? p.college : null;
-    if (college) {
-      const wrongs = pick(near.map(q => q.college).filter(c => c && !/^(none|n\/a)$/i.test(c)), 3, rnd, [college]);
+    if (isCollege(p.college)) {
+      const college = p.college;
+      const wrongs = pick(near.map(q => q.college).filter(isCollege), 3, rnd, [college]);
       if (wrongs.length === 3) kps.push({ knowledge_point_id: `KP-PLAYER-${p.id}-COLLEGE`, column: 'college', era: era(y), season: seasonLabel(y), category: 'Players',
         fact: college, wrongs, question: `Where did ${name} play college basketball before the NBA?`,
         explanation: `${name} came out of ${college} and went No. ${p.draft_number} in the ${y} draft.`, difficulty: y >= 2000 ? 'medium' : 'hard', players: [name] });
     }
     if (!HOME.has(p.country)) {
-      const countries = [...new Set(players.map(q => q.country).filter(c => !HOME.has(c)))];
       const wrongs = pick(countries, 3, rnd, [p.country]);
       if (wrongs.length === 3) kps.push({ knowledge_point_id: `KP-PLAYER-${p.id}-COUNTRY`, column: 'country', era: era(y), season: seasonLabel(y), category: 'Players',
         fact: p.country, wrongs, question: `Which country is ${name} from?`,
