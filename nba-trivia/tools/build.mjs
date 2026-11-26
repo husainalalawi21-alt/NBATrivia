@@ -21,8 +21,11 @@ const today = new Date().toISOString().slice(0, 10);
 const [questions, mystery, teams, facts, engine, gen, fr, jerseys] = await Promise.all(
   ['questions', 'mystery', 'teams', 'facts', 'engine', 'generate', 'franchises', 'jerseys'].map(m => import(join(ROOT, 'data', m + '.js'))));
 
-const read = f => JSON.parse(readFileSync(join(CACHE, f), 'utf8'));
-const seasonsOf = kind => readdirSync(CACHE).map(f => f.match(new RegExp(`^games-(\\d{4})-${kind}\\.json$`))).filter(Boolean).map(m => +m[1]).sort((a, b) => a - b);
+// Games come from the merged table (tools/merge.mjs: balldontlie + Kaggle)
+// when it exists; everything else from the cache.
+const MERGED = join(CACHE, 'merged'), GDIR = existsSync(join(MERGED, 'report.json')) ? MERGED : CACHE;
+const read = f => JSON.parse(readFileSync(join(/^games-/.test(f) ? GDIR : CACHE, f), 'utf8'));
+const seasonsOf = kind => readdirSync(GDIR).map(f => f.match(new RegExp(`^games-(\\d{4})-${kind}\\.json$`))).filter(Boolean).map(m => +m[1]).sort((a, b) => a - b);
 const current = new Date().getUTCMonth() >= 9 ? new Date().getUTCFullYear() : new Date().getUTCFullYear() - 1;
 
 // ── 1. knowledge points from the data ───────────────────────────
@@ -61,7 +64,9 @@ for (const y of seasonsOf('reg')) {
   generated.push(...kps);
   (report.seasons[y] ||= {}).reg = kps.length;
 }
-if (existsSync(join(CACHE, 'players.json'))) generated.push(...gen.fromPlayers(read('players.json')));
+const masterPlayers = existsSync(join(MERGED, 'players.json')) ? JSON.parse(readFileSync(join(MERGED, 'players.json'), 'utf8')) : null;
+if (masterPlayers) generated.push(...gen.fromPlayers(masterPlayers.filter(p => p.id)));          // balldontlie ids keep question ids stable
+else if (existsSync(join(CACHE, 'players.json'))) generated.push(...gen.fromPlayers(read('players.json')));
 generated.push(...gen.fromJerseys(jerseys.JERSEYS));
 
 // ── NBA Database on Kaggle (tools/.cache/kaggle; fetch with tools/fetch-kaggle.mjs) ──
@@ -87,23 +92,9 @@ if (existsSync(join(KDIR, 'draft_history.csv'))) {
   const abbrById = new Map(teamRows.map(t => [t.id, t.abbreviation.toLowerCase()]));
   const abbrOf = id => abbrById.get(String(id)) || null;
   const bios = new Map(bioRows.map(r => [r.person_id, r]));
-  const fromK = [...gen.fromDraft(k('draft_history'), { abbrOf, bios }), ...gen.fromBios(bioRows)];
-  const box = k('game').filter(g => g.season_id && g.season_id[0] === '2'), bySeason = new Map();
-  for (const g of box) { const y = +g.season_id.slice(1); if (!bySeason.has(y)) bySeason.set(y, []); bySeason.get(y).push(g); }
-  let checked = 0, matched = 0;
-  for (const [y, rows] of bySeason) {
-    if (!existsSync(join(CACHE, `games-${y}-reg.json`))) continue;
-    const bdl = new Map(gen.standings(read(`games-${y}-reg.json`), y).filter(r => r.team.id <= 30).map(r => [r.team.abbreviation.toLowerCase(), `${r.w}-${r.l}`]));
-    const wl = new Map();
-    for (const g of rows) for (const [side, other] of [['home', 'away'], ['away', 'home']]) {
-      const a = abbrOf(g[`team_id_${side}`]); if (!a) continue;
-      const rec = wl.get(a) || [0, 0]; if (+g[`pts_${side}`] > +g[`pts_${other}`]) rec[0]++; else rec[1]++; wl.set(a, rec);
-    }
-    const verified = new Set([...wl].filter(([a, [w, l]]) => bdl.get(a) === `${w}-${l}`).map(([a]) => a));
-    checked += wl.size; matched += verified.size;
-    fromK.push(...gen.fromTeamBox(rows, y, { verified, abbrOf }));
-  }
-  report.issues.push(`kaggle: ${fromK.length} questions; box-score team-seasons matching balldontlie ${matched}/${checked}`);
+  const fromK = [...gen.fromDraft(k('draft_history'), { abbrOf, bios }), ...gen.fromBios(masterPlayers ? masterPlayers.filter(p => p.person_id) : bioRows)];
+  if (GDIR === MERGED) for (const y of seasonsOf('reg')) if (y !== current) fromK.push(...gen.fromTeamBox(read(`games-${y}-reg.json`), y));
+  report.issues.push(`kaggle: ${fromK.length} questions (draft, bios${GDIR === MERGED ? ', box scores from the merged games' : ''})`);
   generated.push(...fromK);
 }
 
@@ -286,7 +277,7 @@ if (LOAD) {
   const teamRows = read('teams.json').map(t => ({ id: t.id, abbreviation: t.abbreviation, full_name: t.full_name, conference: t.conference || null, division: t.division || null }));
   await query(`insert into public.teams select * from jsonb_populate_recordset(null::public.teams, $J$${JSON.stringify(teamRows)}$J$::jsonb)
     on conflict (id) do update set abbreviation = excluded.abbreviation, full_name = excluded.full_name, conference = excluded.conference, division = excluded.division`);
-  const games = readdirSync(CACHE).filter(f => /^games-\d{4}-(post|reg)\.json$/.test(f)).flatMap(f => read(f)).map(g => ({
+  const games = readdirSync(GDIR).filter(f => /^games-\d{4}-(post|reg)\.json$/.test(f)).flatMap(f => read(f)).map(g => ({
     id: g.id, season: g.season, game_date: g.date.slice(0, 10), postseason: g.postseason, status: g.status, period: g.period, postponed: !!g.postponed,
     home_team_id: g.home_team.id, visitor_team_id: g.visitor_team.id, home_score: g.home_team_score || 0, visitor_score: g.visitor_team_score || 0 }));
   const GC = ['id', 'season', 'game_date', 'postseason', 'status', 'period', 'postponed', 'home_team_id', 'visitor_team_id', 'home_score', 'visitor_score'];
@@ -296,4 +287,8 @@ if (LOAD) {
     process.stdout.write(`\rgames ${Math.min(i + 3000, games.length)} / ${games.length}`);
   }
   console.log();
+  // Games that only Kaggle had get ids from 900000000000; drop any an earlier
+  // merge produced that this one matched to a balldontlie game instead.
+  const kOnly = games.filter(g => g.id >= 900000000000).map(g => g.id);
+  await query(`delete from public.games where id >= 900000000000${kOnly.length ? ` and not (id = any(array[${kOnly.join(',')}]::bigint[]))` : ''}`);
 }

@@ -30,11 +30,13 @@ function pick(pool, n, rnd, not = []) {
   while (out.length < n && a.length) out.push(...a.splice(Math.floor(rnd() * a.length), 1));
   return out;
 }
-const final = g => g.status === 'Final' && g.home_team_score > 0 && g.visitor_team_score > 0;
+// A tie can't be a final NBA score (some sources store an overtime game at
+// its end-of-regulation score), so a tied "final" counts as unscored.
+const final = g => g.status === 'Final' && g.home_team_score > 0 && g.visitor_team_score > 0 && g.home_team_score !== g.visitor_team_score;
 // Games the source marks as played but with no score (common before the
 // 1970s). Any of these in a season means its series and standings can't be
 // trusted, so nothing is generated from that season's games.
-export const gapsIn = games => games.filter(g => g.status === 'Final' && !g.postponed && !(g.home_team_score > 0 && g.visitor_team_score > 0)).length;
+export const gapsIn = games => games.filter(g => g.status === 'Final' && !g.postponed && !final(g)).length;
 const scoreLine = (a, b) => `${Math.max(a, b)}–${Math.min(a, b)}`;
 function nearbyScores(w, l, rnd) {
   const out = new Set(), real = scoreLine(w, l);
@@ -138,8 +140,11 @@ export function fromTeamSeasons(regGames, postGames, season) {
       return { g, home, us, them, won: us > them, opp: teamNameIn(home ? g.visitor_team : g.home_team, season) }; });
     const opps = [...new Set(res.map(r => r.opp))];
     // home record
+    // Before the 1970s many games were played at neutral sites, which the
+    // sources list under one team as "home" (the 1963-64 Celtics show 40 home
+    // games; they had 30). Only ask when the home and road games balance.
     const hw = res.filter(r => r.home && r.won).length, hl = res.filter(r => r.home && !r.won).length;
-    tag('HOME-RECORD', { category: 'Team seasons', fact: `${hw}–${hl}`, wrongs: recordWrongs(hw, hl, rnd),
+    if (season >= 1971 && Math.abs(2 * (hw + hl) - res.length) <= 1) tag('HOME-RECORD', { category: 'Team seasons', fact: `${hw}–${hl}`, wrongs: recordWrongs(hw, hl, rnd),
       question: `What was the ${s} ${poss(name)} home record?`, explanation: `${hw}–${hl} at home, ${row.w}–${row.l} overall.`, difficulty: deep });
     // longest winning streak
     let run = 0, best = 0; for (const r of res) { run = r.won ? run + 1 : 0; best = Math.max(best, run); }
@@ -538,12 +543,15 @@ export function fromBios(rows) {
 // Team box scores (Kaggle game.csv), one season at a time: the league's best
 // three-point and passing teams, and each team's threes per game. `verified`
 // holds the teams whose win–loss in this file matches balldontlie exactly.
-export function fromTeamBox(games, season, { verified, abbrOf }) {
+// Works on the merged games (tools/merge.mjs): a team counts only if every
+// one of its games that season carries a box score.
+export function fromTeamBox(games, season) {
   const kps = [], s = seasonLabel(season), e = era(season), t = new Map();
-  for (const g of games) for (const side of ['home', 'away']) {
-    const id = g[`team_id_${side}`], abbr = abbrOf(id); if (!abbr || !verified.has(abbr)) continue;
+  for (const g of standingsGames(games, season)) for (const side of ['home', 'visitor']) {
+    const team = g[`${side}_team`]; if (!team || team.id > 30) continue;
+    const abbr = team.abbreviation.toLowerCase(), b = g.box && g.box[side];
     const r = t.get(abbr) || { abbr, gp: 0, fg3: 0, ast: 0, blank: 0 }; t.set(abbr, r);
-    r.gp++; if (g[`fg3m_${side}`] === '' || g[`ast_${side}`] === '') r.blank++; r.fg3 += +g[`fg3m_${side}`] || 0; r.ast += +g[`ast_${side}`] || 0;
+    r.gp++; if (!b || b.fg3m == null || b.ast == null) { r.blank++; continue; } r.fg3 += b.fg3m; r.ast += b.ast;
   }
   const rows = [...t.values()].filter(r => !r.blank && r.gp >= 40).map(r => ({ ...r, name: teamNameIn({ id: ABBR_ID[r.abbr.toUpperCase()] }, season), p3: r.fg3 / r.gp, pa: r.ast / r.gp }));
   if (rows.length < 20) return kps;           // most of the league must check out

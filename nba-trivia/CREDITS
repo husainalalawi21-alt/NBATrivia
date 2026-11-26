@@ -9,9 +9,11 @@ Images    None. The three photo areas (welcome, home team card, team hub) are em
           SLOT_IMAGES in app.js. No team or league logos are used; teams appear as three-letter text marks.
 Data      NBA facts are used for trivia reference only.
           - Games, teams and players: balldontlie (balldontlie.io), 1946-47 to the present.
-          - Draft history, player bios and team box scores: "NBA Database" by Wyatt Walsh,
+          - Missing and corrected game scores, played dates of postponed games, team box scores,
+            draft history and player bios: "NBA Database" by Wyatt Walsh,
             https://www.kaggle.com/datasets/wyattowalsh/basketball, licensed CC BY-SA 4.0
             (data from stats.nba.com). Questions built from it carry the same licence.
+          - The two are merged by tools/merge.mjs; tools/DATA.md lists what each one lacked.
           - Awards table and jersey numbers: hand-checked.
           Accounts, stats, leaderboards and head-to-head live in Supabase (supabase/migrations);
           guests and offline play fall back to the device. supabase-js 2.118.0 (MIT) is vendored in vendor/.
