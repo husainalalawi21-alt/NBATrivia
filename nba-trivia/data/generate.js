@@ -465,6 +465,110 @@ export function fromJerseys(table) {
 }
 function hash(t) { let h = 2166136261 >>> 0; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h; }
 
+// ── NBA Database on Kaggle (wyattowalsh/basketball, CC BY-SA 4.0) ─
+// Official draft history, player bios and team box scores from stats.nba.com
+// (the Kaggle copy runs to June 2023 and is missing some whole seasons, so
+// team box scores are only used where the season checks out — see build).
+const KAGGLE = 'NBA Database (Kaggle, CC BY-SA 4.0)';
+const NOTABLE_EXP = 10;   // "notable" = NBA 75 member or a 10+ season career
+
+// Draft: which team took whom, and at which pick. One question per pick:
+// player-side for notable players, team-side (that franchise's mode) otherwise.
+export function fromDraft(rows, { abbrOf, bios }) {
+  const kps = [], byYear = new Map();
+  for (const r of rows) { const y = +r.season, n = +r.overall_pick; if (!y || !n || y < 1960) continue; if (!byYear.has(y)) byYear.set(y, []); byYear.get(y).push({ ...r, y, n, team: `${r.team_city} ${r.team_name}`.trim() }); }
+  for (const [y, picks] of byYear) {
+    picks.sort((a, b) => a.n - b.n);
+    const near = (p, k, f) => picks.filter(q => q !== p && Math.abs(q.n - p.n) <= k).map(f);
+    const s = seasonLabel(y - 1), e = era(y);
+    for (const p of picks) {
+      const bio = bios.get(p.person_id), notable = !!bio && (bio.greatest_75_flag === 'Y' || +bio.season_exp >= NOTABLE_EXP);
+      const rnd = rng('dr' + p.person_id + y), abbr = abbrOf(p.team_id);
+      if (p.n >= 2 && p.n <= 14 && notable) {
+        const wrongs = pick(near(p, 6, q => q.team), 3, rnd, [p.team]);
+        if (wrongs.length === 3) kps.push({ knowledge_point_id: `KP-DRAFT-${y}-${p.person_id}-TEAM`, column: 'team', era: e, season: s, category: 'Draft', source: KAGGLE,
+          fact: p.team, wrongs, question: `Which team drafted ${p.player_name} in ${y}?`,
+          explanation: `The ${p.team} took him No. ${p.n} overall${p.organization ? ` out of ${p.organization}` : ''}.`,
+          difficulty: p.n <= 5 && y >= 2000 ? 'medium' : tierBy(y, [[2005, 'hard'], [1990, 'hardest'], [1975, 'hall_of_fame'], [0, 'goat']]), players: [p.player_name], teams: [p.team] });
+      } else if (p.n >= 2 && p.n <= 20 && y >= 1975 && abbr) {
+        const wrongs = pick(near(p, 4, q => q.player_name), 3, rnd, [p.player_name]);
+        if (wrongs.length === 3) kps.push({ knowledge_point_id: `KP-DRAFT-${y}-PICK-${p.n}`, column: 'player', era: e, season: s, category: 'Draft', source: KAGGLE,
+          fact: p.player_name, wrongs, question: `Who did the ${p.team} draft with the No. ${p.n} pick in ${y}?`,
+          explanation: `${p.player_name}${p.organization ? ` (${p.organization})` : ''}, No. ${p.n} overall.`,
+          difficulty: tierBy(y, [[2010, 'hard'], [1995, 'hardest'], [1980, 'hall_of_fame'], [0, 'goat']]), team_id: abbr, teams: [p.team], players: [p.player_name] });
+      }
+      if (notable && p.n >= 3) {
+        const opts = []; for (const d of [-4, -2, -1, 1, 2, 3, 5, 8]) if (p.n + d >= 1 && p.n + d !== p.n) opts.push('No. ' + (p.n + d));
+        kps.push({ knowledge_point_id: `KP-DRAFT-${y}-${p.person_id}-PICKNO`, column: 'value', era: e, season: s, category: 'Draft', source: KAGGLE,
+          fact: 'No. ' + p.n, wrongs: pick(opts, 3, rnd), question: `With which pick was ${p.player_name} selected in the ${y} draft?`,
+          explanation: `The ${p.team} took him No. ${p.n} overall${+p.round_number > 1 ? `, in round ${p.round_number}` : ''}.`,
+          difficulty: bio.greatest_75_flag === 'Y' ? 'hard' : tierBy(y, [[2005, 'hardest'], [0, 'hall_of_fame']]), players: [p.player_name] });
+      }
+    }
+  }
+  return kps;
+}
+
+// Player bios: the NBA 75th Anniversary Team, debut seasons, colleges and
+// home countries (the last two in exactly the wording fromPlayers uses, so the
+// bank keeps one copy if both sources have the same player).
+export function fromBios(rows) {
+  const kps = [];
+  const yr = r => parseInt(r.from_year, 10);
+  const notable = rows.filter(r => r.nba_flag !== 'N' && (r.greatest_75_flag === 'Y' || +r.season_exp >= NOTABLE_EXP) && yr(r));
+  const peers = rows.filter(r => r.greatest_75_flag !== 'Y' && +r.season_exp >= 12 && yr(r)).sort((a, b) => +b.season_exp - +a.season_exp);
+  for (const r of notable) {
+    const name = r.display_first_last, y = yr(r), rnd = rng('bio' + r.person_id);
+    if (r.greatest_75_flag === 'Y') {
+      const wrongs = pick(peers.filter(q => Math.abs(yr(q) - y) <= 6).slice(0, 14).map(q => q.display_first_last), 3, rnd, [name]);
+      if (wrongs.length === 3) kps.push({ knowledge_point_id: `KP-BIO-${r.person_id}-NBA75`, column: 'player', era: era(y), season: null, category: 'Legends', source: KAGGLE,
+        fact: name, wrongs, question: `Which of these players made the NBA 75th Anniversary Team: ${[name, ...wrongs].sort().join(', ').replace(/, ([^,]*)$/, ' or $1')}?`,
+        explanation: `${name} was one of the 76 players honoured in 2021.`, difficulty: y >= 1990 ? 'medium' : y >= 1970 ? 'hard' : 'hardest', players: [name] });
+    }
+    if (r.greatest_75_flag === 'Y' || +r.season_exp >= 14) {
+      const opts = [-3, -2, -1, 1, 2, 3].map(d => seasonLabel(y + d));
+      kps.push({ knowledge_point_id: `KP-BIO-${r.person_id}-DEBUT`, column: 'value', era: era(y), season: seasonLabel(y), category: 'Players', source: KAGGLE,
+        fact: seasonLabel(y), wrongs: pick(opts, 3, rnd), question: `In which season did ${name} make his NBA debut?`,
+        explanation: `${name} broke in in ${seasonLabel(y)} and played ${r.season_exp} seasons.`, difficulty: tierBy(y, [[2000, 'hard'], [1980, 'hardest'], [0, 'hall_of_fame']]), players: [name] });
+    }
+  }
+  return kps;
+}
+
+// Team box scores (Kaggle game.csv), one season at a time: the league's best
+// three-point and passing teams, and each team's threes per game. `verified`
+// holds the teams whose win–loss in this file matches balldontlie exactly.
+export function fromTeamBox(games, season, { verified, abbrOf }) {
+  const kps = [], s = seasonLabel(season), e = era(season), t = new Map();
+  for (const g of games) for (const side of ['home', 'away']) {
+    const id = g[`team_id_${side}`], abbr = abbrOf(id); if (!abbr || !verified.has(abbr)) continue;
+    const r = t.get(abbr) || { abbr, gp: 0, fg3: 0, ast: 0, blank: 0 }; t.set(abbr, r);
+    r.gp++; if (g[`fg3m_${side}`] === '' || g[`ast_${side}`] === '') r.blank++; r.fg3 += +g[`fg3m_${side}`] || 0; r.ast += +g[`ast_${side}`] || 0;
+  }
+  const rows = [...t.values()].filter(r => !r.blank && r.gp >= 40).map(r => ({ ...r, name: teamNameIn({ id: ABBR_ID[r.abbr.toUpperCase()] }, season), p3: r.fg3 / r.gp, pa: r.ast / r.gp }));
+  if (rows.length < 20) return kps;           // most of the league must check out
+  const lead = (key, label, cat, tiers) => {
+    const sorted = [...rows].sort((a, b) => b[key] - a[key]);
+    if (sorted[0][key].toFixed(1) === sorted[1][key].toFixed(1)) return;
+    kps.push({ knowledge_point_id: `KP-${s}-${label}-LEADER`, column: 'team', era: e, season: s, category: cat, source: KAGGLE,
+      fact: sorted[0].name, wrongs: sorted.slice(1, 4).map(r => r.name),
+      question: label === 'THREES' ? `Which team made the most 3-pointers per game in ${s}?` : `Which team averaged the most assists in ${s}?`,
+      explanation: `The ${sorted[0].name}: ${sorted[0][key].toFixed(1)} a game.`, difficulty: tierBy(season, tiers) });
+  };
+  if (season >= 1979) lead('p3', 'THREES', 'Statistics', [[2015, 'hard'], [2000, 'hardest'], [0, 'hall_of_fame']]);
+  lead('pa', 'ASSISTS', 'Statistics', [[2015, 'hardest'], [0, 'hall_of_fame']]);
+  if (season >= 1995) for (const r of rows) {
+    const v = r.p3.toFixed(1), rnd = rng('3p' + s + r.abbr), skip = Math.floor(rnd() * 4);
+    const wrongs = [...new Set([-2.6, -1.2, 1.4, 2.9].map(d => (+v + d).toFixed(1)).filter((x, i) => i !== skip && x !== v && +x > 0))].slice(0, 3);
+    if (wrongs.length < 3) continue;
+    kps.push({ knowledge_point_id: `KP-${s}-${r.abbr.toUpperCase()}-THREES-PG`, column: 'value', era: e, season: s, category: 'Team seasons', source: KAGGLE,
+      fact: v, wrongs,
+      question: `How many 3-pointers per game did the ${s} ${r.name} make?`, explanation: `${v} a game over ${r.gp} games.`,
+      difficulty: tierBy(season, [[2015, 'hall_of_fame'], [0, 'goat']]), team_id: r.abbr, teams: [r.name] });
+  }
+  return kps;
+}
+
 // Compare the hand-checked champions list with what the game data says.
 export function crossCheck(seasonsTable, finalsBySeason) {
   const issues = [];

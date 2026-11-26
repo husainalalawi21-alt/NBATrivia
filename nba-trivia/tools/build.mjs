@@ -64,6 +64,49 @@ for (const y of seasonsOf('reg')) {
 if (existsSync(join(CACHE, 'players.json'))) generated.push(...gen.fromPlayers(read('players.json')));
 generated.push(...gen.fromJerseys(jerseys.JERSEYS));
 
+// ── NBA Database on Kaggle (tools/.cache/kaggle; fetch with tools/fetch-kaggle.mjs) ──
+// Draft history, player bios, team box scores. A team's box-score season is
+// used only when its win–loss in this file matches balldontlie exactly (the
+// Kaggle copy is missing some whole seasons and ends in June 2023).
+const KDIR = join(CACHE, 'kaggle');
+function parseCSV(text) {
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+    else if (c === '"') q = true; else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  const [head, ...body] = rows; return body.filter(r => r.length === head.length).map(r => Object.fromEntries(head.map((h, i) => [h, r[i]])));
+}
+if (existsSync(join(KDIR, 'draft_history.csv'))) {
+  const k = name => parseCSV(readFileSync(join(KDIR, name + '.csv'), 'utf8'));
+  const teamRows = k('team'), bioRows = k('common_player_info');
+  const abbrById = new Map(teamRows.map(t => [t.id, t.abbreviation.toLowerCase()]));
+  const abbrOf = id => abbrById.get(String(id)) || null;
+  const bios = new Map(bioRows.map(r => [r.person_id, r]));
+  const fromK = [...gen.fromDraft(k('draft_history'), { abbrOf, bios }), ...gen.fromBios(bioRows)];
+  const box = k('game').filter(g => g.season_id && g.season_id[0] === '2'), bySeason = new Map();
+  for (const g of box) { const y = +g.season_id.slice(1); if (!bySeason.has(y)) bySeason.set(y, []); bySeason.get(y).push(g); }
+  let checked = 0, matched = 0;
+  for (const [y, rows] of bySeason) {
+    if (!existsSync(join(CACHE, `games-${y}-reg.json`))) continue;
+    const bdl = new Map(gen.standings(read(`games-${y}-reg.json`), y).filter(r => r.team.id <= 30).map(r => [r.team.abbreviation.toLowerCase(), `${r.w}-${r.l}`]));
+    const wl = new Map();
+    for (const g of rows) for (const [side, other] of [['home', 'away'], ['away', 'home']]) {
+      const a = abbrOf(g[`team_id_${side}`]); if (!a) continue;
+      const rec = wl.get(a) || [0, 0]; if (+g[`pts_${side}`] > +g[`pts_${other}`]) rec[0]++; else rec[1]++; wl.set(a, rec);
+    }
+    const verified = new Set([...wl].filter(([a, [w, l]]) => bdl.get(a) === `${w}-${l}`).map(([a]) => a));
+    checked += wl.size; matched += verified.size;
+    fromK.push(...gen.fromTeamBox(rows, y, { verified, abbrOf }));
+  }
+  report.issues.push(`kaggle: ${fromK.length} questions; box-score team-seasons matching balldontlie ${matched}/${checked}`);
+  generated.push(...fromK);
+}
+
 // ── 2. bring the team profiles up to date with real Finals results ─
 // Titles per franchise = the hand-checked champions table, plus any later
 // season whose Finals the game data shows complete.
@@ -153,7 +196,8 @@ const rows = bank.map(r => {
     season: r.season || null, era: eraOf(r.season) || (r.subcategory && /^\d{4}s$/.test(r.subcategory) ? r.subcategory : null),
     players: r.players || [], teams: g?.teams || r.teams || [],
     payload: { clues: r.clues || null, person: r.person || null, source_ref: r.source_ref || null },
-    source_name: g ? 'balldontlie' : r.source_name, source_url: g ? 'https://www.balldontlie.io' : (r.source_url || null),
+    source_name: g ? (g.source || 'balldontlie') : r.source_name,
+    source_url: g ? (g.source ? 'https://www.kaggle.com/datasets/wyattowalsh/basketball' : 'https://www.balldontlie.io') : (r.source_url || null),
     source_date: g ? today : r.source_date, quality_score: r.quality_score,
     team_id: g?.team_id || r.team_id || null, valid_from: g?.valid_from || r.valid_from || null, valid_until: validUntil,
     subcategory: r.subcategory || null
