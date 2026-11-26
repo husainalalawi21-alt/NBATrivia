@@ -93,17 +93,21 @@ const toRecord = q => ({
 // basics and jersey numbers); a team's deep season / game / playoff questions
 // only come for the player's own team. Admins load everything.
 const DEEP = '("Team seasons","Team games","Team playoffs")';
-export async function loadQuestions(teamId = null, everything = false) {
+export async function loadQuestions(teamId = null, everything = false, onFirstPage = null) {
   if (!sb) return null;
-  const out = [];
-  for (let from = 0; ; from += 1000) {
-    let q = sb.from('questions').select('*').order('question_id').range(from, from + 999);
+  // The first page also returns the total, so the rest download in parallel.
+  const page = (from, count) => {
+    let q = sb.from('questions').select('*', count ? { count: 'exact' } : undefined).order('question_id').range(from, from + 999);
     if (!everything) q = q.or(`team_id.is.null,category.not.in.${DEEP}${teamId ? `,team_id.eq.${teamId}` : ''}`);
-    const { data, error } = await q;
-    if (error) return out.length ? out.map(toRecord) : null;
-    out.push(...data);
-    if (data.length < 1000) break;
-  }
+    return q;
+  };
+  const first = await page(0, true);
+  if (first.error) return null;
+  if (onFirstPage) onFirstPage(first.data.map(toRecord));
+  const total = first.count || first.data.length, rest = [];
+  for (let from = 1000; from < total; from += 1000) rest.push(page(from));
+  const out = [...first.data];
+  for (const { data, error } of await Promise.all(rest)) { if (error) break; out.push(...data); }
   return out.map(toRecord);
 }
 export async function setQuestionStatus(id, status) {

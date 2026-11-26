@@ -1,12 +1,13 @@
 NBA Trivia (20-0) — sources & licences
 
-Design    Built from the "20-0 v2" screens of the "Mobile app design decisions" design project, on the Modernist
-          design system retuned dark with an orange accent (modernist.css + app.css).
-Code      index.html (screen markup), app.js (screen logic), dc.js (renderer). Question bank and engine in data/
-          (engine.js, questions.js, mystery.js, teams.js, facts.js), carried over from the design project unchanged.
+Design    Built from the "20-0 v2" screens of the "Mobile app design decisions" design project, refreshed in 2026:
+          dark rounded cards, a colour per difficulty level, team colours on the three-letter marks, a four-tab
+          menu (sidebar on desktop). Styles in app.css; modernist.css supplies the base reset and form controls.
+Code      index.html (screen markup + icon set), app.js (screen logic), dc.js (renderer). Question bank and engine
+          in data/ (engine.js, questions.js, mystery.js, teams.js, facts.js).
 Fonts     Archivo (The Archivo Project Authors / Omnibus-Type), SIL Open Font License 1.1; files and licence in fonts/.
-Images    None. The three photo areas (welcome, home team card, team hub) are empty until images are set in
-          SLOT_IMAGES in app.js. No team or league logos are used; teams appear as three-letter text marks.
+Images    None. Icons are drawn inline (index.html). No team or league logos are used; teams appear as three-letter
+          text marks in the team's colour.
 Data      NBA facts are used for trivia reference only.
           - Games, teams and players: balldontlie (balldontlie.io), 1946-47 to the present.
           - Missing and corrected game scores, played dates of postponed games, team box scores,
