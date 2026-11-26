@@ -158,6 +158,7 @@
   <sc-if value="{{ atPlay }}" hint-placeholder-val="{{ false }}">
     <div style="display:flex;flex-direction:column;flex:1;animation:fade .25s ease-out">
       <h2 style="font-size:40px;letter-spacing:-0.04em;line-height:.95;margin:0;padding:var(--space-6) var(--space-4) var(--space-4)">PICK YOUR<br>BATTLE</h2>
+      <sc-if value="{{ poolExhausted }}"><div style="margin:0 var(--space-4) var(--space-4);border-left:3px solid var(--color-accent);padding:var(--space-2) var(--space-3);font-size:14px;color:var(--color-accent-300);text-wrap:pretty">{{ exhaustedMsg }}</div></sc-if>
       <button onClick="{{ startStreak }}" style="all:unset;cursor:pointer;box-sizing:border-box;display:block;width:100%;background:var(--color-accent);color:#120800;padding:var(--space-5, 20px) var(--space-4)">
         <div style="display:flex;align-items:center;gap:8px;font-family:var(--font-heading);font-weight:800;font-size:11px;letter-spacing:.16em;text-transform:uppercase"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>Main event</div>
         <div style="font-family:var(--font-heading);font-weight:800;font-size:46px;letter-spacing:-0.05em;line-height:1;margin-top:6px">STREAK</div>

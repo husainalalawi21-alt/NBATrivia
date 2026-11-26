@@ -117,17 +117,37 @@ const rows = bank.map(r => {
     wrong_answers: (r.answers || []).filter(a => a !== r.correct_answer),
     explanation: r.explanation || null, category: r.category || null,
     difficulty: engine.TIER_ORDER.includes(r.difficulty) ? r.difficulty : (TIER[r.difficulty] || 'medium'),
-    question_type: r.question_type, pool: r.pool, game_modes_allowed: r.game_modes_allowed,
+    // Generated franchise questions belong to that team's "Your Team" pool only.
+    question_type: r.question_type, pool: g?.team_id ? 'team' : r.pool, game_modes_allowed: g?.team_id ? ['team'] : r.game_modes_allowed,
     status, active, temporal,
     season: r.season || null, era: eraOf(r.season) || (r.subcategory && /^\d{4}s$/.test(r.subcategory) ? r.subcategory : null),
     players: r.players || [], teams: g?.teams || r.teams || [],
     payload: { clues: r.clues || null, person: r.person || null, source_ref: r.source_ref || null },
     source_name: g ? 'balldontlie' : r.source_name, source_url: g ? 'https://www.balldontlie.io' : (r.source_url || null),
     source_date: g ? today : r.source_date, quality_score: r.quality_score,
-    team_id: r.team_id || null, valid_from: g?.valid_from || r.valid_from || null, valid_until: validUntil,
+    team_id: g?.team_id || r.team_id || null, valid_from: g?.valid_from || r.valid_from || null, valid_until: validUntil,
     subcategory: r.subcategory || null
   };
 });
+// ── one question per fact ────────────────────────────────────────
+// Two wordings of the same fact ("Who holds the record for most points in a
+// single game?" / "Who holds the NBA record for …") would let a player meet
+// the same question twice. Same answer + same season + wording that differs
+// only by filler words = the same fact: the first wording stays, the others
+// are retired for everyone.
+const STOPW = new Set(['the','a','an','of','in','to','for','and','or','is','was','were','did','does','do','who','which','what','has','have','had','nba','player','team','season','regular','named','won','win','wins','this','that','his','with','by','on','at','as','from','be','are','he','it']);
+const FILLER = new Set(['holds','hold','record','records','league','head','ever','history']);
+const words = t => new Set(engine.normalizeText(t).split(' ').filter(w => w.length > 2 && !STOPW.has(w) && !/^\d+$/.test(w)));
+const factGroups = new Map();
+for (const r of rows) {
+  if (r.status === 'outdated') continue;
+  const key = engine.normalizeText(r.correct_answer) + '|' + (r.season || '');
+  const group = factGroups.get(key) || []; factGroups.set(key, group);
+  const w = words(r.question_text);
+  const twin = group.find(g => { const diff = [...w].filter(x => !g.w.has(x)).concat([...g.w].filter(x => !w.has(x))); return w.size && g.w.size && diff.every(x => FILLER.has(x)); });
+  if (twin) { r.status = 'disabled'; r.active = false; r.payload = { ...r.payload, duplicate_of: twin.r.question_id }; report.issues.push(`duplicate retired: "${r.question_text}" = "${twin.r.question_text}"`); }
+  else group.push({ r, w });
+}
 writeFileSync(join(CACHE, 'bank.json'), JSON.stringify(rows));
 
 // ── report ───────────────────────────────────────────────────────
@@ -152,8 +172,8 @@ if (LOAD) {
   const sql = json => `insert into public.questions (${COLS.join(', ')})
     select ${COLS.join(', ')} from jsonb_populate_recordset(null::public.questions, $J$${json}$J$::jsonb)
     on conflict (question_id) do update set ${set}, updated_at = now(),
-      status = case when excluded.status = 'outdated' then 'outdated' else questions.status end,
-      active = case when excluded.status = 'outdated' then false else questions.active end`;
+      status = case when excluded.status = 'outdated' or excluded.payload ? 'duplicate_of' then excluded.status else questions.status end,
+      active = case when excluded.status = 'outdated' or excluded.payload ? 'duplicate_of' then false else questions.active end`;
   for (let i = 0; i < rows.length; i += 400) {
     const chunk = JSON.stringify(rows.slice(i, i + 400));
     if (chunk.includes('$J$')) throw new Error('payload contains the SQL quote tag');

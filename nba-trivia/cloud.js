@@ -118,12 +118,18 @@ export async function loadHistory(uid) {
   }
   return out;
 }
+// Every answered question goes on the player's record, so it is never
+// served to them again on any device — even from a game they quit.
+export async function recordHistory(uid, mode, log) {
+  if (!sb || !uid) return;
+  const rows = (log || []).filter(x => x.qid && !x.saved).map(x => ({ user_id: uid, question_id: x.qid, mode, correct: !!x.ok, ms: x.ms == null ? null : Math.round(x.ms) }));
+  if (rows.length) await sb.from('question_history').insert(rows);
+}
 export async function recordRun(uid, run) {
   if (!sb || !uid) return;
   await sb.from('runs').insert({ user_id: uid, mode: run.challenge ? 'h2h' : run.mode, team_id: run.teamId || null,
     score: run.score || 0, best: run.best || 0, answers: run.answers || 0, correct: run.correct || 0 });
-  const rows = run.log.filter(x => x.qid).map(x => ({ user_id: uid, question_id: x.qid, mode: run.mode, correct: !!x.ok, ms: x.ms == null ? null : Math.round(x.ms) }));
-  if (rows.length) await sb.from('question_history').insert(rows);
+  await recordHistory(uid, run.mode, run.log);
 }
 
 // ── leaderboards ───────────────────────────────────────────────────

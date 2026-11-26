@@ -189,6 +189,18 @@ export function fromRegularSeason(games, season, { inProgress = false, asOf = nu
       question: `Which team had the worst regular-season record in ${s}?`,
       explanation: `The ${worst.name} went ${worst.w}–${worst.l}.`, difficulty: byEra(season, 'hard', 'expert', 'expert') });
   }
+  // "Your Team" mode: every current franchise's win total, season by season
+  // (the league-best team's total is already asked above).
+  table.forEach((r, i) => {
+    if (r.team.id > 30 || (i === 0 && best.pct !== table[1].pct)) return;
+    const rank = i + 1, ord = rank === 1 ? '1st' : rank === 2 ? '2nd' : rank === 3 ? '3rd' : rank + 'th';
+    kps.push({ knowledge_point_id: `KP-${s}-${r.team.abbreviation}-WINS`, column: 'value', era: e, season: s, category: 'Team seasons',
+      fact: String(r.w), wrongs: nearbyNumbers(r.w, rng('w' + s + r.team.id), 0),
+      question: `How many regular-season games did the ${s} ${r.name} win?`,
+      explanation: `They went ${r.w}–${r.l}, ${ord} in the league.`,
+      difficulty: season >= 2015 ? 'medium' : season >= 1995 ? 'hard' : 'expert',
+      team_id: r.team.abbreviation.toLowerCase(), teams: [r.name] });
+  });
   return kps;
 }
 

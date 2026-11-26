@@ -191,11 +191,16 @@ export class App extends Logic {
       time: this.BUZZ_START, qStart: Date.now(), started: Date.now(), fastest: null,
       clueIdx: 0, phase: 'idle', guess: '', wrongOpts: [], wrongCount: 0 };
     if (mode === 'daily') run.qs = eng.buildDaily(dateKey, session, 10);
-    else if (opts.challenge) run.qs = (opts.challenge.questionIds || []).map(id => eng.byId(id)).filter(Boolean).map(rec => eng.serve(rec, session.rnd));
+    // A challenge plays the challenger's list, minus anything this player has already seen.
+    else if (opts.challenge) run.qs = (opts.challenge.questionIds || []).map(id => eng.byId(id)).filter(Boolean).filter(rec => !eng.inExclusion(rec.question_id)).map(rec => eng.serve(rec, session.rnd));
     else if (mode === 'q20') run.qs = eng.buildSet(session, 20, eng.Q20_SPREAD);
     else if (mode === 'wai') run.qs = eng.buildSet(session, 20, eng.TIER_ORDER);
     run.q = this.nextQ(run);
-    if (!run.q) return this.setState({ screen: 'play', poolExhausted: true });
+    // Nothing unseen left: say so — questions are never repeated.
+    if (!run.q) return this.setState({ screen: 'play', poolExhausted: true, exhaustedMsg:
+      mode === 'daily' ? "You've played today's Daily Challenge. A new set unlocks tomorrow."
+      : opts.challenge ? "You've already seen every question in this battle — challenge someone to a new one."
+      : "You've answered every question in this mode. New ones are added every week — try another mode meanwhile." });
     this.setState({ screen: 'game', run, qVisible: true, gain: null, milestone: null, newBadges: [], poolExhausted: false });
   }
   nextQ(run) {
@@ -358,6 +363,7 @@ export class App extends Logic {
   }
   // Screens that show live data fetch it when you open them.
   onEnter(screen) {
+    if (screen !== 'play' && this.state.poolExhausted) this.setState({ poolExhausted: false });
     if (screen === 'board') this.refreshBoard();
     if (screen === 'h2h' || screen === 'profile') this.refreshChallenges();
     if (screen === 'home') this.refreshRanks();
@@ -619,6 +625,7 @@ export class App extends Logic {
       hasRecentBadges: !!(p.recentBadges && p.recentBadges.length), recentBadges: p.recentBadges || [],
 
       // play
+      poolExhausted: !!s.poolExhausted, exhaustedMsg: s.exhaustedMsg || '',
       playModes: [
         { name: 'Buzz', desc: '24 seconds. Fast answers buy time.', pick: () => this.startRun('buzz'), locked: false, hasStat: !!rec.buzz, stat: rec.buzz ? this.fmt(rec.buzz.score) : '' },
         { name: '20 Questions', desc: 'Twenty questions, one run, lifelines.', pick: () => this.startRun('q20'), locked: false, hasStat: !!rec.q20, stat: rec.q20 ? this.fmt(rec.q20.score) : '' },
@@ -629,7 +636,7 @@ export class App extends Logic {
 
       // game
       gameShellStyle: `position:relative;display:flex;flex-direction:column;flex:1;min-height:0;${urgent ? 'box-shadow:inset 0 0 0 2px var(--color-accent)' : ''}`,
-      quitGame: () => this.setState({ screen: 'home', run: null }),
+      quitGame: () => { const uid = s.user && s.user.id; if (uid && a && r) cloud.recordHistory(uid, r.mode, r.log); this.setState({ screen: 'home', run: null }); },
       gameProgress: r ? (r.qs ? `${String(r.idx + 1).padStart(2, '0')} / ${r.qs.length}` : modeName(r.mode).toUpperCase()) : '',
       gameHasClock: !!(r && r.mode === 'buzz'),
       clock: r ? (liveMs / 1000).toFixed(1) : '',

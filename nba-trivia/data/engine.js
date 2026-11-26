@@ -40,7 +40,8 @@ const Store = {
   write(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 };
 
-export const defaultConfig = () => ({ exclusionDays: 180, autoPublish: false, semanticThreshold: 0.82, dailyNeverRepeat: true });
+// exclusionDays 0 = a player never sees the same question twice, in any mode or session.
+export const defaultConfig = () => ({ exclusionDays: 0, autoPublish: false, semanticThreshold: 0.82, dailyNeverRepeat: true });
 export const getConfig = () => Object.assign(defaultConfig(), Store.read(CKEY, {}));
 export const setConfig = patch => { const c = Object.assign(getConfig(), patch); Store.write(CKEY, c); return c; };
 
@@ -326,8 +327,8 @@ export function recordAnswer(id, { correct, ms, mode }) {
   const rec = byId(id); if (rec) { rec.usage_count = s.shown; rec.last_used_at = s.last_used_at; }
 }
 export const getAnalytics = () => Store.read(AKEY, {});
-export function statsFor(id) {
-  const s = getAnalytics()[id];
+export function statsFor(id) { return statsFrom(getAnalytics()[id]); }
+function statsFrom(s) {
   if (!s) return { shown: 0, correctPct: null, avgMs: null, modes: [], last_used_at: null };
   return { shown: s.shown, correctPct: s.answered ? Math.round(s.correct / s.answered * 100) : null, avgMs: s.answered ? Math.round(s.totalMs / s.answered) : null, modes: s.modes, last_used_at: s.last_used_at };
 }
@@ -407,7 +408,7 @@ export function eligible({ mode, teamId = null, band = null, category = null, se
 // fit to the user's live accuracy, subject spread, and team affinity.
 function weight(r, ctx) {
   let w = 1;
-  const st = statsFor(r.question_id);
+  const st = ctx.statsOf(r.question_id);
   w *= st.last_used_at ? 0.55 : 1.35;                       // freshness
   w *= 1 / (1 + Math.min(6, (r.usage_count || 0) * 0.12));  // global rarity
   if (ctx.accuracy != null) {
@@ -422,6 +423,9 @@ function weight(r, ctx) {
   return Math.max(0.01, w);
 }
 function weightedPick(pool, ctx, rnd) {
+  // Read the player's answer log once per pick, not once per candidate.
+  const all = getAnalytics();
+  ctx = { ...ctx, statsOf: id => statsFrom(all[id]) };
   const ws = pool.map(r => weight(r, ctx));
   const total = ws.reduce((a, b) => a + b, 0);
   let x = rnd() * total;
@@ -450,8 +454,9 @@ export function serve(rec, rnd = Math.random) {
 }
 export function shuffle(arr, rnd = Math.random) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
-// One question. Falls back by widening the band, then relaxing history only
-// as a last resort (and reports it) rather than silently repeating.
+// One question. Falls back by widening the difficulty band — never by
+// re-serving something the player has seen. Out of unseen questions → null,
+// and the game ends honestly ("you've seen every question here").
 export function nextQuestion(session, opts = {}) {
   const rnd = session.rnd || Math.random;
   const band = opts.band || bandFor(session.mode, opts.progress || 0);
@@ -464,7 +469,6 @@ export function nextQuestion(session, opts = {}) {
     top++; pool = eligible({ ...common, band: TIER_ORDER.slice(TIER_ORDER.indexOf(band[0]), top + 1) }); relaxed = 'band';
   }
   if (!pool.length) { pool = eligible(common); relaxed = 'band'; }
-  if (!pool.length) { pool = eligible({ ...common, ignoreHistory: true }); relaxed = 'history'; }
   if (!pool.length) return null;
   const rec = weightedPick(pool, { accuracy: session.accuracy, subjectCount: session.subjectCount, categoryCount: session.categoryCount, favoriteTeam: opts.favoriteTeam }, rnd);
   session.used.add(rec.question_id);
@@ -494,7 +498,9 @@ export function buildDaily(dateKey, session, count = 10) {
   const cfg = getConfig();
   const ledger = dailyLedger(), everUsed = new Set(cfg.dailyNeverRepeat ? ledger.used : []);
   const today = ledger.days[dateKey];
-  if (today) { const recs = today.map(byId).filter(Boolean); if (recs.length) { recs.forEach(r => session.used.add(r.question_id)); return recs.map(r => serve(r, rnd)); } }
+  // Today's set is fixed; a replay only serves what this player hasn't seen
+  // (after one full play, nothing — the Daily is once a day).
+  if (today) { const recs = today.map(byId).filter(Boolean); if (recs.length) { const fresh = recs.filter(r => !inExclusion(r.question_id, session.history)); fresh.forEach(r => session.used.add(r.question_id)); return fresh.map(r => serve(r, rnd)); } }
   const canonical = eligible({ mode: 'daily', sessionUsed: new Set(), ignoreHistory: true }).filter(r => !everUsed.has(r.question_id));
   const picked = shuffle(canonical, rnd).slice(0, 120);
   const out = [];
