@@ -350,6 +350,7 @@ export class App extends Logic {
     const done = { ...r, acc, isRecord, prevBest: prevMetric, survived: Math.round((Date.now() - (r.started || r.qStart)) / 1000) };
     const uid = this.state.user && this.state.user.id;
     if (uid && this.state.account) cloud.recordRun(uid, done).then(() => this.refreshRanks());
+    else if (!r.challenge) cloud.logGuestRun(done).catch(() => {});
     if (r.challenge) { this.setState({ run: done }); return this.completeChallenge(done); }
     if (r.mode === 'h2h') { this.setState({ run: done }); return this.createChallenge(done); }
     this.setState({ screen: 'result', run: done, newBadges, displayScore: 0, copied: false });

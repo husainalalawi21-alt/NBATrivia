@@ -142,6 +142,17 @@ export async function recordRun(uid, run) {
   await recordHistory(uid, run.mode, run.log);
 }
 
+// A finished guest game, counted anonymously: the mode and how it went,
+// nothing about who played (no account, no device id). Guests can add rows
+// but not read them (migration 0007).
+const GUEST_MODES = ['streak', 'team', 'buzz', 'q20', 'wai', 'daily'];
+export async function logGuestRun(run) {
+  if (!sb || !run || !GUEST_MODES.includes(run.mode)) return;
+  const answers = Math.min(1000, Math.max(0, run.answers | 0)), correct = Math.min(answers, Math.max(0, run.correct | 0));
+  await sb.from('guest_runs').insert({ mode: run.mode, team_id: run.mode === 'team' && /^[a-z]{3}$/.test(run.teamId || '') ? run.teamId : null,
+    answers, correct, best: Math.min(answers, Math.max(0, run.best | 0)), score: Math.min(1000000, Math.max(0, run.score | 0)) });
+}
+
 // ── leaderboards ───────────────────────────────────────────────────
 export async function leaderboard(period = 'today', team = null, limit = 50) {
   if (!sb) return [];
