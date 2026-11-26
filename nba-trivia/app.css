@@ -285,7 +285,6 @@ button.card:active { transform: scale(.985); }
 .q-text { margin: 0; font: 800 clamp(22px, 3.7dvh, 32px)/1.14 var(--display); font-stretch: 104%; letter-spacing: -.02em; text-wrap: pretty; }
 .q-text[data-long] { font-size: clamp(19px, 3dvh, 26px); }
 .answers { flex: none; display: grid; gap: clamp(7px, 1.1dvh, 10px); }
-.answers-2 { grid-template-columns: 1fr 1fr; }
 .ans { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 12px; min-height: clamp(50px, 7.4dvh, 62px); padding: 8px 14px 8px 10px;
   border-radius: var(--r-md); background: var(--card-2); border: 1.5px solid var(--line-2); font: 700 clamp(15px, 2.2dvh, 17px)/1.2 var(--font-body);
   transition: background .15s, border-color .15s, opacity .15s, transform .1s; }
@@ -304,8 +303,6 @@ button.card:active { transform: scale(.985); }
 .ans[data-state="gone"] { opacity: .2; text-decoration: line-through; }
 .stack { display: grid; text-align: left; line-height: 1.2; }
 .stack small { font-size: 12px; font-weight: 600; color: var(--muted); }
-.guess-row { display: flex; gap: 10px; }
-.guess-row .inp { flex: 1; }
 .feedback { flex: none; display: flex; align-items: center; gap: 12px; margin-top: 2px; padding: 10px 12px;
   border-radius: var(--r-md); animation: rise .2s ease-out; background: rgba(255, 84, 104, .12); border: 1px solid rgba(255, 84, 104, .3); }
 .feedback[data-ok] { background: rgba(47, 212, 122, .12); border-color: rgba(47, 212, 122, .32); }
@@ -602,3 +599,18 @@ button.brow:hover { border-color: var(--line-2); }
   .team-grid { grid-template-columns: repeat(3, 1fr); }
   .badges { grid-template-columns: repeat(5, 1fr); }
 }
+
+/* ── room for anything floating over the bottom (e.g. a host badge; set by index.html) ── */
+.shell { padding-bottom: var(--overlay-bottom, 0px); }
+/* ── Who Am I?: clues from the top, the guess inside the card, options two by two ── */
+.q-card[data-clues] .q-main { justify-content: flex-start; }
+.clue-more { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--dim); padding-left: 34px; }
+.clue-more .ic { width: 15px; height: 15px; }
+.guess-inline { display: flex; gap: 10px; margin-top: 6px; }
+.guess-inline .inp { flex: 1; min-height: 52px; }
+.guess-inline .btn-main { min-height: 52px; padding: 0 22px; }
+.next-clue { flex: none; justify-content: flex-start; gap: 12px; padding: 0 16px; }
+.next-clue > .ic { color: var(--t-hard); }
+.answers[data-two] { grid-template-columns: 1fr 1fr; }
+.answers[data-two] .ans { min-height: 50px; padding: 8px 10px; gap: 9px; font-size: 14.5px; }
+.answers[data-two] .ans .key { width: 26px; height: 26px; border-radius: 8px; font-size: 12px; }

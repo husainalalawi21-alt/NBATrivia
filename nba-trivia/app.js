@@ -295,7 +295,7 @@ export class App extends Logic {
   // Who Am I?
   nextClue() { const r = this.state.run; if (r.phase !== 'idle' || r.clueIdx + 1 >= r.q.clues.length) return; this.beep(540, .05, 'sine', .04); this.setState({ run: { ...r, clueIdx: r.clueIdx + 1, locked: false } }); }
   waiGuess(text) {
-    const r = this.state.run, mys = this.state.mys; if (r.phase !== 'guess') return;
+    const r = this.state.run, mys = this.state.mys; if (!r || r.phase === 'done') return;
     const q = r.q, ok = mys.matches(text, q);
     if (ok) {
       const pts = this.WAI_POINTS[r.clueIdx] || 200;
@@ -562,13 +562,13 @@ export class App extends Logic {
     const urgent = !!(r && !answered && liveMs < 5000);
     const letters = ['A', 'B', 'C', 'D'];
     const ok = !!(answered && q && (isWai ? r.log[r.log.length - 1] && r.log[r.log.length - 1].ok : r.answered === q.correct));
-    const answers = q && q.options && !(isWai && r.phase !== 'guess') ? q.options.map((o, i) => {
+    const answers = q && q.options ? q.options.map((o, i) => {
       const isC = isWai ? o === q.name : o === q.correct, chosen = r.answered === o, gone = isWai && r.wrongOpts.includes(o);
       const state = gone ? 'gone' : !answered ? 'idle' : isC ? 'right' : chosen ? 'wrong' : 'dim';
       return { letter: letters[i], text: o, state, disabled: answered || gone, isRight: state === 'right', isWrong: state === 'wrong', pick: () => isWai ? this.waiGuess(o) : this.answer(o) };
     }) : [];
-    const clueRows = isWai && q ? q.clues.map((c, i) => {
-      const locked = i > r.clueIdx;
+    const clueRows = isWai && q ? q.clues.slice(0, r.clueIdx + 1).map((c, i) => {
+      const locked = false;
       return { n: i + 1, locked, isNew: i === r.clueIdx && i > 0, isText: !locked && c.type === 'text', isPath: !locked && c.type === 'path', isNumbers: !locked && c.type === 'numbers', isAwards: !locked && c.type === 'awards',
         text: c.content, numbers: c.numbers || [], list: c.list || [], teams: (c.teams || []).map(name => ({ name })) };
     }) : [];
@@ -704,17 +704,18 @@ export class App extends Logic {
       qIsClues: !!isWai, qIsPlain: !isWai,
       qText: q && !isWai ? q.text : '', qLong: !!(q && !isWai && q.text.length > 90),
       clueRows,
-      showAnswers: !!(q && (!isWai || (isWai && r.phase === 'guess' && q.options))),
+      showAnswers: !!(q && q.options),
+      hasLockedClues: !!(isWai && q && r.clueIdx + 1 < q.clues.length && r.phase !== 'done'),
+      lockedCluesText: isWai && q ? (n => `${n} more clue${n === 1 ? '' : 's'} locked`)(q.clues.length - r.clueIdx - 1) : '',
+      showGuessInline: !!(isWai && q && !q.options && r.phase !== 'done'), guessEmpty: !(r && r.guess && r.guess.trim()),
+      showNextClue: !!(isWai && q && r.phase !== 'done' && r.clueIdx + 1 < q.clues.length),
+      nextClueLabel: isWai && q && r.clueIdx + 1 < q.clues.length ? 'Next clue' : 'No more clues',
       answers,
-      showClueActions: !!(isWai && r.phase === 'idle'),
       nextClue: () => this.nextClue(), noMoreClues: !!(isWai && q && r.clueIdx + 1 >= q.clues.length),
-      nextClueWorth: isWai && q && r.clueIdx + 1 < q.clues.length ? `worth ${this.fmt(this.WAI_POINTS[r.clueIdx + 1])} after` : 'last clue',
-      openGuess: () => { if (!isWai) return; if (q.options) return this.setState({ run: { ...r, phase: 'guess' } }); this.setState({ run: { ...r, phase: 'guess', guess: '' } }); },
-      showGuessInput: !!(isWai && r.phase === 'guess' && !q.options),
+      nextClueWorth: isWai && q && r.clueIdx + 1 < q.clues.length ? `The answer drops to ${this.fmt(this.WAI_POINTS[r.clueIdx + 1])} points` : 'Make your guess',
       guessText: r ? r.guess : '', setGuess: e => this.setState({ run: { ...r, guess: e.target.value } }),
       guessKey: e => { if (e.key === 'Enter' && r.guess.trim()) this.waiGuess(r.guess); },
       submitGuess: () => { if (r.guess.trim()) this.waiGuess(r.guess); },
-      cancelGuess: () => this.setState({ run: { ...r, phase: 'idle' } }),
       showGain: !!s.gain, gainPts: s.gain ? s.gain.pts : '', gainExtra: !!(s.gain && s.gain.extra), gainExtraText: s.gain && s.gain.extra,
       showMilestone: !!ms, milestoneTier: ms ? ms.tier : '', milestoneKicker: ms ? ms.kicker : '', milestoneText: ms ? ms.text : '',
       showFeedback: !!answered, feedbackOk: ok, feedbackBad: !!answered && !ok,

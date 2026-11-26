@@ -219,7 +219,7 @@
 
       <sc-if value="{{ gameVisible }}" hint-placeholder-val="{{ true }}">
         <div class="g-body">
-          <div class="q-card">
+          <div class="q-card" data-clues="{{ qIsClues }}">
             <div class="q-main">
             <div class="q-cat">{{ qKicker }}</div>
             <sc-if value="{{ qIsPlain }}" hint-placeholder-val="{{ true }}"><h2 class="q-text" data-long="{{ qLong }}">{{ qText }}</h2></sc-if>
@@ -239,6 +239,10 @@
                   </div>
                 </sc-for>
               </div>
+              <sc-if value="{{ hasLockedClues }}"><div class="clue-more"><svg class="ic"><use href="#i-lock"></use></svg>{{ lockedCluesText }}</div></sc-if>
+              <sc-if value="{{ showGuessInline }}">
+                <div class="guess-inline"><input class="inp" placeholder="Type the name…" autocomplete="off" autocapitalize="words" spellcheck="false" value="{{ guessText }}" onChange="{{ setGuess }}" onKeyDown="{{ guessKey }}"><button class="btn-main" onClick="{{ submitGuess }}" disabled="{{ guessEmpty }}">Guess</button></div>
+              </sc-if>
             </sc-if>
             </div>
             <sc-if value="{{ showFeedback }}" hint-placeholder-val="{{ false }}">
@@ -254,7 +258,7 @@
         </div>
 
         <sc-if value="{{ showAnswers }}" hint-placeholder-val="{{ true }}">
-          <div class="answers">
+          <div class="answers" data-two="{{ qIsClues }}">
             <sc-for list="{{ answers }}" as="a" hint-placeholder-count="4">
               <button class="ans" data-state="{{ a.state }}" onClick="{{ a.pick }}" disabled="{{ a.disabled }}">
                 <span class="key">{{ a.letter }}</span>
@@ -266,22 +270,10 @@
           </div>
         </sc-if>
 
-        <sc-if value="{{ showClueActions }}" hint-placeholder-val="{{ false }}">
-          <div class="answers answers-2">
-            <button class="btn-soft" onClick="{{ nextClue }}" disabled="{{ noMoreClues }}"><span class="stack"><b>Next clue</b><small>{{ nextClueWorth }}</small></span></button>
-            <button class="btn-main" onClick="{{ openGuess }}">I know it</button>
-          </div>
+        <sc-if value="{{ showNextClue }}">
+          <button class="btn-soft next-clue" onClick="{{ nextClue }}" disabled="{{ noMoreClues }}"><svg class="ic"><use href="#i-mystery"></use></svg><span class="stack"><b>{{ nextClueLabel }}</b><small>{{ nextClueWorth }}</small></span></button>
         </sc-if>
-
-        <sc-if value="{{ showGuessInput }}" hint-placeholder-val="{{ false }}">
-          <div class="answers">
-            <div class="guess-row">
-              <input class="inp" placeholder="Type a name…" value="{{ guessText }}" onChange="{{ setGuess }}" onKeyDown="{{ guessKey }}" autoFocus="{{ true }}">
-              <button class="btn-main" onClick="{{ submitGuess }}">Guess</button>
-            </div>
-            <button class="btn-link" onClick="{{ cancelGuess }}">Back to clues</button>
-          </div>
-        </sc-if>
+      </sc-if>
       </sc-if>
 
 
@@ -687,6 +679,28 @@
     streakGlow: true,
   };
   new App(props).mount(document.getElementById('root'), document.getElementById('screens'));
+</script>
+<script>
+// Anything floating over the bottom of the page (a host's badge, a cookie bar): lift the app above it.
+(function () {
+  const ours = el => el.id === 'root' || /^(SCRIPT|TEMPLATE|STYLE|LINK|NOSCRIPT)$/.test(el.tagName) || el.tagName.toLowerCase() === 'svg';
+  function measure() {
+    let need = 0;
+    for (const el of document.body.children) {
+      if (ours(el)) continue;
+      let hit = false;
+      for (const b of [el, ...(el.shadowRoot ? el.shadowRoot.querySelectorAll('*') : [])]) {
+        const r = b.getBoundingClientRect(), pos = getComputedStyle(b).position;
+        if (r.width && r.height && (pos === 'fixed' || pos === 'absolute') && r.top > innerHeight * .55) { need = Math.max(need, innerHeight - r.top + 8); hit = true; }
+      }
+      // a closed widget we can't measure, but that names itself
+      if (!hit && /netlify|badge/i.test(el.tagName + ' ' + el.id + ' ' + el.className)) need = Math.max(need, 72);
+    }
+    document.documentElement.style.setProperty('--overlay-bottom', Math.min(need, 140) + 'px');
+  }
+  new MutationObserver(() => setTimeout(measure, 60)).observe(document.body, { childList: true });
+  addEventListener('resize', measure); addEventListener('load', () => setTimeout(measure, 300)); setTimeout(measure, 2500);
+})();
 </script>
 </body>
 </html>
