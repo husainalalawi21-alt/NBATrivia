@@ -377,23 +377,27 @@ export function refreshTemporal(now = Date.now()) {
 // ── Eligibility + weighted selection ────────────────────────────
 const TIER_FOR = { beginner: 1, easy: 2, medium: 3, hard: 4, expert: 5 };
 export function bandFor(mode, progress) {
-  if (mode === 'team') return progress < 5 ? ['beginner'] : progress < 12 ? ['beginner', 'easy'] : progress < 22 ? ['easy', 'medium'] : progress < 35 ? ['medium', 'hard'] : ['hard', 'expert'];
-  if (mode === 'streak') return progress < 5 ? ['beginner'] : progress < 10 ? ['beginner', 'easy'] : progress < 20 ? ['easy', 'medium'] : progress < 30 ? ['medium', 'hard'] : ['hard', 'expert'];
+  // Steep ramps: a run warms up for a couple of questions, then gets hard fast.
+  if (mode === 'team') return progress < 3 ? ['beginner', 'easy'] : progress < 8 ? ['easy', 'medium'] : progress < 15 ? ['medium', 'hard'] : ['hard', 'expert'];
+  if (mode === 'streak') return progress < 2 ? ['beginner', 'easy'] : progress < 6 ? ['easy', 'medium'] : progress < 12 ? ['medium', 'hard'] : ['hard', 'expert'];
   // BUZZ stays fast and recognizable — it never climbs past medium.
-  if (mode === 'buzz') return progress < 6 ? ['beginner'] : progress < 18 ? ['beginner', 'easy'] : ['easy', 'medium'];
+  if (mode === 'buzz') return progress < 4 ? ['beginner', 'easy'] : progress < 12 ? ['easy', 'medium'] : ['medium', 'hard'];
   return TIER_ORDER;
 }
-// 20 QUESTIONS is a balanced examination: 4 beginner / 5 easy / 6 medium / 4 hard / 1 expert.
-export const Q20_SPREAD = ['beginner', 'beginner', 'beginner', 'beginner', 'easy', 'easy', 'easy', 'easy', 'easy', 'medium', 'medium', 'medium', 'medium', 'medium', 'medium', 'hard', 'hard', 'hard', 'hard', 'expert'];
+// 20 QUESTIONS is a hard examination: 1 beginner / 3 easy / 5 medium / 6 hard / 5 expert.
+export const Q20_SPREAD = ['beginner', 'easy', 'easy', 'easy', 'medium', 'medium', 'medium', 'medium', 'medium', 'hard', 'hard', 'hard', 'hard', 'hard', 'hard', 'expert', 'expert', 'expert', 'expert', 'expert'];
 
 // Core gate: mode allowance + lifecycle + session + GLOBAL history.
 export function eligible({ mode, teamId = null, band = null, category = null, sessionUsed = new Set(), history = getHistory(), cfg = getConfig(), ignoreHistory = false }) {
   return getBank().filter(r => {
     if (!r.active || r.status !== 'active') return false;
-    if (!r.game_modes_allowed.includes(mode)) return false;
     if (r.quality_score != null && r.quality_score < QUALITY_THRESHOLD) return false;
+    // One shared bank: every multiple-choice question can come up in any
+    // multiple-choice mode (Streak, Buzz, 20 Questions, Daily, Head-to-Head),
+    // team questions included. "Your Team" draws only its franchise's
+    // questions; Who Am I? only career mysteries. History is shared too, so a
+    // question seen in one mode never comes back in another.
     if (mode === 'team' && r.team_id !== teamId) return false;
-    if (mode !== 'team' && r.team_id) return false;
     if (mode === 'wai' && r.question_type !== 'career_mystery') return false;
     if (mode !== 'wai' && r.question_type === 'career_mystery') return false;
     if (band && !band.includes(r.difficulty)) return false;

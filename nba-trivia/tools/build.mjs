@@ -113,7 +113,11 @@ const rows = bank.map(r => {
   if (temporal === 'dynamic' && validUntil && validUntil < today) { status = 'outdated'; active = false; }
   return {
     question_id: r.question_id, knowledge_point_id: r.knowledge_point_id,
-    question_text: r.question_text, correct_answer: r.correct_answer,
+    // Two-name questions ("Who was drafted first?") carry both names in the
+    // text, so two of them never read as the same question.
+    question_text: /^(comparison|before_after)$/.test(r.question_type) && (r.answers || []).length === 2
+      ? `${r.question_text.replace(/\?\s*$/, '')}: ${[...r.answers].sort().join(' or ')}?` : r.question_text,
+    correct_answer: r.correct_answer,
     wrong_answers: (r.answers || []).filter(a => a !== r.correct_answer),
     explanation: r.explanation || null, category: r.category || null,
     difficulty: engine.TIER_ORDER.includes(r.difficulty) ? r.difficulty : (TIER[r.difficulty] || 'medium'),
@@ -139,8 +143,13 @@ const STOPW = new Set(['the','a','an','of','in','to','for','and','or','is','was'
 const FILLER = new Set(['holds','hold','record','records','league','head','ever','history']);
 const words = t => new Set(engine.normalizeText(t).split(' ').filter(w => w.length > 2 && !STOPW.has(w) && !/^\d+$/.test(w)));
 const factGroups = new Map();
+const sameText = new Map();
 for (const r of rows) {
   if (r.status === 'outdated') continue;
+  // Identical wording reads as a repeat to a player even if the answer differs.
+  const tkey = engine.normalizeText(r.question_text);
+  if (sameText.has(tkey)) { r.status = 'disabled'; r.active = false; r.payload = { ...r.payload, duplicate_of: sameText.get(tkey) }; report.issues.push(`duplicate retired (same wording): "${r.question_text}"`); continue; }
+  sameText.set(tkey, r.question_id);
   const key = engine.normalizeText(r.correct_answer) + '|' + (r.season || '');
   const group = factGroups.get(key) || []; factGroups.set(key, group);
   const w = words(r.question_text);
@@ -183,6 +192,17 @@ if (LOAD) {
     process.stdout.write(`\rloaded ${Math.min(i + 400, rows.length)} / ${rows.length}`);
   }
   console.log();
+
+  // A permanent question this build no longer produces (its wording changed,
+  // or it was merged away) is retired; time-limited ones expire on their own.
+  const ids = rows.map(r => `'${r.question_id}'`).join(',');
+  const stale = await fetch(`https://api.supabase.com/v1/projects/${PROJECT}/database/query`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer proxy-injected' },
+    body: JSON.stringify({ query: `update public.questions set status = 'disabled', active = false, updated_at = now(),
+      payload = coalesce(payload, '{}'::jsonb) || '{"retired": "no longer produced by the bank build"}'::jsonb
+      where active and temporal = 'static' and not (question_id = any(array[${ids}])) returning question_id` }) });
+  if (!stale.ok) throw new Error(`retire stale: ${stale.status} ${(await stale.text()).slice(0, 300)}`);
+  console.log('retired (no longer in the bank):', (await stale.json()).length);
 
   // Teams and every downloaded game, so the weekly job can compute standings
   // and series from the database instead of re-downloading history.

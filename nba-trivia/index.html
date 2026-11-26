@@ -12,8 +12,8 @@
 <body>
 <div id="root"></div>
 <template id="screens">
-<div style="min-height:100vh;display:flex;justify-content:center;align-items:flex-start;background:#000">
-<div style="{{ shellStyle }}">
+<div style="height:100vh;height:100dvh;overflow:hidden;display:flex;justify-content:center;align-items:center;background:#000">
+<div class="shell" style="{{ shellStyle }}">
 
   <!-- ═══ REGISTRATION ═══ -->
   <sc-if value="{{ atWelcome }}" hint-placeholder-val="{{ true }}">
@@ -72,7 +72,7 @@
         <p style="font-size:15px;color:var(--color-neutral-300);margin:0 0 var(--space-3)">Unlocks a mode built entirely from their history.</p>
         <input class="input" placeholder="Search 30 teams" value="{{ teamSearch }}" onChange="{{ setTeamSearch }}" style="min-height:48px">
       </div>
-      <div style="flex:1;overflow:auto;border-top:2px solid var(--color-divider)">
+      <div style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;border-top:2px solid var(--color-divider)">
         <sc-for list="{{ teamList }}" as="t" hint-placeholder-count="12">
           <button onClick="{{ t.pick }}" style="{{ t.style }}">
             <div style="{{ t.markStyle }}">{{ t.abbr }}</div>
@@ -109,7 +109,7 @@
         <div style="text-align:right"><div style="font-family:var(--font-heading);font-weight:800;font-size:18px;letter-spacing:-0.02em;color:var(--color-accent-400)">{{ globalRank }}</div><div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-400)">Global</div></div>
       </div>
 
-      <div style="position:relative;padding:var(--space-6) var(--space-4) var(--space-6);overflow:hidden">
+      <div style="position:relative;padding:clamp(8px,2.4dvh,24px) var(--space-4) clamp(10px,2.4dvh,24px);overflow:hidden">
         <sc-if value="{{ hasStreak }}" hint-placeholder-val="{{ false }}"><sc-for list="{{ embers }}" as="e" hint-placeholder-count="0"><div style="{{ e }}"></div></sc-for></sc-if>
         <div style="position:relative">
           <div style="display:flex;align-items:center;gap:7px;font-family:var(--font-heading);font-weight:800;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--color-accent)"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>{{ streakLabel }}</div>
@@ -118,17 +118,17 @@
             <div><span style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-400)">Best </span><span style="font-family:var(--font-heading);font-weight:800;font-size:18px">{{ bestStreak }}</span></div>
             <div><span style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-400)">Accuracy </span><span style="font-family:var(--font-heading);font-weight:800;font-size:18px">{{ accuracy }}</span></div>
           </div>
-          <div style="font-family:var(--font-heading);font-weight:800;font-size:24px;letter-spacing:-0.03em;margin-top:var(--space-4)">{{ heroPrompt }}</div>
-          <button class="btn btn-primary btn-block" onClick="{{ startStreak }}" style="min-height:60px;font-size:17px;margin-top:var(--space-3);padding-inline:var(--space-4)">PLAY STREAK<svg style="margin-left:auto" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
+          <div style="font-family:var(--font-heading);font-weight:800;font-size:clamp(18px,2.9dvh,24px);letter-spacing:-0.03em;margin-top:clamp(8px,1.8dvh,16px)">{{ heroPrompt }}</div>
+          <button class="btn btn-primary btn-block" onClick="{{ startStreak }}" style="min-height:clamp(48px,7dvh,60px);font-size:17px;margin-top:clamp(8px,1.4dvh,12px);padding-inline:var(--space-4)">PLAY STREAK<svg style="margin-left:auto" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
         </div>
       </div>
 
       <button onClick="{{ goTeamHub }}" style="all:unset;cursor:pointer;position:relative;display:block;border-top:2px solid var(--color-divider);color:var(--color-text)">
         <div style="position:absolute;top:0;left:54%;right:0;bottom:0"><image-slot id="v2-team" shape="rect" fit="cover" placeholder="Team image"></image-slot></div>
-        <div style="position:relative;padding:var(--space-4) var(--space-4);background:linear-gradient(to right,var(--color-bg) 54%,color-mix(in srgb,var(--color-bg) 20%,transparent));pointer-events:none">
+        <div style="position:relative;padding:clamp(10px,2dvh,16px) var(--space-4);background:linear-gradient(to right,var(--color-bg) 54%,color-mix(in srgb,var(--color-bg) 20%,transparent));pointer-events:none">
           <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-400);font-weight:800">Your team</div>
-          <div style="font-family:var(--font-heading);font-weight:800;font-size:34px;letter-spacing:-0.04em;line-height:.98;margin-top:2px;max-width:230px">{{ teamHeadline }}</div>
-          <div style="display:flex;align-items:center;gap:var(--space-3);margin-top:var(--space-3)">
+          <div style="font-family:var(--font-heading);font-weight:800;font-size:clamp(22px,4dvh,34px);letter-spacing:-0.04em;line-height:.98;margin-top:2px;max-width:250px">{{ teamHeadline }}</div>
+          <div style="display:flex;align-items:center;gap:var(--space-3);margin-top:clamp(6px,1.2dvh,12px)">
             <span style="font-family:var(--font-heading);font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-accent)">{{ teamCtaLabel }} →</span>
             <sc-if value="{{ hasTeam }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:var(--color-neutral-400)">Best {{ teamBest }} · {{ teamAnswered }} answered</span></sc-if>
           </div>
@@ -137,7 +137,7 @@
 
       <div style="border-top:2px solid var(--color-divider)">
         <sc-for list="{{ homeRows }}" as="r" hint-placeholder-count="3">
-          <button onClick="{{ r.go }}" style="all:unset;cursor:pointer;width:100%;box-sizing:border-box;display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--color-divider);color:var(--color-text)" style-hover="background:var(--color-surface)">
+          <button onClick="{{ r.go }}" style="all:unset;cursor:pointer;width:100%;box-sizing:border-box;display:flex;align-items:center;gap:var(--space-3);padding:clamp(7px,1.4dvh,12px) var(--space-4);border-bottom:1px solid var(--color-divider);color:var(--color-text)" style-hover="background:var(--color-surface)">
             <div style="flex:1;text-align:left"><div style="font-family:var(--font-heading);font-weight:800;font-size:15px">{{ r.title }}</div><div style="font-size:12px;color:var(--color-neutral-400)">{{ r.sub }}</div></div>
             <sc-if value="{{ r.badge }}" hint-placeholder-val="{{ false }}"><span class="tag tag-accent" style="font-weight:800">{{ r.badgeText }}</span></sc-if>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-neutral-500)" stroke-width="2.5" stroke-linecap="square"><path d="m9 6 6 6-6 6"></path></svg>
@@ -146,7 +146,7 @@
       </div>
 
       <sc-if value="{{ hasRecentBadges }}" hint-placeholder-val="{{ false }}">
-        <div style="padding:var(--space-4)">
+        <div class="tall-only" style="padding:var(--space-4)">
           <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-400);font-weight:800;margin-bottom:var(--space-2)">Recent achievements</div>
           <div style="display:flex;flex-wrap:wrap;gap:var(--space-2)"><sc-for list="{{ recentBadges }}" as="b" hint-placeholder-count="2"><span class="tag tag-outline" style="font-weight:800;padding:7px 11px">{{ b }}</span></sc-for></div>
         </div>
@@ -157,22 +157,22 @@
   <!-- ═══ PLAY ═══ -->
   <sc-if value="{{ atPlay }}" hint-placeholder-val="{{ false }}">
     <div style="display:flex;flex-direction:column;flex:1;animation:fade .25s ease-out">
-      <h2 style="font-size:40px;letter-spacing:-0.04em;line-height:.95;margin:0;padding:var(--space-6) var(--space-4) var(--space-4)">PICK YOUR<br>BATTLE</h2>
-      <sc-if value="{{ poolExhausted }}"><div style="margin:0 var(--space-4) var(--space-4);border-left:3px solid var(--color-accent);padding:var(--space-2) var(--space-3);font-size:14px;color:var(--color-accent-300);text-wrap:pretty">{{ exhaustedMsg }}</div></sc-if>
-      <button onClick="{{ startStreak }}" style="all:unset;cursor:pointer;box-sizing:border-box;display:block;width:100%;background:var(--color-accent);color:#120800;padding:var(--space-5, 20px) var(--space-4)">
+      <h2 style="font-size:clamp(28px,4.8dvh,40px);letter-spacing:-0.04em;line-height:.95;margin:0;padding:clamp(12px,2.6dvh,24px) var(--space-4) clamp(8px,1.6dvh,16px)">PICK YOUR<br>BATTLE</h2>
+      <sc-if value="{{ poolExhausted }}"><div style="margin:0 var(--space-4) var(--space-2);border-left:3px solid var(--color-accent);padding:6px var(--space-3);font-size:13px;color:var(--color-accent-300);text-wrap:pretty">{{ exhaustedMsg }}</div></sc-if>
+      <button onClick="{{ startStreak }}" style="all:unset;cursor:pointer;box-sizing:border-box;display:block;width:100%;background:var(--color-accent);color:#120800;padding:clamp(10px,2.2dvh,20px) var(--space-4)">
         <div style="display:flex;align-items:center;gap:8px;font-family:var(--font-heading);font-weight:800;font-size:11px;letter-spacing:.16em;text-transform:uppercase"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>Main event</div>
-        <div style="font-family:var(--font-heading);font-weight:800;font-size:46px;letter-spacing:-0.05em;line-height:1;margin-top:6px">STREAK</div>
-        <div style="font-size:15px;margin-top:4px;opacity:.85">One mistake ends your run. Your best is {{ bestStreak }}.</div>
+        <div style="font-family:var(--font-heading);font-weight:800;font-size:clamp(32px,5.5dvh,46px);letter-spacing:-0.05em;line-height:1;margin-top:4px">STREAK</div>
+        <div style="font-size:14px;margin-top:2px;opacity:.85">One mistake ends your run. Your best is {{ bestStreak }}.</div>
       </button>
-      <button onClick="{{ goTeamHub }}" style="all:unset;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;gap:var(--space-3);width:100%;padding:var(--space-4);border-bottom:2px solid var(--color-divider);color:var(--color-text)" style-hover="background:var(--color-surface)">
+      <button onClick="{{ goTeamHub }}" style="all:unset;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;gap:var(--space-3);width:100%;padding:clamp(8px,1.8dvh,16px) var(--space-4);border-bottom:2px solid var(--color-divider);color:var(--color-text)" style-hover="background:var(--color-surface)">
         <div style="{{ teamMarkStyle }}">{{ myTeamAbbr }}</div>
-        <div style="flex:1;text-align:left"><div style="font-family:var(--font-heading);font-weight:800;font-size:26px;letter-spacing:-0.03em;line-height:1">YOUR TEAM</div><div style="font-size:14px;color:var(--color-neutral-300);margin-top:2px">{{ teamModeSub }}</div></div>
+        <div style="flex:1;text-align:left"><div style="font-family:var(--font-heading);font-weight:800;font-size:clamp(20px,3.1dvh,26px);letter-spacing:-0.03em;line-height:1">YOUR TEAM</div><div style="font-size:13px;color:var(--color-neutral-300);margin-top:2px">{{ teamModeSub }}</div></div>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2.5" stroke-linecap="square"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
       </button>
-      <div style="padding:var(--space-4) var(--space-4) var(--space-2);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-400);font-weight:800">More ways to play</div>
+      <div style="padding:clamp(8px,1.6dvh,16px) var(--space-4) 4px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-400);font-weight:800">More ways to play</div>
       <sc-for list="{{ playModes }}" as="m" hint-placeholder-count="5">
-        <button onClick="{{ m.pick }}" disabled="{{ m.locked }}" style="{{ m.style }}">
-          <div style="flex:1;text-align:left"><div style="font-family:var(--font-heading);font-weight:800;font-size:17px;letter-spacing:-0.01em">{{ m.name }}</div><div style="font-size:13px;color:var(--color-neutral-400);margin-top:1px">{{ m.desc }}</div></div>
+        <button class="{{ m.cls }}" onClick="{{ m.pick }}" disabled="{{ m.locked }}" style="{{ m.style }}">
+          <div style="flex:1;text-align:left"><div style="font-family:var(--font-heading);font-weight:800;font-size:clamp(15px,2.1dvh,17px);letter-spacing:-0.01em">{{ m.name }}</div><div style="font-size:12px;color:var(--color-neutral-400);margin-top:1px">{{ m.desc }}</div></div>
           <sc-if value="{{ m.locked }}" hint-placeholder-val="{{ false }}"><span class="tag tag-outline" style="font-weight:800">Soon</span></sc-if>
           <sc-if value="{{ m.hasStat }}" hint-placeholder-val="{{ false }}"><div style="font-family:var(--font-heading);font-weight:800;font-size:16px;color:var(--color-neutral-300)">{{ m.stat }}</div></sc-if>
         </button>
@@ -193,11 +193,11 @@
 
       <sc-if value="{{ gameVisible }}" hint-placeholder-val="{{ true }}">
         <div style="display:flex;flex-direction:column;flex:1;min-height:0;animation:in .22s ease-out">
-          <div style="padding:var(--space-6) var(--space-4) var(--space-4)">
-            <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent);font-weight:800;margin-bottom:var(--space-3)">{{ qKicker }}</div>
+          <div style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:clamp(10px,3dvh,24px) var(--space-4) 6px">
+            <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent);font-weight:800;margin-bottom:clamp(6px,1.2dvh,12px)">{{ qKicker }}</div>
 
             <sc-if value="{{ qIsClues }}" hint-placeholder-val="{{ false }}">
-              <h2 style="font-size:34px;letter-spacing:-0.04em;line-height:1;margin:0 0 var(--space-4)">WHO AM I?</h2>
+              <h2 style="font-size:clamp(24px,4dvh,34px);letter-spacing:-0.04em;line-height:1;margin:0 0 clamp(6px,1.4dvh,16px)">WHO AM I?</h2>
               <div style="border-top:2px solid var(--color-divider)">
                 <sc-for list="{{ clueRows }}" as="c" hint-placeholder-count="5">
                   <div style="{{ c.style }}">
@@ -225,7 +225,7 @@
           </div>
 
           <sc-if value="{{ showAnswers }}" hint-placeholder-val="{{ true }}">
-            <div style="margin-top:auto;padding:var(--space-3) var(--space-4) var(--space-4);display:grid;gap:10px">
+            <div style="flex:none;padding:6px var(--space-4) 8px;display:grid;gap:clamp(6px,1.1dvh,10px)">
               <sc-for list="{{ answers }}" as="a" hint-placeholder-count="4">
                 <button onClick="{{ a.pick }}" disabled="{{ a.disabled }}" style="{{ a.style }}">
                   <span style="{{ a.letterStyle }}">{{ a.letter }}</span>
@@ -237,14 +237,14 @@
           </sc-if>
 
           <sc-if value="{{ showClueActions }}" hint-placeholder-val="{{ false }}">
-            <div style="margin-top:auto;padding:var(--space-3) var(--space-4) var(--space-4);display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div style="flex:none;padding:6px var(--space-4) 8px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
               <button class="btn btn-secondary" onClick="{{ nextClue }}" disabled="{{ noMoreClues }}" style="min-height:56px;flex-direction:column;align-items:flex-start;gap:0;justify-content:center;padding-inline:var(--space-3)"><span>NEXT CLUE</span><span style="font-weight:400;font-size:11px;color:var(--color-neutral-400)">{{ nextClueWorth }}</span></button>
               <button class="btn btn-primary" onClick="{{ openGuess }}" style="min-height:56px;justify-content:flex-start;padding-inline:var(--space-3)">I KNOW IT</button>
             </div>
           </sc-if>
 
           <sc-if value="{{ showGuessInput }}" hint-placeholder-val="{{ false }}">
-            <div style="margin-top:auto;padding:var(--space-3) var(--space-4) var(--space-4)">
+            <div style="flex:none;padding:6px var(--space-4) 8px">
               <div style="display:flex;gap:10px">
                 <input class="input" placeholder="Type a name…" value="{{ guessText }}" onChange="{{ setGuess }}" onKeyDown="{{ guessKey }}" autoFocus="{{ true }}" style="flex:1;min-height:56px;font-family:var(--font-heading);font-weight:800;font-size:18px">
                 <button class="btn btn-primary" onClick="{{ submitGuess }}" style="min-height:56px;padding-inline:var(--space-4)">GUESS</button>
@@ -264,15 +264,15 @@
       <sc-if value="{{ showMilestone }}" hint-placeholder-val="{{ false }}">
         <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none"><div style="{{ milestoneStyle }}">{{ milestoneText }}</div></div>
       </sc-if>
-      <sc-if value="{{ showFeedback }}" hint-placeholder-val="{{ false }}">
-        <div style="{{ feedbackStyle }}">
+      <div style="{{ feedbackStyle }}">
+        <sc-if value="{{ showFeedback }}" hint-placeholder-val="{{ false }}">
           <div style="display:flex;align-items:baseline;gap:var(--space-3)">
-            <div style="font-family:var(--font-heading);font-weight:800;font-size:24px;letter-spacing:-0.02em">{{ feedbackTitle }}</div>
+            <div style="font-family:var(--font-heading);font-weight:800;font-size:clamp(18px,2.9dvh,24px);letter-spacing:-0.02em">{{ feedbackTitle }}</div>
             <sc-if value="{{ feedbackHasTrail }}" hint-placeholder-val="{{ false }}"><div style="font-family:var(--font-heading);font-weight:800;font-size:15px;opacity:.9">{{ feedbackTrail }}</div></sc-if>
           </div>
-          <div style="font-size:13px;opacity:.9;margin-top:2px;text-wrap:pretty">{{ feedbackSub }}</div>
-        </div>
-      </sc-if>
+          <div style="font-size:13px;line-height:1.3;opacity:.9;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ feedbackSub }}</div>
+        </sc-if>
+      </div>
     </div>
   </sc-if>
 
@@ -282,29 +282,28 @@
       <div style="{{ resultHeroStyle }}">
         <div style="font-family:var(--font-heading);font-weight:800;font-size:12px;letter-spacing:.16em;text-transform:uppercase;opacity:.85">{{ resultKicker }}</div>
         <div style="{{ resultNumStyle }}">{{ resultNumber }}</div>
-        <div style="font-size:17px;margin-top:var(--space-2);opacity:.9;text-wrap:pretty">{{ resultLine }}</div>
+        <div style="font-size:15px;margin-top:6px;opacity:.9;text-wrap:pretty">{{ resultLine }}</div>
         <sc-if value="{{ isRecord }}" hint-placeholder-val="{{ false }}"><div style="font-family:var(--font-heading);font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;margin-top:var(--space-3)">New personal record — previous {{ prevBest }}</div></sc-if>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid var(--color-divider)">
-        <sc-for list="{{ resultStats }}" as="s" hint-placeholder-count="4"><div style="{{ s.style }}"><div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-400)">{{ s.label }}</div><div style="font-family:var(--font-heading);font-weight:800;font-size:30px;letter-spacing:-0.03em;margin-top:2px">{{ s.value }}</div></div></sc-for>
+      <div style="flex:none;display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid var(--color-divider)">
+        <sc-for list="{{ resultStats }}" as="s" hint-placeholder-count="4"><div style="{{ s.style }}"><div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.label }}</div><div style="font-family:var(--font-heading);font-weight:800;font-size:clamp(18px,2.8dvh,26px);letter-spacing:-0.03em;margin-top:2px">{{ s.value }}</div></div></sc-for>
       </div>
-      <div style="padding:var(--space-4);display:grid;gap:10px">
-        <button class="btn btn-primary btn-block" onClick="{{ playAgain }}" style="min-height:60px;font-size:17px;margin:0;padding-inline:var(--space-4)">PLAY AGAIN</button>
-        <button class="btn btn-secondary btn-block" onClick="{{ goBoard }}" style="min-height:50px;padding-inline:var(--space-4)">VIEW LEADERBOARD</button>
-        <sc-if value="{{ canChallenge }}"><button class="btn btn-secondary btn-block" onClick="{{ challengeFriend }}" style="min-height:50px;padding-inline:var(--space-4);margin:0">CHALLENGE A FRIEND</button></sc-if>
-        <button class="btn btn-ghost" onClick="{{ goShare }}" style="min-height:46px;justify-content:flex-start;padding-inline:var(--space-2)">Share result</button>
+      <div style="flex:none;padding:clamp(8px,1.8dvh,16px) var(--space-4);display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button class="btn btn-primary btn-block" onClick="{{ playAgain }}" style="grid-column:1/-1;min-height:clamp(48px,7dvh,60px);font-size:17px;margin:0;padding-inline:var(--space-4)">PLAY AGAIN</button>
+        <sc-if value="{{ canChallenge }}"><button class="btn btn-secondary btn-block" onClick="{{ challengeFriend }}" style="grid-column:1/-1;min-height:46px;padding-inline:var(--space-4);margin:0">CHALLENGE A FRIEND</button></sc-if>
+        <button class="btn btn-secondary btn-block" onClick="{{ goBoard }}" style="min-height:44px;padding-inline:var(--space-3);margin:0">LEADERBOARD</button>
+        <button class="btn btn-secondary btn-block" onClick="{{ goShare }}" style="min-height:44px;padding-inline:var(--space-3);margin:0">SHARE</button>
       </div>
       <sc-if value="{{ hasNewBadges }}" hint-placeholder-val="{{ false }}">
-        <div style="padding:0 var(--space-4) var(--space-4)"><div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-400);font-weight:800;margin-bottom:var(--space-2)">Unlocked</div><div style="display:flex;flex-wrap:wrap;gap:var(--space-2)"><sc-for list="{{ newBadges }}" as="b" hint-placeholder-count="1"><span class="tag tag-accent" style="font-weight:800;padding:7px 11px">{{ b }}</span></sc-for></div></div>
+        <div style="flex:none;padding:0 var(--space-4) var(--space-2)"><div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-400);font-weight:800;margin-bottom:6px">Unlocked</div><div style="display:flex;flex-wrap:wrap;gap:var(--space-2)"><sc-for list="{{ newBadges }}" as="b" hint-placeholder-count="1"><span class="tag tag-accent" style="font-weight:800;padding:7px 11px">{{ b }}</span></sc-for></div></div>
       </sc-if>
       <sc-if value="{{ isGuest }}" hint-placeholder-val="{{ false }}">
-        <div style="padding:var(--space-4);border-top:2px solid var(--color-divider);background:var(--color-surface)">
-          <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;letter-spacing:-0.01em">Claim this score</div>
-          <div style="font-size:14px;color:var(--color-neutral-300);margin-top:2px">Guests aren't ranked. Pick a username to get on the board.</div>
-          <button class="btn btn-primary" onClick="{{ backToWelcome }}" style="min-height:48px;justify-content:flex-start;padding-inline:var(--space-4);margin-top:var(--space-3)">Create account</button>
+        <div style="flex:none;display:flex;align-items:center;gap:var(--space-3);padding:10px var(--space-4);border-top:2px solid var(--color-divider);background:var(--color-surface)">
+          <div style="flex:1;min-width:0"><div style="font-family:var(--font-heading);font-weight:800;font-size:15px">Claim this score</div><div style="font-size:12px;color:var(--color-neutral-300)">Guests aren't ranked.</div></div>
+          <button class="btn btn-primary" onClick="{{ backToWelcome }}" style="min-height:42px;padding-inline:var(--space-3)">Create account</button>
         </div>
       </sc-if>
-      <div style="padding:var(--space-4) 0 var(--space-8)">
+      <div style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:var(--space-2) 0 var(--space-4);border-top:1px solid var(--color-divider)">
         <div style="padding:0 var(--space-4) var(--space-2);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-400);font-weight:800">Every question</div>
         <sc-for list="{{ reviewRows }}" as="r" hint-placeholder-count="8">
           <div style="display:grid;grid-template-columns:26px 1fr auto;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-top:1px solid var(--color-divider);align-items:start">
@@ -319,17 +318,17 @@
 
   <!-- ═══ SHARE ═══ -->
   <sc-if value="{{ atShare }}" hint-placeholder-val="{{ false }}">
-    <div style="padding:var(--space-6) var(--space-4) var(--space-8)">
-      <h2 style="font-size:34px;letter-spacing:-0.04em;margin:0 0 var(--space-4)">SHARE IT</h2>
+    <div style="display:flex;flex-direction:column;padding:clamp(10px,2.4dvh,24px) var(--space-4) var(--space-3)">
+      <h2 style="font-size:clamp(24px,4dvh,34px);letter-spacing:-0.04em;margin:0 0 clamp(8px,1.6dvh,16px)">SHARE IT</h2>
       <div style="display:flex;justify-content:center">
-        <div style="width:280px;height:498px;background:var(--color-bg);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;padding:26px 22px;border:2px solid var(--color-accent)">
+        <div style="height:min(498px,52dvh);aspect-ratio:9/16;box-sizing:border-box;background:var(--color-bg);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;padding:clamp(14px,3dvh,26px) clamp(12px,2.6dvh,22px);border:2px solid var(--color-accent)">
           <div style="font-family:var(--font-heading);font-weight:800;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--color-accent)">{{ appName }}</div>
           <div style="margin-top:auto">
             <div style="display:flex;align-items:center;gap:7px;font-family:var(--font-heading);font-weight:800;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent)"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>{{ shareKicker }}</div>
-            <div style="font-family:var(--font-heading);font-weight:800;font-size:112px;line-height:.85;letter-spacing:-0.06em;margin:8px 0 0">{{ shareNumber }}</div>
-            <div style="font-family:var(--font-heading);font-weight:800;font-size:30px;letter-spacing:-0.03em;line-height:1;margin-top:6px">"I KNOW BALL."</div>
+            <div style="font-family:var(--font-heading);font-weight:800;font-size:clamp(56px,11.5dvh,112px);line-height:.85;letter-spacing:-0.06em;margin:8px 0 0">{{ shareNumber }}</div>
+            <div style="font-family:var(--font-heading);font-weight:800;font-size:clamp(18px,3.2dvh,30px);letter-spacing:-0.03em;line-height:1;margin-top:6px">"I KNOW BALL."</div>
           </div>
-          <div style="height:2px;background:var(--color-accent);margin:22px 0 12px"></div>
+          <div style="height:2px;background:var(--color-accent);margin:clamp(10px,2.4dvh,22px) 0 clamp(8px,1.4dvh,12px)"></div>
           <div style="display:flex;align-items:center;gap:10px">
             <div style="{{ shareMarkStyle }}">{{ myTeamAbbr }}</div>
             <div style="flex:1;min-width:0"><div style="font-family:var(--font-heading);font-weight:800;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ handle }}</div><div style="font-size:11px;color:var(--color-neutral-400)">{{ shareFooter }}</div></div>
@@ -341,14 +340,14 @@
         <button class="btn btn-primary" onClick="{{ shareNative }}" style="min-height:52px;justify-content:flex-start;padding-inline:var(--space-3)">Share</button>
         <button class="btn btn-secondary" onClick="{{ copyShare }}" style="min-height:52px;justify-content:flex-start;padding-inline:var(--space-3)">{{ copyLabel }}</button>
       </div>
-      <div style="font-size:12px;color:var(--color-neutral-400);margin-top:var(--space-3)">Sized 9:16 for Stories, WhatsApp, X, Snapchat and TikTok.</div>
+      <div style="font-size:12px;color:var(--color-neutral-400);margin-top:var(--space-2)">Sized 9:16 for Stories, WhatsApp, X, Snapchat and TikTok.</div>
     </div>
   </sc-if>
 
   <!-- ═══ LEADERBOARD ═══ -->
   <sc-if value="{{ atBoard }}" hint-placeholder-val="{{ false }}">
     <div style="display:flex;flex-direction:column;flex:1;animation:fade .25s ease-out">
-      <h2 style="font-size:40px;letter-spacing:-0.04em;margin:0;padding:var(--space-6) var(--space-4) var(--space-3)">LEADERBOARD</h2>
+      <h2 style="font-size:clamp(28px,4.8dvh,40px);letter-spacing:-0.04em;margin:0;padding:clamp(12px,2.6dvh,24px) var(--space-4) clamp(8px,1.4dvh,12px)">LEADERBOARD</h2>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-top:2px solid var(--color-divider);border-bottom:1px solid var(--color-divider)">
         <sc-for list="{{ boardScopes }}" as="b" hint-placeholder-count="3"><button onClick="{{ b.pick }}" style="{{ b.style }}">{{ b.label }}</button></sc-for>
       </div>
@@ -369,7 +368,7 @@
         </div>
       </sc-if>
       <sc-if value="{{ boardHasRows }}" hint-placeholder-val="{{ true }}">
-        <div style="flex:1">
+        <div style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:none">
           <sc-for list="{{ boardRows }}" as="r" hint-placeholder-count="10">
             <div style="{{ r.rowStyle }}">
               <div style="{{ r.rankStyle }}">{{ r.rank }}</div>
@@ -381,7 +380,7 @@
             </div>
           </sc-for>
         </div>
-        <div style="position:sticky;bottom:0;z-index:2;display:grid;grid-template-columns:38px 1fr auto;gap:10px;align-items:center;padding:var(--space-3) var(--space-4);background:var(--color-accent);color:#120800;border-top:2px solid var(--color-bg)">
+        <div style="flex:none;z-index:2;display:grid;grid-template-columns:38px 1fr auto;gap:10px;align-items:center;padding:var(--space-3) var(--space-4);background:var(--color-accent);color:#120800;border-top:2px solid var(--color-bg)">
           <div style="font-family:var(--font-heading);font-weight:800;font-size:16px">{{ myRank }}</div>
           <div style="min-width:0"><div style="font-family:var(--font-heading);font-weight:800;font-size:15px">YOU</div><div style="font-size:11px;opacity:.8">{{ myRankSub }}</div></div>
           <div style="font-family:var(--font-heading);font-weight:800;font-size:24px;letter-spacing:-0.02em">{{ myRankValue }}</div>
@@ -395,21 +394,21 @@
     <div style="display:flex;flex-direction:column;flex:1;animation:fade .25s ease-out">
       <div style="position:relative;border-bottom:2px solid var(--color-divider)">
         <div style="position:absolute;top:0;left:0;right:0;height:52%"><image-slot id="v2-hub" shape="rect" fit="cover" placeholder="Drop a team hero image"></image-slot></div>
-        <div style="position:relative;padding:var(--space-6) var(--space-4) var(--space-4);background:linear-gradient(to top,var(--color-bg) 62%,color-mix(in srgb,var(--color-bg) 25%,transparent));pointer-events:none">
+        <div style="position:relative;padding:clamp(12px,2.6dvh,24px) var(--space-4) clamp(8px,1.6dvh,16px);background:linear-gradient(to top,var(--color-bg) 62%,color-mix(in srgb,var(--color-bg) 25%,transparent));pointer-events:none">
           <div style="{{ hubMarkStyle }}">{{ myTeamAbbr }}</div>
-          <div style="font-family:var(--font-heading);font-weight:800;font-size:38px;letter-spacing:-0.045em;line-height:.98;margin-top:var(--space-3);max-width:260px">{{ hubHeadline }}</div>
+          <div style="font-family:var(--font-heading);font-weight:800;font-size:clamp(24px,4.4dvh,38px);letter-spacing:-0.045em;line-height:.98;margin-top:clamp(6px,1.2dvh,12px);max-width:280px">{{ hubHeadline }}</div>
           <button class="btn btn-ghost" onClick="{{ goTeamPick }}" style="min-height:40px;justify-content:flex-start;padding-inline:0;margin-top:4px;pointer-events:auto">Change team</button>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:2px solid var(--color-divider)">
         <sc-for list="{{ hubStats }}" as="s" hint-placeholder-count="3"><div style="{{ s.style }}"><div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-400)">{{ s.label }}</div><div style="font-family:var(--font-heading);font-weight:800;font-size:26px;letter-spacing:-0.03em;margin-top:2px">{{ s.value }}</div></div></sc-for>
       </div>
-      <div style="padding:var(--space-4) var(--space-4) var(--space-2);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-400);font-weight:800">Focus a category</div>
+      <div style="padding:clamp(8px,1.6dvh,16px) var(--space-4) 6px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-400);font-weight:800">Focus a category</div>
       <div style="padding:0 var(--space-4);display:flex;flex-wrap:wrap;gap:8px">
         <sc-for list="{{ hubCats }}" as="c" hint-placeholder-count="7"><button onClick="{{ c.pick }}" style="{{ c.style }}">{{ c.label }}</button></sc-for>
       </div>
-      <div style="padding:var(--space-4)">
-        <button class="btn btn-primary btn-block" onClick="{{ startTeamRun }}" style="min-height:60px;font-size:17px;margin:0;padding-inline:var(--space-4)">{{ hubCta }}<svg style="margin-left:auto" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
+      <div style="margin-top:auto;padding:clamp(8px,1.6dvh,16px) var(--space-4)">
+        <button class="btn btn-primary btn-block" onClick="{{ startTeamRun }}" style="min-height:clamp(48px,7dvh,60px);font-size:17px;margin:0;padding-inline:var(--space-4)">{{ hubCta }}<svg style="margin-left:auto" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
         <div style="font-size:12px;color:var(--color-neutral-400);margin-top:var(--space-2)">{{ hubLadder }}</div>
       </div>
     </div>
@@ -418,7 +417,7 @@
   <!-- ═══ PROFILE ═══ -->
   <sc-if value="{{ atProfile }}" hint-placeholder-val="{{ false }}">
     <div style="display:flex;flex-direction:column;flex:1;animation:fade .25s ease-out">
-      <div style="padding:var(--space-6) var(--space-4) var(--space-4);border-bottom:2px solid var(--color-divider)">
+      <div style="flex:none;padding:clamp(12px,2.6dvh,24px) var(--space-4) clamp(10px,1.8dvh,16px);border-bottom:2px solid var(--color-divider)">
         <div style="display:flex;align-items:center;gap:var(--space-3)">
           <div style="{{ bigAvatarStyle }}">{{ avatarInitial }}</div>
           <div style="flex:1;min-width:0">
@@ -430,16 +429,16 @@
           <div style="flex:1"><div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-400)">Level {{ level }} · {{ xpLine }}</div><div style="height:6px;background:var(--color-neutral-800);margin-top:6px"><div style="{{ xpBarStyle }}"></div></div></div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:2px solid var(--color-divider)">
+      <div style="flex:none;display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:2px solid var(--color-divider)">
         <sc-for list="{{ profileStats }}" as="s" hint-placeholder-count="6"><div style="{{ s.style }}"><div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-400)">{{ s.label }}</div><div style="font-family:var(--font-heading);font-weight:800;font-size:24px;letter-spacing:-0.03em;margin-top:2px">{{ s.value }}</div></div></sc-for>
       </div>
-      <div style="padding:var(--space-4) var(--space-4) var(--space-2);display:flex;align-items:baseline;justify-content:space-between"><div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-400);font-weight:800">Achievements</div><div style="font-family:var(--font-heading);font-weight:800;font-size:13px;color:var(--color-accent-400)">{{ badgeCount }}</div></div>
-      <div style="padding:0 var(--space-4);display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="flex:none;padding:10px var(--space-4) 6px;display:flex;align-items:baseline;justify-content:space-between"><div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-400);font-weight:800">Achievements</div><div style="font-family:var(--font-heading);font-weight:800;font-size:13px;color:var(--color-accent-400)">{{ badgeCount }}</div></div>
+      <div style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:0 var(--space-4);display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start">
         <sc-for list="{{ badges }}" as="b" hint-placeholder-count="8">
           <div style="{{ b.style }}"><div style="{{ b.iconStyle }}">{{ b.initial }}</div><div style="font-family:var(--font-heading);font-weight:800;font-size:13px;letter-spacing:-0.01em;margin-top:8px">{{ b.name }}</div><div style="font-size:11px;color:var(--color-neutral-400);margin-top:1px;text-wrap:pretty">{{ b.desc }}</div></div>
         </sc-for>
       </div>
-      <div style="padding:var(--space-4);display:grid;gap:8px;justify-items:stretch">
+      <div style="flex:none;padding:10px var(--space-4);display:grid;gap:6px;justify-items:stretch;border-top:1px solid var(--color-divider)">
         <button class="btn btn-secondary" onClick="{{ goH2H }}" style="min-height:48px;justify-content:flex-start;padding-inline:var(--space-3)">Head to head — {{ h2hRecord }}</button>
         <button class="btn btn-secondary" onClick="{{ goAdmin }}" style="min-height:48px;justify-content:flex-start;padding-inline:var(--space-3)">Question engine — {{ engineSummaryLine }}</button>
         <sc-if value="{{ isMember }}" hint-placeholder-val="{{ false }}">
@@ -479,7 +478,7 @@
   </sc-if>
 
   <sc-if value="{{ atH2HIntro }}" hint-placeholder-val="{{ false }}">
-    <div style="padding:var(--space-8) var(--space-4)">
+    <div style="padding:clamp(14px,3.5dvh,32px) var(--space-4)">
       <div style="font-family:var(--font-heading);font-weight:800;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--color-accent)">You've been challenged</div>
       <h2 style="font-size:46px;letter-spacing:-0.05em;line-height:.93;margin:var(--space-3) 0 var(--space-3)">{{ chCreator }} THINKS THEY KNOW MORE.</h2>
       <div style="display:grid;grid-template-columns:1fr 1fr;border-top:2px solid var(--color-divider);border-bottom:2px solid var(--color-divider)">
@@ -492,7 +491,7 @@
   </sc-if>
 
   <sc-if value="{{ atH2HMade }}" hint-placeholder-val="{{ false }}">
-    <div style="padding:var(--space-8) var(--space-4)">
+    <div style="padding:clamp(14px,3.5dvh,32px) var(--space-4)">
       <div style="font-family:var(--font-heading);font-weight:800;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--color-accent)">Challenge sent</div>
       <h2 style="font-size:46px;letter-spacing:-0.05em;line-height:.93;margin:var(--space-3) 0 var(--space-4)">BEAT MY SCORE.</h2>
       <div style="background:var(--color-accent);color:#120800;padding:var(--space-4)">
@@ -555,14 +554,14 @@
       </div>
 
       <div style="padding:0 var(--space-4) var(--space-4)">
-        <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-400);font-weight:800;margin-bottom:8px">Mode pools · exclusive</div>
+        <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-400);font-weight:800;margin-bottom:8px">Shared bank</div>
         <sc-for list="{{ chPools }}" as="pl" hint-placeholder-count="5">
           <div style="display:grid;grid-template-columns:1fr auto;gap:var(--space-3);align-items:center;padding:8px 0;border-bottom:1px solid var(--color-divider)">
             <div style="font-family:var(--font-heading);font-weight:800;font-size:14px">{{ pl.label }}</div>
             <div style="font-family:var(--font-heading);font-weight:800;font-size:18px;letter-spacing:-0.03em">{{ pl.count }}</div>
           </div>
         </sc-for>
-        <div style="font-size:11px;color:var(--color-neutral-500);margin-top:8px;text-wrap:pretty">Every question belongs to exactly one pool, so no question reaches a player through two different modes.</div>
+        <div style="font-size:11px;color:var(--color-neutral-500);margin-top:8px;text-wrap:pretty">Every question can come up in any game. A player never sees the same question twice — not in another session, another mode or on another device.</div>
       </div>
 
       <div style="padding:0 var(--space-4) var(--space-4)">
@@ -652,8 +651,7 @@
 
   <!-- ═══ NAV ═══ -->
   <sc-if value="{{ showNav }}" hint-placeholder-val="{{ false }}">
-    <div style="height:68px;flex:none"></div>
-    <div style="position:sticky;bottom:0;margin-top:auto;display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;background:var(--color-bg);border-top:2px solid var(--color-divider)">
+    <div class="nav-bar" style="flex:none;display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;background:var(--color-bg);border-top:2px solid var(--color-divider)">
       <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="5">
         <button onClick="{{ n.pick }}" aria-label="{{ n.label }}" style="{{ n.style }}">
           <div style="{{ n.iconWrap }}">

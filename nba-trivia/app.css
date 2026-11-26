@@ -26,3 +26,11 @@ button{font-family:inherit}
 @keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
 @keyframes emberUp{0%{opacity:0;transform:translateY(0) scale(.6)}30%{opacity:.9}100%{opacity:0;transform:translateY(-90px) scale(1.3)}}
   
+
+/* One screen, no page scrolling: the shell is exactly the visible height,
+   each screen fills it, and only designated lists scroll inside themselves.
+   (The auto overflow on a screen is a safety net for very small phones.) */
+html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+.shell > *:not(.nav-bar) { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+.shell > *::-webkit-scrollbar { display: none; }
+@media (max-height: 760px) { .tall-only { display: none !important; } }

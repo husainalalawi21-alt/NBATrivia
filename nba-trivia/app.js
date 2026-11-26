@@ -44,7 +44,8 @@ export class App extends Logic {
     else { eng.buildBank({ questions: lib, mystery: mys, teams, facts }); eng.hydrateOverrides(); eng.refreshTemporal(); }
     this.eng = eng;
     const profile = this.localProfile(null);
-    this.setState({ lib, mys, teams, eng, profile, account: null, challenges: [], online: !!(live && live.length), screen: 'welcome', teamDraft: profile.favoriteTeam });
+    // (No screen change here: a player who already tapped ahead stays where they are.)
+    this.setState({ lib, mys, teams, eng, profile, account: null, challenges: [], online: !!(live && live.length), teamDraft: profile.favoriteTeam });
     if (user) await this.signedIn(user);
     // A shared challenge link (…?c=NBA7X92) opens that battle.
     const code = new URLSearchParams(location.search).get('c');
@@ -182,9 +183,8 @@ export class App extends Logic {
     if (mode === 'team' && !teamId) return this.setState({ screen: 'teampick', reg: false, hubFrom: 'home' });
     const dateKey = new Date().toISOString().slice(0, 10);
     const seed = opts.challenge ? opts.challenge.seed : (mode === 'daily' ? 'daily-' + dateKey : 'r' + Math.random().toString(36).slice(2, 10));
-    // Streak is the marquee mode but not a content pool — it reads the BUZZ
-    // pool (fast, recognizable) so pool exclusivity holds across the five modes.
-    const poolMode = mode === 'streak' ? 'buzz' : mode;
+    // All multiple-choice modes share one bank; the mode sets the difficulty ramp.
+    const poolMode = mode;
     const session = eng.newSession({ mode: poolMode, teamId, category: opts.cat || 'All', seed: mode === 'daily' || opts.challenge ? seed : null });
     const run = { mode, teamId, seed, session, challenge: opts.challenge || null, cat: opts.cat || 'All',
       idx: 0, answered: null, score: 0, streak: 0, best: 0, correct: 0, answers: 0, log: [],
@@ -341,7 +341,7 @@ export class App extends Logic {
     // The challenger's exact questions, then spares from the same pool so
     // the opponent can go further than the challenger did.
     const ids = r.log.map(x => x.qid).filter(Boolean);
-    const poolMode = r.mode === 'streak' ? 'buzz' : r.mode;
+    const poolMode = r.mode;
     const spares = this.eng.shuffle(this.eng.eligible({ mode: poolMode, teamId: r.teamId, sessionUsed: new Set(ids), ignoreHistory: true })).slice(0, 30).map(x => x.question_id);
     this.setState({ busy: true });
     const res = await cloud.createChallenge({ creator_id: uid, mode: r.mode, team_id: r.teamId || null, seed: r.seed, question_ids: [...ids, ...spares],
@@ -404,7 +404,11 @@ export class App extends Logic {
       chGapNote: `${this.fmt(gap)} knowledge points short of the 500,000 target. The pipeline scales without redesign — reaching the target needs a verified source corpus (season-by-season box scores, rosters, transactions) ingested through the same fact → knowledge point → question path. No wording variations are counted.`,
       chGenerated: this.fmt(ch.generated), chDupesRejected: this.fmt(ch.duplicatesRejected), chQualityRejected: this.fmt(ch.qualityRejected),
       chCurrentSplit: `${ch.current} / ${this.fmt(ch.historical)}`,
-      chPools: eng.POOLS.map(pl => ({ label: poolLabel[pl] || pl, count: this.fmt(ch.pools[pl] || 0) })),
+      chPools: [
+        ['Multiple choice — every mode', eng.getBank().filter(r => r.active && r.status === 'active' && r.question_type !== 'career_mystery').length],
+        ['…of which team questions', eng.getBank().filter(r => r.active && r.status === 'active' && r.team_id).length],
+        ['Who Am I? career clues', eng.getBank().filter(r => r.active && r.status === 'active' && r.question_type === 'career_mystery').length]
+      ].map(([label, n]) => ({ label, count: this.fmt(n) })),
       chMix: ch.mixRows.map(m => ({ tier: m.tier, readout: `${Math.round(m.actual * 100)}% / ${Math.round(m.target * 100)}%`,
         barStyle: `height:100%;background:${Math.abs(m.actual - m.target) > 0.12 ? 'var(--color-accent-700)' : 'var(--color-accent)'};width:${Math.min(100, m.actual * 100 / 0.35 * 1)}%`,
         targetTickStyle: `position:absolute;top:-3px;bottom:-3px;left:${Math.min(99, m.target * 100 / 0.35)}%;width:2px;background:var(--color-text)` })),
@@ -506,7 +510,7 @@ export class App extends Logic {
       let bg = 'var(--color-surface)', col = 'var(--color-text)', anim = '', bd = 'var(--color-divider)';
       if (answered) { if (isC) { bg = 'var(--color-accent)'; col = '#120800'; bd = 'var(--color-accent)'; } else if (chosen) { bg = 'transparent'; col = 'var(--color-neutral-400)'; bd = 'var(--color-neutral-500)'; anim = 'shake .3s ease-in-out'; } else { col = 'var(--color-neutral-500)'; bd = 'var(--color-neutral-800)'; } }
       return { letter: letters[i], text: o, disabled: answered || gone, pick: () => isWai ? this.waiGuess(o) : this.answer(o),
-        style: `all:unset;box-sizing:border-box;cursor:${answered || gone ? 'default' : 'pointer'};display:flex;align-items:center;gap:14px;min-height:64px;padding:12px 14px;background:${bg};color:${col};border:1px solid ${bd};font-family:var(--font-heading);font-weight:800;font-size:17px;line-height:1.15;opacity:${gone ? .3 : 1};animation:${anim};transition:background .12s,border-color .12s`,
+        style: `all:unset;box-sizing:border-box;cursor:${answered || gone ? 'default' : 'pointer'};display:flex;align-items:center;gap:14px;min-height:clamp(48px,7.6dvh,64px);padding:clamp(6px,1.2dvh,12px) 14px;background:${bg};color:${col};border:1px solid ${bd};font-family:var(--font-heading);font-weight:800;font-size:clamp(15px,2.2dvh,17px);line-height:1.15;opacity:${gone ? .3 : 1};animation:${anim};transition:background .12s,border-color .12s`,
         letterStyle: 'width:26px;flex:none;font-size:12px;opacity:.55;letter-spacing:.06em',
         mark: answered && (isC || chosen), markText: isC ? 'CORRECT' : 'YOURS' };
     }) : [];
@@ -523,10 +527,10 @@ export class App extends Logic {
     // ── result view ──
     const isStreaky = r && (r.mode === 'streak' || r.mode === 'team');
     const cell3 = i => `padding:var(--space-3) var(--space-4);${(i + 1) % 3 !== 0 ? 'border-right:1px solid var(--color-divider);' : ''}${i < 3 ? 'border-bottom:1px solid var(--color-divider);' : ''}`;
-    const cell2 = i => `padding:var(--space-4);${i % 2 === 0 ? 'border-right:1px solid var(--color-divider);' : ''}${i < 2 ? 'border-bottom:1px solid var(--color-divider);' : ''}`;
+    const cell2 = i => `min-width:0;padding:clamp(8px,1.4dvh,12px) 10px;${i < 3 ? 'border-right:1px solid var(--color-divider);' : ''}`;
     const resultStats = r ? (isStreaky
-      ? [['Accuracy', r.acc + '%'], ['Best streak', p.bestStreak || 0], ['Global rank', globalRank], ['Team rank', teamRank]]
-      : [['Questions', r.answers], ['Accuracy', r.acc + '%'], ['Longest streak', r.best], ['Fastest', r.fastest != null ? (r.fastest / 1000).toFixed(1) + 's' : '—']]
+      ? [['Accuracy', r.acc + '%'], ['Best', p.bestStreak || 0], ['Global', globalRank], ['Team', teamRank]]
+      : [['Questions', r.answers], ['Accuracy', r.acc + '%'], ['Streak', r.best], ['Fastest', r.fastest != null ? (r.fastest / 1000).toFixed(1) + 's' : '—']]
     ).map(([label, value], i) => ({ label, value, style: cell2(i) })) : [];
 
     const nav = [['HOME', 'home'], ['PLAY', 'play'], ['BOARD', 'board'], ['TEAM', t ? 'teamhub' : 'teampick'], ['PROFILE', 'profile']].map(([label, target]) => {
@@ -559,10 +563,11 @@ export class App extends Logic {
     return {
       appName,
       shellStyle: frame
-        ? 'position:relative;width:390px;height:844px;margin:24px 0;overflow:auto;display:flex;flex-direction:column;background:var(--color-bg);box-shadow:0 0 0 10px #000,0 0 0 12px #2a2a2e,var(--shadow-lg);border-radius:42px;scrollbar-width:none'
-        : 'position:relative;width:100%;max-width:440px;min-height:100vh;display:flex;flex-direction:column;background:var(--color-bg)',
+        ? 'position:relative;width:390px;height:min(844px,calc(100dvh - 48px));overflow:hidden;display:flex;flex-direction:column;background:var(--color-bg);box-shadow:0 0 0 10px #000,0 0 0 12px #2a2a2e,var(--shadow-lg);border-radius:42px'
+        : 'position:relative;width:100%;max-width:440px;height:100%;overflow:hidden;display:flex;flex-direction:column;background:var(--color-bg)',
 
-      showNav: !REG.includes(sc) && sc !== 'game' && sc !== 'admin',
+      // The team picker opened from the menu keeps the menu (only sign-up hides it).
+      showNav: (!REG.includes(sc) || (sc === 'teampick' && !s.reg)) && sc !== 'game' && sc !== 'admin',
       navItems: nav,
 
       atWelcome: sc === 'welcome', atAuth: sc === 'auth', atUsername: sc === 'username', atTeamPick: sc === 'teampick', atReady: sc === 'ready',
@@ -604,7 +609,7 @@ export class App extends Logic {
       globalRank,
       streakLabel: p.lastStreak != null ? 'Last streak' : 'Your streak',
       heroStreak: String(heroStreakVal).padStart(2, '0'),
-      heroNumStyle: `font-family:var(--font-heading);font-weight:800;font-size:132px;line-height:.82;letter-spacing:-0.07em;margin-top:6px;${accentGlow && heroStreakVal >= 10 ? 'color:var(--color-accent);text-shadow:0 0 48px rgba(255,106,26,.45)' : ''}`,
+      heroNumStyle: `font-family:var(--font-heading);font-weight:800;font-size:clamp(64px,13.5dvh,132px);line-height:.82;letter-spacing:-0.07em;margin-top:6px;${accentGlow && heroStreakVal >= 10 ? 'color:var(--color-accent);text-shadow:0 0 48px rgba(255,106,26,.45)' : ''}`,
       hasStreak: accentGlow && heroStreakVal >= 10,
       embers: Array.from({ length: 10 }, (_, i) => `position:absolute;left:${8 + i * 9}%;bottom:34%;width:4px;height:4px;background:var(--color-accent);opacity:0;animation:emberUp ${2.4 + (i % 4) * .5}s linear ${(i % 5) * .45}s infinite`),
       bestStreak: p.bestStreak || 0, accuracy: totalQ ? acc + '%' : '—',
@@ -632,10 +637,10 @@ export class App extends Logic {
         { name: 'Who Am I?', desc: 'Name the player or coach from career clues.', pick: () => this.startRun('wai'), locked: false, hasStat: !!rec.wai, stat: rec.wai ? this.fmt(rec.wai.score) : '' },
         { name: 'Head to Head', desc: 'Same questions, against a friend.', pick: go('h2h'), locked: false, hasStat: false, stat: '' },
         { name: 'Tournaments', desc: 'Bracketed weekend events.', pick: () => {}, locked: true, hasStat: false, stat: '' }
-      ].map(m => ({ ...m, style: `all:unset;box-sizing:border-box;cursor:${m.locked ? 'default' : 'pointer'};width:100%;display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--color-divider);color:var(--color-text);opacity:${m.locked ? .5 : 1}` })),
+      ].map(m => ({ ...m, cls: m.locked ? 'tall-only' : '', style: `all:unset;box-sizing:border-box;cursor:${m.locked ? 'default' : 'pointer'};width:100%;display:flex;align-items:center;gap:var(--space-3);padding:clamp(6px,1.3dvh,12px) var(--space-4);border-bottom:1px solid var(--color-divider);color:var(--color-text);opacity:${m.locked ? .5 : 1}` })),
 
       // game
-      gameShellStyle: `position:relative;display:flex;flex-direction:column;flex:1;min-height:0;${urgent ? 'box-shadow:inset 0 0 0 2px var(--color-accent)' : ''}`,
+      gameShellStyle: `position:relative;display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;${urgent ? 'box-shadow:inset 0 0 0 2px var(--color-accent)' : ''}`,
       quitGame: () => { const uid = s.user && s.user.id; if (uid && a && r) cloud.recordHistory(uid, r.mode, r.log); this.setState({ screen: 'home', run: null }); },
       gameProgress: r ? (r.qs ? `${String(r.idx + 1).padStart(2, '0')} / ${r.qs.length}` : modeName(r.mode).toUpperCase()) : '',
       gameHasClock: !!(r && r.mode === 'buzz'),
@@ -648,7 +653,7 @@ export class App extends Logic {
       qKicker: q ? (isWai ? `${q.kind === 'coach' ? 'Coach' : 'Player'} · worth ${this.fmt(this.WAI_POINTS[r.clueIdx] || 200)}` : `${q.cat} · ${q.diff}`) : '',
       qIsClues: !!isWai, qIsPlain: !isWai,
       qText: q && !isWai ? q.text : '',
-      qTextStyle: `font-size:${q && !isWai && q.text.length > 72 ? 25 : 31}px;line-height:1.08;letter-spacing:-0.03em;margin:0;text-wrap:pretty;font-family:var(--font-heading);font-weight:800`,
+      qTextStyle: `font-size:${q && !isWai && q.text.length > 72 ? 'clamp(19px,3.1dvh,25px)' : 'clamp(22px,3.8dvh,31px)'};line-height:1.08;letter-spacing:-0.03em;margin:0;text-wrap:pretty;font-family:var(--font-heading);font-weight:800`,
       clueRows,
       showAnswers: !!(q && (!isWai || (isWai && r.phase === 'guess' && q.options))),
       answers,
@@ -669,15 +674,15 @@ export class App extends Logic {
       feedbackHasTrail: !!(ok && r && (r.mode === 'streak' || r.mode === 'team')),
       feedbackTrail: r ? `${r.streak} STREAK` : '',
       feedbackSub: ok ? ((lastLog && lastLog.exp) || '') : (lastLog ? `Correct answer: ${lastLog.correct}${lastLog.exp ? ' — ' + lastLog.exp : ''}` : ''),
-      feedbackStyle: `position:sticky;bottom:0;margin-top:auto;padding:var(--space-3) var(--space-4);background:${ok ? 'var(--color-accent)' : 'var(--color-surface)'};color:${ok ? '#120800' : 'var(--color-text)'};border-top:2px solid ${ok ? 'var(--color-accent)' : 'var(--color-neutral-500)'};animation:in .15s ease-out`,
+      feedbackStyle: `flex:none;box-sizing:border-box;height:clamp(64px,10.5dvh,88px);overflow:hidden;padding:clamp(6px,1.2dvh,12px) var(--space-4);${answered ? `background:${ok ? 'var(--color-accent)' : 'var(--color-surface)'};color:${ok ? '#120800' : 'var(--color-text)'};border-top:2px solid ${ok ? 'var(--color-accent)' : 'var(--color-neutral-500)'};animation:in .15s ease-out` : 'border-top:2px solid transparent'}`,
 
       // result
       resultKicker: r ? (r.exhausted ? 'Pool cleared' : isStreaky ? (r.mode === 'team' && t ? `${t.name} run over` : 'Streak ended') : `${modeName(r.mode)} complete`) : '',
       resultNumber: r ? (isStreaky ? String(r.best) : this.fmt(s.displayScore)) : '',
-      resultNumStyle: `font-family:var(--font-heading);font-weight:800;font-size:${r && isStreaky ? 128 : 84}px;line-height:.85;letter-spacing:-0.06em;margin-top:8px`,
+      resultNumStyle: `font-family:var(--font-heading);font-weight:800;font-size:${r && isStreaky ? 'clamp(64px,13dvh,128px)' : 'clamp(48px,9dvh,84px)'};line-height:.85;letter-spacing:-0.06em;margin-top:6px`,
       resultLine: r ? (r.exhausted ? `${r.best} in a row — you've now seen every question in this pool. Fresh ones are on the way.` : isStreaky ? `${r.best} consecutive correct answers.` : `${r.correct} of ${r.answers} right · ${this.fmt(r.score)} points`) : '',
       isRecord: !!(r && r.isRecord), prevBest: r ? this.fmt(r.prevBest) : '',
-      resultHeroStyle: `padding:var(--space-8) var(--space-4) var(--space-6);border-bottom:2px solid var(--color-divider);${r && r.isRecord ? 'background:var(--color-accent);color:#120800' : ''}`,
+      resultHeroStyle: `flex:none;padding:clamp(14px,3.4dvh,32px) var(--space-4) clamp(12px,2.6dvh,24px);border-bottom:2px solid var(--color-divider);${r && r.isRecord ? 'background:var(--color-accent);color:#120800' : ''}`,
       resultStats,
       playAgain: () => r && this.startRun(r.mode, { cat: r.cat }),
       goBoard: go('board'), goShare: go('share'),

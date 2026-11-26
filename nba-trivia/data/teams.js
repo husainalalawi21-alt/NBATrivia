@@ -60,12 +60,12 @@ export function templates(t, tier, rnd) {
     if (t.legends) add(`Which player did NOT play for the ${t.name}?`, pick(TEAMS.filter(x => x.id !== t.id).flatMap(x => x.legends || []), rnd, 1)[0], t.legends, `The other three are ${F} names.`, 'Franchise legends');
   } else if (tier === 'superfan') {
     if (t.lastTitle) add(`In which year did the ${t.name} most recently win the championship?`, String(t.lastTitle), TEAMS.filter(x => x.lastTitle && x.lastTitle !== t.lastTitle).map(x => String(x.lastTitle)), `${F} — ${t.lastTitle}.`, 'Championships');
-    if (t.former) add(`Which name did this franchise previously go by?`, t.former, others(t, 'former'), `${F} were once the ${t.former}.`, 'Team history');
+    if (t.former) add(`Which name did the ${F} previously go by?`, t.former, others(t, 'former'), `${F} were once the ${t.former}.`, 'Team history');
     if (t.legends && t.legends.length >= 3) add(`Which of these is the longest-serving ${t.name} franchise cornerstone?`, t.legends[0], TEAMS.filter(x => x.id !== t.id).flatMap(x => x.legends || []), `${t.legends[0]} defined an era in ${t.city}.`, 'Franchise legends');
     add(`Which team shares the ${t.div} Division with the ${t.name}?`, pick(TEAMS.filter(x => x.div === t.div && x.id !== t.id), rnd, 1).map(x => x.name)[0], TEAMS.filter(x => x.div !== t.div).map(x => x.name), `${t.div} Division rivals.`, 'Team history');
   } else {
     const pool = TEAMS.filter(x => x.id !== t.id);
-    if (t.former) add(`This franchise played under which name before its current one?`, t.former, others(t, 'former'), `${F} history: ${t.former} → ${F}.`, 'Team history');
+    if (t.former) add(`Before they were the ${F}, which name did they play under?`, t.former, others(t, 'former'), `${F} history: ${t.former} → ${F}.`, 'Team history');
     if (t.scorer && t.legends) add(`Which ${t.name} great scored more points for the franchise than any other?`, t.scorer, t.legends.filter(l => l !== t.scorer).concat(pool.flatMap(x => x.legends || [])), `${t.scorer} is the franchise scoring leader.`, 'Franchise records');
     if (t.lastTitle) add(`The ${t.name} lifted the trophy in which of these years?`, String(t.lastTitle), TEAMS.filter(x => x.lastTitle).map(x => String(x.lastTitle)), `${t.lastTitle}.`, 'Championships');
     if (t.arena) add(`Which arena is home to the ${t.name}?`, t.arena, others(t, 'arena'), `${t.arena}, ${t.city}.`, 'Arenas');
