@@ -86,12 +86,17 @@ function parseCSV(text) {
   if (cell || row.length) { row.push(cell); rows.push(row); }
   const [head, ...body] = rows; return body.filter(r => r.length === head.length).map(r => Object.fromEntries(head.map((h, i) => [h, r[i]])));
 }
+// Who Am I?: the hand-written career mysteries plus one per recognisable
+// player in the database (generate.js fromCareers).
+let careerPeople = [];
 if (existsSync(join(KDIR, 'draft_history.csv'))) {
   const k = name => parseCSV(readFileSync(join(KDIR, name + '.csv'), 'utf8'));
   const teamRows = k('team'), bioRows = k('common_player_info');
   const abbrById = new Map(teamRows.map(t => [t.id, t.abbreviation.toLowerCase()]));
   const abbrOf = id => abbrById.get(String(id)) || null;
   const bios = new Map(bioRows.map(r => [r.person_id, r]));
+  if (masterPlayers) careerPeople = gen.fromCareers(masterPlayers, { seasons: facts.SEASONS, jerseys: jerseys.JERSEYS, exclude: mystery.PEOPLE.map(p => p.name), bios });
+  report.issues.push(`who am I?: ${mystery.PEOPLE.length} hand-written + ${careerPeople.length} from the player database`);
   const fromK = [...gen.fromDraft(k('draft_history'), { abbrOf, bios }), ...gen.fromBios(masterPlayers ? masterPlayers.filter(p => p.person_id) : bioRows)];
   if (GDIR === MERGED) for (const y of seasonsOf('reg')) if (y !== current) fromK.push(...gen.fromTeamBox(read(`games-${y}-reg.json`), y));
   report.issues.push(`kaggle: ${fromK.length} questions (draft, bios${GDIR === MERGED ? ', box scores from the merged games' : ''})`);
@@ -137,7 +142,7 @@ const merged = { ...facts,
     const out = []; while (out.length < 3) out.push(...near.splice(Math.floor(rnd() * near.length), 1));
     return out;
   } };
-const bank = engine.buildBank({ questions, mystery, teams, facts: merged });
+const bank = engine.buildBank({ questions, mystery: { ...mystery, PEOPLE: [...mystery.PEOPLE, ...careerPeople] }, teams, facts: merged });
 const genByKp = new Map(generated.map(k => [k.knowledge_point_id, k]));
 
 // ── six levels for questions that don't come from the game data ──
@@ -207,6 +212,9 @@ const factGroups = new Map();
 const sameText = new Map();
 for (const r of rows) {
   if (r.status === 'outdated') continue;
+  // A career mystery is one per person (its id comes from the name); its text
+  // is only the first clue, which two different players can share.
+  if (r.question_type === 'career_mystery') continue;
   // Identical wording reads as a repeat to a player even if the answer differs.
   const tkey = engine.normalizeText(r.question_text);
   if (sameText.has(tkey)) { r.status = 'disabled'; r.active = false; r.payload = { ...r.payload, duplicate_of: sameText.get(tkey) }; report.issues.push(`duplicate retired (same wording): "${r.question_text}"`); continue; }

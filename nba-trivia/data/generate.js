@@ -587,3 +587,82 @@ export function crossCheck(seasonsTable, finalsBySeason) {
   }
   return issues;
 }
+
+// ── Who Am I? career mysteries from the player database ─────────────
+// One mystery per recognisable player: award winners, the NBA 75th
+// Anniversary Team, the hand-checked jersey list, and long-career high
+// picks. Five clues, hardest first: build and debut → where he came from →
+// career length → draft → awards (or jersey numbers). The facts used are
+// only the reliable ones (Kaggle bios, the hand-checked awards and jersey
+// tables); balldontlie's "current team" is not used, it is often stale.
+// Every mystery is checked to point at exactly one player.
+const deaccent = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
+export function fromCareers(players, { seasons = [], jerseys = [], exclude = [], bios = new Map() } = {}) {
+  const skip = new Set(exclude.map(deaccent));
+  const aw = new Map(), add = (name, k, v) => { if (!name) return; const key = deaccent(name), a = aw.get(key) || { mvp: [], fmvp: [], roy: [], scoring: [] }; a[k].push(v); aw.set(key, a); };
+  for (const [s, , , fmvp, mvp, , roy, scoring] of seasons) { add(mvp, 'mvp', s); add(fmvp, 'fmvp', s); add(roy, 'roy', s); add(scoring, 'scoring', s); }
+  const nums = new Map();
+  for (const [, name, num] of jerseys) { const k = deaccent(name), set = nums.get(k) || new Set(); set.add(num); nums.set(k, set); }
+  // position and height from the Kaggle bio (balldontlie's are sometimes wrong: it lists Mutombo as a guard)
+  const posOf = p => ({ Guard: 'guard', Forward: 'forward', Center: 'center', 'Guard-Forward': 'guard-forward', 'Forward-Guard': 'forward-guard', 'Forward-Center': 'forward-center', 'Center-Forward': 'center-forward' })[p] || null;
+  const group = p => /center/i.test(p || '') ? 'C' : /forward/i.test(p || '') ? 'F' : 'G';
+  const feet = h => { const m = /^(\d)-(\d{1,2})$/.exec(h || ''); return m ? `${m[1]}'${m[2]}"` : null; };
+  const times = (n, what) => n > 1 ? `${n}× ${what}` : what;
+  const isHS = c => /\bHS\b|high school|academy|prep\b/i.test(c || '');
+  const pool = players.filter(p => p.person_id && p.from_year && p.season_exp && p.display_first_last && p.nba_flag !== 'N');
+  const people = [];
+  for (const p of pool) {
+    const name = p.display_first_last.trim(), key = deaccent(name);
+    if (skip.has(key)) continue;
+    const a = aw.get(key) || { mvp: [], fmvp: [], roy: [], scoring: [] }, n75 = p.greatest_75_flag === 'Y', jn = nums.get(key);
+    const pick = +p.draft_number || null, yr = +p.draft_year || null, exp = +p.season_exp;
+    const awardCount = a.mvp.length + a.fmvp.length + a.roy.length + a.scoring.length;
+    // who is recognisable, and how hard is he to guess (rookie = easiest … legend = hardest)
+    let tier = null;
+    if (n75 || a.mvp.length) tier = p.from_year >= 1979 ? 'rookie' : 'starter';
+    else if (awardCount) tier = p.from_year >= 1979 ? 'starter' : 'allstar';
+    else if (jn) tier = 'allstar';
+    else if (pick && pick <= 5 && exp >= 9) tier = 'superstar';
+    else if ((pick && pick <= 15 && exp >= 12) || exp >= 16) tier = 'legend';
+    if (!tier) continue;
+    const bio = bios.get(String(p.person_id)) || {}, position = bio.position || null, height = bio.height || p.height;
+    const debut = seasonLabel(p.from_year), pos = posOf(position), ht = feet(height);
+    const clues = [];
+    clues.push({ type: 'text', content: `${ht && pos ? `A ${ht} ${pos}` : pos ? `A ${pos}` : 'A player'} who entered the NBA in ${debut}.` });
+    const school = (bio.school || p.college || '').trim(), abroad = p.country && p.country !== 'USA';
+    const land = c => /^(Democratic Republic|Republic of|United|Czech Republic|Dominican Republic|Central African Republic|Bahamas|Netherlands|Philippines|U\.?S\.? Virgin|Virgin Islands)/i.test(c) ? 'the ' + c : c;
+    if (abroad) clues.push({ type: 'text', content: school && !/^none$/i.test(school) ? `Came to the NBA from ${land(p.country)}, after playing for ${school}.` : `Came to the NBA from ${land(p.country)}.` });
+    else if (isHS(school)) clues.push({ type: 'text', content: `Went straight to the NBA from high school (${school.replace(/\s*\(([A-Z]{2})\)$/, ', $1')}).` });
+    else if (school && !/^none$/i.test(school)) clues.push({ type: 'text', content: `Played college basketball at ${school}.` });
+    const retired = p.to_year && p.to_year <= 2021;
+    clues.push({ type: 'text', content: retired ? `Played ${exp} NBA season${exp === 1 ? '' : 's'}, the last in ${seasonLabel(p.to_year)}.` : `Had played ${exp} NBA season${exp === 1 ? '' : 's'} by 2022-23.` });
+    if (yr && pick && p.draft_team) clues.push({ type: 'text', content: `Drafted No. ${pick} overall in ${yr} by the ${p.draft_team}.` });
+    else if (/undrafted/i.test(String(bio.draft_year || p.draft_year))) clues.push({ type: 'text', content: 'Went undrafted.' });
+    const list = [
+      a.mvp.length && times(a.mvp.length, 'MVP') + (a.mvp.length === 1 ? ` (${a.mvp[0]})` : ''),
+      a.fmvp.length && times(a.fmvp.length, 'Finals MVP'),
+      a.scoring.length && times(a.scoring.length, 'scoring champion'),
+      a.roy.length && `Rookie of the Year ${a.roy[0]}`,
+      n75 && 'NBA 75th Anniversary Team'
+    ].filter(Boolean);
+    if (list.length) clues.push({ type: 'awards', list });
+    else if (jn) clues.push({ type: 'numbers', numbers: [...jn] });
+    if (clues.length < 4) continue;                       // too little to go on
+    people.push({ id: 100000 + Number(p.person_id), kind: 'player', tier, name, accept: [], decoys: [], clues,
+      era: `${Math.floor(p.from_year / 10) * 10}s${p.to_year && Math.floor(p.to_year / 10) !== Math.floor(p.from_year / 10) ? '–' + Math.floor(p.to_year / 10) * 10 + 's' : ''}`,
+      _g: group(position), _from: p.from_year, _sig: `${p.from_year}|${school}|${p.country}|${yr}|${pick}` });
+  }
+  // fairness: the clues as a whole must fit only this player in the database
+  const allSig = new Map(); for (const p of pool) { const b = bios.get(String(p.person_id)) || {}; const s = `${p.from_year}|${(b.school || p.college || '').trim()}|${p.country}|${+p.draft_year || null}|${+p.draft_number || null}`; allSig.set(s, (allSig.get(s) || 0) + 1); }
+  const unique = people.filter(x => allSig.get(x._sig) === 1);
+  // multiple-choice tiers get three plausible decoys: same position group, similar era
+  // (decoys of similar stature first, so a legend isn't hidden among role players)
+  const T = ['rookie', 'starter', 'allstar', 'superstar', 'legend'];
+  for (const x of unique) {
+    const rnd = rng('decoy' + x.name), ti = T.indexOf(x.tier);
+    const near = unique.filter(y => y !== x && y._g === x._g && Math.abs(y._from - x._from) <= 8)
+      .sort((a, b) => Math.abs(T.indexOf(a.tier) - ti) - Math.abs(T.indexOf(b.tier) - ti) || Math.abs(a._from - x._from) - Math.abs(b._from - x._from)).slice(0, 7);
+    x.decoys = pick(near.map(y => y.name), 3, rnd);
+  }
+  return unique.map(({ _g, _from, _sig, ...x }) => x);
+}
