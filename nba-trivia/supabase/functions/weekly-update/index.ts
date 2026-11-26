@@ -9,7 +9,7 @@
 //   5. writes a row to public.sync_runs
 //
 // Secrets (Project Settings › Edge Functions › Secrets):
-//   BALLDONTLIE_API_KEY  the balldontlie key (without it, steps 1–3 are skipped)
+//   BDONTLIE or BALLDONTLIE_API_KEY  the balldontlie key (either name; without one, the download is skipped)
 //   CRON_SECRET          must match the x-cron-secret header the schedule sends
 // SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are provided by Supabase.
 //
@@ -19,7 +19,10 @@ import { fromRegularSeason, fromRecentGames, fromPostseason, reigningChampion, g
 
 const URL_ = Deno.env.get('SUPABASE_URL')!;
 const KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const BDL = Deno.env.get('BALLDONTLIE_API_KEY') || '';
+// Either secret name works; a key balldontlie rejects (401) is set aside for the next one.
+const BDL_KEYS = [Deno.env.get('BDONTLIE'), Deno.env.get('BALLDONTLIE_API_KEY')].map(k => (k || '').trim().replace(/^Bearer\s+/i, '')).filter(Boolean);
+const BDL = BDL_KEYS.length > 0;
+let bdlKey = 0;
 const CRON = Deno.env.get('CRON_SECRET') || '';
 const MAX_PAGES = 4;               // free plan: 5 requests a minute
 
@@ -41,8 +44,9 @@ async function selectAll(path: string) {        // PostgREST caps responses at 1
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 async function bdl(path: string) {
   for (let i = 0; i < 3; i++) {
-    const r = await fetch('https://api.balldontlie.io/v1' + path, { headers: { Authorization: BDL } });
+    const r = await fetch('https://api.balldontlie.io/v1' + path, { headers: { Authorization: BDL_KEYS[bdlKey] } });
     if (r.status === 429) { await sleep(21000); continue; }
+    if (r.status === 401 && bdlKey + 1 < BDL_KEYS.length) { bdlKey++; i--; continue; }
     if (!r.ok) throw new Error(`balldontlie ${r.status}: ${(await r.text()).slice(0, 200)}`);
     return r.json();
   }
@@ -101,7 +105,7 @@ Deno.serve(async req => {
       result.fetched = 'failed: ' + String(e).slice(0, 200);
       await dbJson(`sync_runs?id=eq.${run!.id}`, { method: 'PATCH', body: JSON.stringify({ error: 'download: ' + String(e).slice(0, 500) }) }).catch(() => {});
     }
-    else result.fetched = 'skipped: BALLDONTLIE_API_KEY is not set';
+    else result.fetched = 'skipped: no balldontlie key (BDONTLIE or BALLDONTLIE_API_KEY) is set';
 
     // ── 2. regenerate live questions from the database ───────────
     const teamRows = await selectAll('teams?select=*');
