@@ -89,11 +89,17 @@ const toRecord = q => ({
   source_name: q.source_name, source_url: q.source_url, source_date: q.source_date,
   person: q.payload && q.payload.person, clues: q.payload && q.payload.clues,
   usage_count: 0, duplicate_warnings: [] });
-export async function loadQuestions() {
+// Everyone gets the shared bank (all multiple-choice questions, every team's
+// basics and jersey numbers); a team's deep season / game / playoff questions
+// only come for the player's own team. Admins load everything.
+const DEEP = '("Team seasons","Team games","Team playoffs")';
+export async function loadQuestions(teamId = null, everything = false) {
   if (!sb) return null;
   const out = [];
   for (let from = 0; ; from += 1000) {
-    const { data, error } = await sb.from('questions').select('*').order('question_id').range(from, from + 999);
+    let q = sb.from('questions').select('*').order('question_id').range(from, from + 999);
+    if (!everything) q = q.or(`team_id.is.null,category.not.in.${DEEP}${teamId ? `,team_id.eq.${teamId}` : ''}`);
+    const { data, error } = await q;
     if (error) return out.length ? out.map(toRecord) : null;
     out.push(...data);
     if (data.length < 1000) break;

@@ -20,6 +20,9 @@ export class App extends Logic {
     ranks: { global: null, team: null }, adminMsg: '', online: false
   };
   PKEY = 'v2_profile'; AKEY = 'v2_account'; CKEY = 'v2_challenges';
+  // Resolves once the question engine is loaded; anything that needs it
+  // (a sign-in that finishes first on a slow connection) waits on this.
+  ready = new Promise(resolve => { this._ready = resolve; });
   BADGES = [
     ['first', 'First Blood', 'Reach a 10 streak', p => (p.bestStreak || 0) >= 10],
     ['fire', 'On Fire', 'Reach a 25 streak', p => (p.bestStreak || 0) >= 25],
@@ -39,10 +42,13 @@ export class App extends Logic {
   async componentDidMount() {
     const [lib, mys, teams, eng, facts] = await Promise.all([import('./data/questions.js'), import('./data/mystery.js'), import('./data/teams.js'), import('./data/engine.js'), import('./data/facts.js')]);
     // The live bank from Supabase; the built-in one if the device is offline.
-    const [live, user] = await Promise.all([cloud.loadQuestions(), cloud.currentUser()]);
+    const guestTeam = this.localProfile(null).favoriteTeam;
+    const [live, user] = await Promise.all([cloud.loadQuestions(guestTeam), cloud.currentUser()]);
+    this._bankTeam = guestTeam;
     if (live && live.length) eng.setBank(live);
     else { eng.buildBank({ questions: lib, mystery: mys, teams, facts }); eng.hydrateOverrides(); eng.refreshTemporal(); }
     this.eng = eng;
+    this._ready();
     const profile = this.localProfile(null);
     // (No screen change here: a player who already tapped ahead stays where they are.)
     this.setState({ lib, mys, teams, eng, profile, account: null, challenges: [], online: !!(live && live.length), teamDraft: profile.favoriteTeam });
@@ -80,6 +86,7 @@ export class App extends Logic {
   }
   // After any sign-in: profile, answer history, battles and ranks from the server.
   async signedIn(user) {
+    await this.ready;
     const row = await cloud.loadProfile(user.id);
     this.eng.useHistoryOf(user.id);
     this.eng.mergeHistory(await cloud.loadHistory(user.id));
@@ -90,9 +97,14 @@ export class App extends Logic {
     const account = row ? { username: row.username, email: user.email, provider: (user.app_metadata || {}).provider || 'email', favoriteTeam: row.favorite_team || null } : null;
     this.setState({ user, account, profile, isAdmin: !!(row && row.is_admin), guest: false, unameDraft: account ? account.username : '', teamDraft: profile.favoriteTeam,
       screen: account ? 'home' : 'username', reg: !account });
-    // Admins also see pending, disabled and retired questions.
-    if (row && row.is_admin) { const all = await cloud.loadQuestions(); if (all && all.length) { this.eng.setBank(all); this.forceUpdate(); } }
+    // Admins see everything (pending, disabled, every team); players get their own team's deep questions.
+    if ((row && row.is_admin) || profile.favoriteTeam !== this._bankTeam) this.reloadBank(row && row.is_admin);
     this.refreshChallenges(); this.refreshRanks();
+    if (account && this._pendingCode) { const c = this._pendingCode; this._pendingCode = null; this.redeem(c); }
+  }
+  async reloadBank(everything = this.state.isAdmin) {
+    const team = this.teamId(), rows = await cloud.loadQuestions(team, everything);
+    if (rows && rows.length) { this.eng.setBank(rows); this._bankTeam = team; this.forceUpdate(); }
   }
   async refreshRanks() {
     const uid = this.state.user && this.state.user.id; if (!uid) return this.setState({ ranks: { global: null, team: null } });
@@ -162,6 +174,7 @@ export class App extends Logic {
     this.setState({ account: acct });
     this.setState({ screen: this.state.reg && !team ? 'teampick' : (this.state.reg ? 'ready' : 'profile'), pending: null, teamDraft: team });
     this.refreshRanks();
+    if (this._pendingCode) { const c = this._pendingCode; this._pendingCode = null; this.redeem(c); }
   }
   checkUsernameSoon(v) {
     clearTimeout(this._unameT);
@@ -191,8 +204,13 @@ export class App extends Logic {
       time: this.BUZZ_START, qStart: Date.now(), started: Date.now(), fastest: null,
       clueIdx: 0, phase: 'idle', guess: '', wrongOpts: [], wrongCount: 0 };
     if (mode === 'daily') run.qs = eng.buildDaily(dateKey, session, 10);
-    // A challenge plays the challenger's list, minus anything this player has already seen.
-    else if (opts.challenge) run.qs = (opts.challenge.questionIds || []).map(id => eng.byId(id)).filter(Boolean).filter(rec => !eng.inExclusion(rec.question_id)).map(rec => eng.serve(rec, session.rnd));
+    else if (mode === 'h2h' && !opts.challenge) run.qs = eng.buildSet(session, 10, eng.BATTLE_SPREAD);
+    // A challenge plays the challenger's list in order; a question this player
+    // has already seen is swapped for an unseen one of the same level.
+    else if (opts.challenge) run.qs = (opts.challenge.questionIds || []).map(id => eng.byId(id)).filter(Boolean).map(rec => {
+      if (!eng.inExclusion(rec.question_id) && !session.used.has(rec.question_id)) { session.used.add(rec.question_id); return eng.serve(rec, session.rnd); }
+      return eng.nextQuestion(session, { band: [rec.difficulty] });
+    }).filter(Boolean);
     else if (mode === 'q20') run.qs = eng.buildSet(session, 20, eng.Q20_SPREAD);
     else if (mode === 'wai') run.qs = eng.buildSet(session, 20, eng.TIER_ORDER);
     run.q = this.nextQ(run);
@@ -207,33 +225,38 @@ export class App extends Logic {
     const eng = this.eng;
     if (run.qs) return run.qs[run.idx] || null;
     run.session.accuracy = run.answers ? run.correct / run.answers : null;
-    return eng.nextQuestion(run.session, { progress: run.mode === 'buzz' ? run.answers : run.streak, favoriteTeam: (this.team() || {}).name });
+    return eng.nextQuestion(run.session, { progress: run.correct, favoriteTeam: (this.team() || {}).name });
   }
   tick() {
-    const r = this.state.run, limit = r.mode === 'q20' || r.mode === 'daily' ? 10000 : this.Q_LIMIT;
+    const r = this.state.run, limit = this.limitFor(r.mode);
     if (r.mode === 'buzz') { if (r.time - (Date.now() - r.qStart) <= 0) return this.endRun({ ...r, time: 0 }); this.forceUpdate(); return; }
     if (Date.now() - r.qStart >= limit) return r.mode === 'wai' ? this.waiOut(true) : this.answer('__timeout');
     this.forceUpdate();
   }
+  limitFor(mode) { return mode === 'q20' || mode === 'daily' ? 10000 : mode === 'h2h' ? 15000 : this.Q_LIMIT; }
   answer(opt) {
     const r = this.state.run, lib = this.state.lib; if (!r || r.answered !== null) return;
     const q = r.q, ms = Math.min(r.mode === 'buzz' ? 99999 : this.Q_LIMIT, Date.now() - r.qStart), ok = opt === q.correct;
     let pts = 0, time = r.time, extra = null;
     if (r.mode === 'buzz') {
       time = r.time - ms;
-      if (ok) { const b = lib.timeBonus(ms); time = Math.min(this.BUZZ_CAP, time + b * 1000); pts = 100 + lib.buzzSpeedPts(ms); extra = b ? `+${b} SEC` : null; }
+      if (ok) { const b = lib.timeBonus(ms); time = Math.min(this.BUZZ_CAP, time + b * 1000); extra = b ? `+${b} SEC` : null; }
       else { time -= this.BUZZ_PENALTY; extra = '−3 SEC'; }
-    } else if (ok) pts = Math.round(100 * lib.streakMult(r.streak));
+      if (ok) pts = (this.eng.TIER_POINTS[q.diff] || 100) + lib.buzzSpeedPts(ms);
+    } else if (ok) pts = (this.eng.TIER_POINTS[q.diff] || 100) + (r.mode === 'h2h' ? (ms < 3000 ? 50 : ms < 6000 ? 25 : 0) : 0);
     const streak = ok ? r.streak + 1 : 0;
     const log = [...r.log, { qid: q.question_id, q: q.text, type: q.type, cat: q.cat, chosen: opt, correct: q.correct, ok, ms, pts, exp: q.exp }];
     const next = { ...r, answered: opt, time, score: r.score + pts, streak, best: Math.max(r.best, streak), correct: r.correct + (ok ? 1 : 0), answers: r.answers + 1, log, fastest: ok && (r.fastest == null || ms < r.fastest) ? ms : r.fastest };
     this.eng.recordAnswer(q.question_id, { correct: ok, ms, mode: r.mode });
+    this.eng.noteAnswer(r.session, q, { correct: ok, ms });
     if (ok) { this.beep(700, .06); setTimeout(() => this.beep(1050, .09), 60); this.buzz(18); } else { this.beep(130, .3, 'sawtooth', .09); this.buzz([55, 40, 55]); }
-    const mile = ok ? lib.MILESTONES.find(([n]) => n === streak) : null;
+    // Climbing modes: crossing into the next level gets its own banner.
+    const climbs = ['streak', 'team', 'buzz'].includes(r.mode), was = this.eng.ladderStage(r.correct), now = this.eng.ladderStage(r.correct + (ok ? 1 : 0));
+    const mile = ok && climbs && now.index > was.index ? [now.index * 10, `LEVEL UP · ${now.label.toUpperCase()}`] : ok ? lib.MILESTONES.find(([n]) => n === streak) : null;
     this.setState({ run: next, gain: ok ? { pts: '+' + pts, extra } : (extra ? { pts: '', extra } : null), milestone: mile || null });
     if (r.mode === 'buzz' && next.time <= 0) return setTimeout(() => this.endRun(next), 700);
     if ((r.mode === 'streak' || r.mode === 'team') && !ok) return setTimeout(() => this.endRun(next), 1600);
-    const last = (r.mode === 'q20' || r.mode === 'daily') && r.idx + 1 >= r.qs.length;
+    const last = (r.mode === 'q20' || r.mode === 'daily' || r.mode === 'h2h') && r.idx + 1 >= r.qs.length;
     setTimeout(() => last ? this.endRun(next) : this.advance(next), ok ? 560 : 1500);
   }
   advance(r) {
@@ -281,8 +304,9 @@ export class App extends Logic {
     const acc = r.answers ? Math.round(r.correct / r.answers * 100) : 0;
     const key = r.mode === 'team' ? 'team' : r.mode;
     const rec = { ...(p.records || {}) }, prev = rec[key] || { score: 0, best: 0, answers: 0 };
-    const metric = (r.mode === 'buzz' || r.mode === 'q20' || r.mode === 'daily' || r.mode === 'wai') ? r.score : r.best;
-    const prevMetric = (r.mode === 'buzz' || r.mode === 'q20' || r.mode === 'daily' || r.mode === 'wai') ? prev.score : prev.best;
+    const byScore = ['buzz', 'q20', 'daily', 'wai', 'h2h'].includes(r.mode);
+    const metric = byScore ? r.score : r.best;
+    const prevMetric = byScore ? prev.score : prev.best;
     const isRecord = metric > prevMetric && p.games > 0;
     rec[key] = { score: Math.max(prev.score, r.score), best: Math.max(prev.best, r.best), answers: Math.max(prev.answers, r.answers) };
     p.records = rec; p.games++; p.totalQ += r.answers; p.totalCorrect += r.correct;
@@ -303,6 +327,7 @@ export class App extends Logic {
     const uid = this.state.user && this.state.user.id;
     if (uid && this.state.account) cloud.recordRun(uid, done).then(() => this.refreshRanks());
     if (r.challenge) { this.setState({ run: done }); return this.completeChallenge(done); }
+    if (r.mode === 'h2h') { this.setState({ run: done }); return this.createChallenge(done); }
     this.setState({ screen: 'result', run: done, newBadges, displayScore: 0, copied: false });
     clearInterval(this._count); const t0 = Date.now();
     this._count = setInterval(() => { const k = Math.min(1, (Date.now() - t0) / 1100), e = 1 - Math.pow(1 - k, 3); this.setState({ displayScore: Math.round(r.score * e) }); if (k >= 1) clearInterval(this._count); }, 30);
@@ -326,7 +351,7 @@ export class App extends Logic {
     this.setState({ challenges: rows.map(c => this.toChallenge(c, names)) });
   }
   async redeem(code) {
-    if (!this.state.user) return this.setState({ screen: 'welcome', reg: true, h2hError: '' });
+    if (!this.state.user || !this.state.account) { this._pendingCode = code; return this.setState({ screen: 'auth', authMode: 'register', reg: true, authErrs: [`Sign up or sign in to accept battle ${code}.`] }); }
     const res = await cloud.challengeByCode(code);
     if (res.error) return this.setState({ screen: 'h2h', h2hError: res.error });
     const c = res.challenge;
@@ -340,12 +365,14 @@ export class App extends Logic {
     const uid = this.state.user && this.state.user.id; if (!uid || !this.state.account) return this.setState({ screen: 'welcome', reg: true });
     // The challenger's exact questions, then spares from the same pool so
     // the opponent can go further than the challenger did.
-    const ids = r.log.map(x => x.qid).filter(Boolean);
-    const poolMode = r.mode;
-    const spares = this.eng.shuffle(this.eng.eligible({ mode: poolMode, teamId: r.teamId, sessionUsed: new Set(ids), ignoreHistory: true })).slice(0, 30).map(x => x.question_id);
+    // Only questions every player's device has (no team deep-dives).
+    const shared = id => { const q = this.eng.byId(id); return q && !(q.team_id && /^Team (seasons|games|playoffs)$/.test(q.category)); };
+    const ids = r.log.map(x => x.qid).filter(Boolean).filter(shared);
+    // A streak challenge also carries spares so the opponent can go further.
+    const spares = r.mode === 'h2h' ? [] : this.eng.shuffle(this.eng.eligible({ mode: 'h2h', sessionUsed: new Set(ids), ignoreHistory: true })).slice(0, 30).map(x => x.question_id);
     this.setState({ busy: true });
     const res = await cloud.createChallenge({ creator_id: uid, mode: r.mode, team_id: r.teamId || null, seed: r.seed, question_ids: [...ids, ...spares],
-      creator_score: r.score, creator_stat: r.mode === 'buzz' ? r.answers : r.best });
+      creator_score: r.score, creator_stat: r.mode === 'buzz' ? r.answers : r.mode === 'h2h' ? r.correct : r.best });
     this.setState({ busy: false });
     if (res.error) return this.setState({ screen: 'h2h', h2hError: res.error });
     this.setState({ screen: 'h2h-made', activeChallenge: this.toChallenge(res.challenge, { [uid]: this.state.account.username }), copied: false });
@@ -353,7 +380,7 @@ export class App extends Logic {
   }
   async completeChallenge(r) {
     const ch = r.challenge;
-    const res = await cloud.completeChallenge(ch.code, r.score, r.best);
+    const res = await cloud.completeChallenge(ch.code, r.score, r.mode === 'h2h' ? r.correct : r.best);
     if (res.error) return this.setState({ screen: 'h2h', h2hError: res.error });
     const names = await cloud.usernamesFor([res.challenge.creator_id, res.challenge.opponent_id]);
     const done = this.toChallenge(res.challenge, names);
@@ -499,7 +526,7 @@ export class App extends Logic {
     // ── game view ──
     const q = r && r.q;
     const isWai = r && r.mode === 'wai';
-    const limit = r && (r.mode === 'q20' || r.mode === 'daily') ? 10000 : this.Q_LIMIT;
+    const limit = r ? this.limitFor(r.mode) : this.Q_LIMIT;
     const answered = r && r.answered !== null;
     const liveMs = r && !answered ? Math.max(0, (r.mode === 'buzz' ? r.time : limit) - (Date.now() - r.qStart)) : (r ? (r.mode === 'buzz' ? r.time : limit) : 0);
     const urgent = r && !answered && liveMs < 5000;
@@ -521,7 +548,8 @@ export class App extends Logic {
         teams: (c.teams || []).map((name, j, arr) => ({ name, lineStyle: `position:absolute;left:7px;top:20px;bottom:-8px;width:2px;background:${j < arr.length - 1 ? 'var(--color-divider)' : 'transparent'}` })),
         style: `padding:var(--space-3) 0;border-bottom:1px solid var(--color-divider);opacity:${locked ? .4 : 1};${i === r.clueIdx ? 'animation:in .25s ease-out' : ''}` };
     }) : [];
-    const modeName = m => ({ streak: 'Streak', buzz: 'Buzz', team: t ? t.name : 'Team', q20: '20 Questions', wai: 'Who am I?', daily: 'Daily' })[m] || m;
+    const modeName = m => ({ streak: 'Streak', buzz: 'Buzz', team: t ? t.name : 'Team', q20: '20 Questions', wai: 'Who am I?', daily: 'Daily', h2h: 'Head-to-head' })[m] || m;
+    const stage = r && ['streak', 'team', 'buzz'].includes(r.mode) ? this.eng.ladderStage(r.correct) : null;
     const lastLog = r && r.log[r.log.length - 1];
 
     // ── result view ──
@@ -552,8 +580,10 @@ export class App extends Logic {
     const draftT = T && s.teamDraft ? T.teamById(s.teamDraft) : null;
     const ch = s.activeChallenge;
     const meIsCreator = !!(ch && ch.dir === 'out');
-    const creatorVal = ch ? (ch.mode === 'buzz' ? ch.creatorScore : ch.creatorStat) : 0;
-    const oppVal = ch && ch.status === 'completed' ? (ch.mode === 'buzz' ? ch.opponentScore : ch.opponentStat) : 0;
+    // Buzz and battles are decided by points; streak challenges by streak length.
+    const byPoints = !!(ch && (ch.mode === 'buzz' || ch.mode === 'h2h'));
+    const creatorVal = ch ? (byPoints ? ch.creatorScore : ch.creatorStat) : 0;
+    const oppVal = ch && ch.status === 'completed' ? (byPoints ? ch.opponentScore : ch.opponentStat) : 0;
     const chMine = meIsCreator ? creatorVal : oppVal, chTheirs = meIsCreator ? oppVal : creatorVal;
     const theirName = ch ? (meIsCreator ? (ch.opponent || 'opponent') : ch.creator) : '';
     const creatorWon = !!(ch && (meIsCreator ? ch.result === 'won' : ch.result === 'lost'));
@@ -595,7 +625,7 @@ export class App extends Logic {
       claimUsername: () => this.claimUsername(),
       regFlow: s.reg, teamSearch: s.teamSearch, setTeamSearch: e => this.setState({ teamSearch: e.target.value }), teamList,
       noTeamChosen: !draftT, teamCta: draftT ? `LOCK IN THE ${draftT.name.toUpperCase()}` : 'PICK A TEAM',
-      saveTeam: () => { if (!s.teamDraft) return; const prof = { ...p, favoriteTeam: s.teamDraft }; this.save(prof); if (a) this.saveAccount({ ...a, favoriteTeam: s.teamDraft }); this.setState({ screen: s.reg ? 'ready' : (s.hubFrom === 'profile' ? 'profile' : 'teamhub'), teamSearch: '' }); this.refreshRanks(); },
+      saveTeam: () => { if (!s.teamDraft) return; const prof = { ...p, favoriteTeam: s.teamDraft }; this.save(prof); if (a) this.saveAccount({ ...a, favoriteTeam: s.teamDraft }); this.setState({ screen: s.reg ? 'ready' : (s.hubFrom === 'profile' ? 'profile' : 'teamhub'), teamSearch: '' }); this.refreshRanks(); if (s.teamDraft !== this._bankTeam) this.reloadBank(); },
       readyMarkStyle: `width:76px;height:76px;display:flex;align-items:center;justify-content:center;font-family:var(--font-heading);font-weight:800;font-size:22px;background:var(--color-accent);color:#120800`,
       readyLine: t ? `Your first ${t.name} question is waiting. One mistake ends the run.` : 'One mistake ends the run. How long can you last?',
 
@@ -635,14 +665,14 @@ export class App extends Logic {
         { name: 'Buzz', desc: '24 seconds. Fast answers buy time.', pick: () => this.startRun('buzz'), locked: false, hasStat: !!rec.buzz, stat: rec.buzz ? this.fmt(rec.buzz.score) : '' },
         { name: '20 Questions', desc: 'Twenty questions, one run, lifelines.', pick: () => this.startRun('q20'), locked: false, hasStat: !!rec.q20, stat: rec.q20 ? this.fmt(rec.q20.score) : '' },
         { name: 'Who Am I?', desc: 'Name the player or coach from career clues.', pick: () => this.startRun('wai'), locked: false, hasStat: !!rec.wai, stat: rec.wai ? this.fmt(rec.wai.score) : '' },
-        { name: 'Head to Head', desc: 'Same questions, against a friend.', pick: go('h2h'), locked: false, hasStat: false, stat: '' },
+        { name: 'Head to Head', desc: '10 questions, Easy to GOAT. Same set for your friend.', pick: go('h2h'), locked: false, hasStat: false, stat: '' },
         { name: 'Tournaments', desc: 'Bracketed weekend events.', pick: () => {}, locked: true, hasStat: false, stat: '' }
       ].map(m => ({ ...m, cls: m.locked ? 'tall-only' : '', style: `all:unset;box-sizing:border-box;cursor:${m.locked ? 'default' : 'pointer'};width:100%;display:flex;align-items:center;gap:var(--space-3);padding:clamp(6px,1.3dvh,12px) var(--space-4);border-bottom:1px solid var(--color-divider);color:var(--color-text);opacity:${m.locked ? .5 : 1}` })),
 
       // game
       gameShellStyle: `position:relative;display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;${urgent ? 'box-shadow:inset 0 0 0 2px var(--color-accent)' : ''}`,
       quitGame: () => { const uid = s.user && s.user.id; if (uid && a && r) cloud.recordHistory(uid, r.mode, r.log); this.setState({ screen: 'home', run: null }); },
-      gameProgress: r ? (r.qs ? `${String(r.idx + 1).padStart(2, '0')} / ${r.qs.length}` : modeName(r.mode).toUpperCase()) : '',
+      gameProgress: r ? (stage ? (stage.size === Infinity ? `GOAT LEVEL · ${stage.n}` : `${stage.label.toUpperCase()} · ${stage.n}/${stage.size}`) : r.qs ? `${String(r.idx + 1).padStart(2, '0')} / ${r.qs.length}` : modeName(r.mode).toUpperCase()) : '',
       gameHasClock: !!(r && r.mode === 'buzz'),
       clock: r ? (liveMs / 1000).toFixed(1) : '',
       clockStyle: `font-family:var(--font-heading);font-weight:800;font-size:26px;letter-spacing:-0.04em;font-variant-numeric:tabular-nums;color:${urgent ? 'var(--color-accent)' : 'var(--color-text)'};${urgent ? 'animation:tick .45s ease-in-out infinite' : ''}`,
@@ -650,7 +680,7 @@ export class App extends Logic {
       streakChipStyle: `display:flex;align-items:center;gap:4px;font-family:var(--font-heading);font-weight:800;font-size:18px;letter-spacing:-0.02em;color:${r && r.streak >= 5 ? 'var(--color-accent)' : 'var(--color-neutral-400)'}`,
       gameBarStyle: `height:100%;background:${urgent ? 'var(--color-accent)' : 'var(--color-accent-700)'};width:${r ? (r.mode === 'buzz' ? Math.min(100, r.time / this.BUZZ_CAP * 100) : (r.mode === 'streak' || r.mode === 'team') ? Math.max(4, liveMs / limit * 100) : (r.idx + (answered ? 1 : 0)) / r.qs.length * 100) : 0}%;transition:width .25s`,
       gameVisible: s.qVisible,
-      qKicker: q ? (isWai ? `${q.kind === 'coach' ? 'Coach' : 'Player'} · worth ${this.fmt(this.WAI_POINTS[r.clueIdx] || 200)}` : `${q.cat} · ${q.diff}`) : '',
+      qKicker: q ? (isWai ? `${q.kind === 'coach' ? 'Coach' : 'Player'} · worth ${this.fmt(this.WAI_POINTS[r.clueIdx] || 200)}` : `${q.cat} · ${this.eng.TIER_LABEL[q.diff] || q.diff}`) : '',
       qIsClues: !!isWai, qIsPlain: !isWai,
       qText: q && !isWai ? q.text : '',
       qTextStyle: `font-size:${q && !isWai && q.text.length > 72 ? 'clamp(19px,3.1dvh,25px)' : 'clamp(22px,3.8dvh,31px)'};line-height:1.08;letter-spacing:-0.03em;margin:0;text-wrap:pretty;font-family:var(--font-heading);font-weight:800`,
@@ -743,6 +773,8 @@ export class App extends Logic {
 
       // head to head
       h2hRecord: `${wins}W · ${losses}L · ${ties}T`,
+      startBattle: () => a ? this.startRun('h2h') : this.setState({ screen: 'auth', authMode: 'register', reg: true, authErrs: ['Sign up or sign in to start a battle.'] }),
+      battleCta: a ? 'START A BATTLE' : 'SIGN IN TO BATTLE',
       h2hCode: s.h2hCode, setH2HCode: e => this.setState({ h2hCode: e.target.value.toUpperCase(), h2hError: '' }),
       redeemCode: () => { const code = s.h2hCode.trim().toUpperCase(); if (code) this.redeem(code); },
       h2hHasError: !!s.h2hError, h2hError: s.h2hError,
@@ -759,7 +791,7 @@ export class App extends Logic {
       chShare: () => { const text = ch && ch.status === 'completed' ? `${appName} — @${ch.creator} ${this.fmt(creatorVal)} vs @${ch.opponent} ${this.fmt(oppVal)}. ${this.challengeLink(ch.code)}` : `Beat my ${ch ? this.fmt(creatorVal) : ''} on ${appName}. Code ${ch ? ch.code : ''} · ${ch ? this.challengeLink(ch.code) : ''}`; if (navigator.share) navigator.share({ text }).catch(() => {}); else { navigator.clipboard && navigator.clipboard.writeText(text); this.setState({ copied: true }); } },
       chCopy: () => { navigator.clipboard && navigator.clipboard.writeText(ch ? this.challengeLink(ch.code) : ''); this.setState({ copied: true }); },
       chResultTitle: ch && ch.result === 'won' ? 'YOU WIN' : ch && ch.result === 'lost' ? 'YOU LOSE' : 'DEAD HEAT',
-      chResultSub: ch ? (ch.result === 'won' ? `You beat @${theirName} by ${this.fmt(Math.abs(chMine - chTheirs))}.` : ch.result === 'lost' ? `@${theirName} edged you by ${this.fmt(Math.abs(chTheirs - chMine))}.` : `Both of you finished on ${this.fmt(chMine)}.`) : '',
+      chResultSub: ch ? (ch.result === 'won' ? `You beat @${theirName} by ${this.fmt(Math.abs(chMine - chTheirs))}${byPoints ? ' points' : ''}.` : ch.result === 'lost' ? `@${theirName} edged you by ${this.fmt(Math.abs(chTheirs - chMine))}${byPoints ? ' points' : ''}.` : `Both of you finished on ${this.fmt(chMine)}.`) : '',
       chResultHeroStyle: `padding:var(--space-8) var(--space-4) var(--space-6);border-bottom:2px solid var(--color-divider);${ch && ch.result === 'won' ? 'background:var(--color-accent);color:#120800' : ''}`,
       chScores: ch ? [{ name: '@' + ch.creator, value: this.fmt(creatorVal), style: `padding:var(--space-4);border-right:1px solid var(--color-divider);${creatorWon ? 'background:var(--color-surface)' : ''}` }, { name: '@' + (ch.opponent || 'You'), value: this.fmt(oppVal), style: `padding:var(--space-4);${ch.result !== 'tied' && !creatorWon ? 'background:var(--color-surface)' : ''}` }] : [],
       chRematch: () => ch && this.startRun(ch.mode)

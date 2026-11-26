@@ -72,7 +72,7 @@
         <p style="font-size:15px;color:var(--color-neutral-300);margin:0 0 var(--space-3)">Unlocks a mode built entirely from their history.</p>
         <input class="input" placeholder="Search 30 teams" value="{{ teamSearch }}" onChange="{{ setTeamSearch }}" style="min-height:48px">
       </div>
-      <div style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;border-top:2px solid var(--color-divider)">
+      <div class="team-list" style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;border-top:2px solid var(--color-divider)">
         <sc-for list="{{ teamList }}" as="t" hint-placeholder-count="12">
           <button onClick="{{ t.pick }}" style="{{ t.style }}">
             <div style="{{ t.markStyle }}">{{ t.abbr }}</div>
@@ -99,8 +99,8 @@
 
   <!-- ═══ HOME ═══ -->
   <sc-if value="{{ atHome }}" hint-placeholder-val="{{ false }}">
-    <div style="display:flex;flex-direction:column;flex:1;animation:fade .3s ease-out">
-      <div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4)">
+    <div class="screen-home" style="display:flex;flex-direction:column;flex:1;animation:fade .3s ease-out">
+      <div class="h-head" style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4)">
         <div style="{{ avatarStyle }}">{{ avatarInitial }}</div>
         <div style="flex:1;min-width:0">
           <div style="font-family:var(--font-heading);font-weight:800;font-size:16px;letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ handle }}</div>
@@ -109,7 +109,7 @@
         <div style="text-align:right"><div style="font-family:var(--font-heading);font-weight:800;font-size:18px;letter-spacing:-0.02em;color:var(--color-accent-400)">{{ globalRank }}</div><div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-400)">Global</div></div>
       </div>
 
-      <div style="position:relative;padding:clamp(8px,2.4dvh,24px) var(--space-4) clamp(10px,2.4dvh,24px);overflow:hidden">
+      <div class="h-hero" style="position:relative;padding:clamp(8px,2.4dvh,24px) var(--space-4) clamp(10px,2.4dvh,24px);overflow:hidden">
         <sc-if value="{{ hasStreak }}" hint-placeholder-val="{{ false }}"><sc-for list="{{ embers }}" as="e" hint-placeholder-count="0"><div style="{{ e }}"></div></sc-for></sc-if>
         <div style="position:relative">
           <div style="display:flex;align-items:center;gap:7px;font-family:var(--font-heading);font-weight:800;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--color-accent)"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>{{ streakLabel }}</div>
@@ -123,7 +123,7 @@
         </div>
       </div>
 
-      <button onClick="{{ goTeamHub }}" style="all:unset;cursor:pointer;position:relative;display:block;border-top:2px solid var(--color-divider);color:var(--color-text)">
+      <button class="h-team" onClick="{{ goTeamHub }}" style="all:unset;cursor:pointer;position:relative;display:block;border-top:2px solid var(--color-divider);color:var(--color-text)">
         <div style="position:absolute;top:0;left:54%;right:0;bottom:0"><image-slot id="v2-team" shape="rect" fit="cover" placeholder="Team image"></image-slot></div>
         <div style="position:relative;padding:clamp(10px,2dvh,16px) var(--space-4);background:linear-gradient(to right,var(--color-bg) 54%,color-mix(in srgb,var(--color-bg) 20%,transparent));pointer-events:none">
           <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-400);font-weight:800">Your team</div>
@@ -135,7 +135,7 @@
         </div>
       </button>
 
-      <div style="border-top:2px solid var(--color-divider)">
+      <div class="h-rows" style="border-top:2px solid var(--color-divider)">
         <sc-for list="{{ homeRows }}" as="r" hint-placeholder-count="3">
           <button onClick="{{ r.go }}" style="all:unset;cursor:pointer;width:100%;box-sizing:border-box;display:flex;align-items:center;gap:var(--space-3);padding:clamp(7px,1.4dvh,12px) var(--space-4);border-bottom:1px solid var(--color-divider);color:var(--color-text)" style-hover="background:var(--color-surface)">
             <div style="flex:1;text-align:left"><div style="font-family:var(--font-heading);font-weight:800;font-size:15px">{{ r.title }}</div><div style="font-size:12px;color:var(--color-neutral-400)">{{ r.sub }}</div></div>
@@ -182,7 +182,7 @@
 
   <!-- ═══ GAME ═══ -->
   <sc-if value="{{ atGame }}" hint-placeholder-val="{{ false }}">
-    <div style="{{ gameShellStyle }}">
+    <div class="screen-game" style="{{ gameShellStyle }}">
       <div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4)">
         <button onClick="{{ quitGame }}" aria-label="Exit" style="all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;width:44px;height:44px;margin-left:-10px;color:var(--color-neutral-400)" style-hover="color:var(--color-text)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
         <div style="flex:1;font-family:var(--font-heading);font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-400)">{{ gameProgress }}</div>
@@ -220,12 +220,12 @@
             </sc-if>
 
             <sc-if value="{{ qIsPlain }}" hint-placeholder-val="{{ true }}">
-              <h2 style="{{ qTextStyle }}">{{ qText }}</h2>
+              <h2 class="q-text" style="{{ qTextStyle }}">{{ qText }}</h2>
             </sc-if>
           </div>
 
           <sc-if value="{{ showAnswers }}" hint-placeholder-val="{{ true }}">
-            <div style="flex:none;padding:6px var(--space-4) 8px;display:grid;gap:clamp(6px,1.1dvh,10px)">
+            <div class="answers" style="flex:none;padding:6px var(--space-4) 8px;display:grid;gap:clamp(6px,1.1dvh,10px)">
               <sc-for list="{{ answers }}" as="a" hint-placeholder-count="4">
                 <button onClick="{{ a.pick }}" disabled="{{ a.disabled }}" style="{{ a.style }}">
                   <span style="{{ a.letterStyle }}">{{ a.letter }}</span>
@@ -278,7 +278,7 @@
 
   <!-- ═══ RESULT ═══ -->
   <sc-if value="{{ atResult }}" hint-placeholder-val="{{ false }}">
-    <div style="display:flex;flex-direction:column;flex:1;animation:fade .35s ease-out">
+    <div class="screen-result" style="display:flex;flex-direction:column;flex:1;animation:fade .35s ease-out">
       <div style="{{ resultHeroStyle }}">
         <div style="font-family:var(--font-heading);font-weight:800;font-size:12px;letter-spacing:.16em;text-transform:uppercase;opacity:.85">{{ resultKicker }}</div>
         <div style="{{ resultNumStyle }}">{{ resultNumber }}</div>
@@ -303,7 +303,7 @@
           <button class="btn btn-primary" onClick="{{ backToWelcome }}" style="min-height:42px;padding-inline:var(--space-3)">Create account</button>
         </div>
       </sc-if>
-      <div style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:var(--space-2) 0 var(--space-4);border-top:1px solid var(--color-divider)">
+      <div class="r-review" style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:var(--space-2) 0 var(--space-4);border-top:1px solid var(--color-divider)">
         <div style="padding:0 var(--space-4) var(--space-2);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-400);font-weight:800">Every question</div>
         <sc-for list="{{ reviewRows }}" as="r" hint-placeholder-count="8">
           <div style="display:grid;grid-template-columns:26px 1fr auto;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-top:1px solid var(--color-divider);align-items:start">
@@ -433,7 +433,7 @@
         <sc-for list="{{ profileStats }}" as="s" hint-placeholder-count="6"><div style="{{ s.style }}"><div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-400)">{{ s.label }}</div><div style="font-family:var(--font-heading);font-weight:800;font-size:24px;letter-spacing:-0.03em;margin-top:2px">{{ s.value }}</div></div></sc-for>
       </div>
       <div style="flex:none;padding:10px var(--space-4) 6px;display:flex;align-items:baseline;justify-content:space-between"><div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-400);font-weight:800">Achievements</div><div style="font-family:var(--font-heading);font-weight:800;font-size:13px;color:var(--color-accent-400)">{{ badgeCount }}</div></div>
-      <div style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:0 var(--space-4);display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start">
+      <div class="badge-grid" style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:0 var(--space-4);display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start">
         <sc-for list="{{ badges }}" as="b" hint-placeholder-count="8">
           <div style="{{ b.style }}"><div style="{{ b.iconStyle }}">{{ b.initial }}</div><div style="font-family:var(--font-heading);font-weight:800;font-size:13px;letter-spacing:-0.01em;margin-top:8px">{{ b.name }}</div><div style="font-size:11px;color:var(--color-neutral-400);margin-top:1px;text-wrap:pretty">{{ b.desc }}</div></div>
         </sc-for>
@@ -460,7 +460,10 @@
       <div style="padding:0 var(--space-4)">
         <h2 style="font-size:40px;letter-spacing:-0.04em;line-height:.95;margin:0 0 var(--space-2)">HEAD<br>TO HEAD</h2>
         <div style="font-family:var(--font-heading);font-weight:800;font-size:15px;color:var(--color-accent-400)">{{ h2hRecord }}</div>
-        <div style="display:flex;gap:10px;margin-top:var(--space-4)">
+        <button class="btn btn-primary btn-block" onClick="{{ startBattle }}" style="min-height:56px;font-size:16px;margin-top:var(--space-3);padding-inline:var(--space-4)">{{ battleCta }}</button>
+        <div style="font-size:13px;color:var(--color-neutral-300);margin-top:6px;text-wrap:pretty">10 questions from Easy to GOAT Level. You get a code — your friend plays the exact same questions, and the server decides who knows more.</div>
+        <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-400);font-weight:800;margin-top:var(--space-4)">Got a code?</div>
+        <div style="display:flex;gap:10px;margin-top:6px">
           <input class="input" placeholder="Challenge code" value="{{ h2hCode }}" onChange="{{ setH2HCode }}" style="flex:1;min-height:50px;font-family:var(--font-heading);font-weight:800;letter-spacing:.1em"><button class="btn btn-primary" onClick="{{ redeemCode }}" style="min-height:50px;padding-inline:var(--space-4)">GO</button>
         </div>
         <sc-if value="{{ h2hHasError }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;color:var(--color-accent-300);margin-top:8px">{{ h2hError }}</div></sc-if>
@@ -674,12 +677,12 @@
 <script src="vendor/supabase.js"></script>
 <script type="module">
   import { App } from './app.js';
-  // Same props the design exposes. On a wide screen the app sits in a phone
-  // frame, as in the design; on a phone it fills the viewport.
+  // Same props the design exposes. Phones fill the screen; tablets and
+  // desktops get their own layouts (app.css), not a phone frame.
   const props = {
     appName: 'NBA TRIVIA',
     shareUrl: '20-0.app',
-    phoneFrame: matchMedia('(min-width: 600px) and (min-height: 900px)').matches,
+    phoneFrame: false,
     streakGlow: true,
   };
   new App(props).mount(document.getElementById('root'), document.getElementById('screens'));

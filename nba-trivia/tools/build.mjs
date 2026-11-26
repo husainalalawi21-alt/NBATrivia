@@ -18,8 +18,8 @@ const PROJECT = process.env.SUPABASE_PROJECT || 'mvsyneqcohupycyehsvp';
 const LOAD = process.argv.includes('--load');
 const today = new Date().toISOString().slice(0, 10);
 
-const [questions, mystery, teams, facts, engine, gen, fr] = await Promise.all(
-  ['questions', 'mystery', 'teams', 'facts', 'engine', 'generate', 'franchises'].map(m => import(join(ROOT, 'data', m + '.js'))));
+const [questions, mystery, teams, facts, engine, gen, fr, jerseys] = await Promise.all(
+  ['questions', 'mystery', 'teams', 'facts', 'engine', 'generate', 'franchises', 'jerseys'].map(m => import(join(ROOT, 'data', m + '.js'))));
 
 const read = f => JSON.parse(readFileSync(join(CACHE, f), 'utf8'));
 const seasonsOf = kind => readdirSync(CACHE).map(f => f.match(new RegExp(`^games-(\\d{4})-${kind}\\.json$`))).filter(Boolean).map(m => +m[1]).sort((a, b) => a - b);
@@ -56,10 +56,13 @@ for (const y of seasonsOf('reg')) {
   const live = y === current;
   const kps = gen.fromRegularSeason(games, y, live ? { inProgress: true, asOf: today } : {});
   if (live) kps.push(...gen.fromRecentGames(games, y, today));
+  // every franchise's season in depth (completed seasons only)
+  else kps.push(...gen.fromTeamSeasons(games, existsSync(join(CACHE, `games-${y}-post.json`)) ? read(`games-${y}-post.json`) : [], y));
   generated.push(...kps);
   (report.seasons[y] ||= {}).reg = kps.length;
 }
 if (existsSync(join(CACHE, 'players.json'))) generated.push(...gen.fromPlayers(read('players.json')));
+generated.push(...gen.fromJerseys(jerseys.JERSEYS));
 
 // ── 2. bring the team profiles up to date with real Finals results ─
 // Titles per franchise = the hand-checked champions table, plus any later
@@ -103,7 +106,30 @@ const merged = { ...facts,
 const bank = engine.buildBank({ questions, mystery, teams, facts: merged });
 const genByKp = new Map(generated.map(k => [k.knowledge_point_id, k]));
 
-const TIER = { rookie: 'beginner', starter: 'easy', allstar: 'medium', superstar: 'hard', legend: 'expert' };
+// ── six levels for questions that don't come from the game data ──
+// Awards, champions and drafts by how famous and how long ago; the app's
+// hand-written and team-template questions keep their relative order.
+const SHIFT = { rookie: 'easy', starter: 'medium', allstar: 'hard', superstar: 'hardest', legend: 'hall_of_fame',
+  beginner: 'easy', easy: 'medium', medium: 'hard', hard: 'hardest', expert: 'hall_of_fame' };              // team templates, mysteries
+const HAND = { beginner: 'easy', starter: 'easy', easy: 'easy', medium: 'medium', hard: 'hard', expert: 'hardest' };  // hand-written questions
+function tierFor(r) {
+  r = { ...r, difficulty: r.raw_difficulty || r.difficulty };
+  const kp = r.knowledge_point_id, y = parseInt(r.season, 10), by = steps => gen.tierBy(isNaN(y) ? 0 : y, steps);
+  const draftYear = +((kp.match(/^KP-DRAFT-(\d{4})-/) || [])[1] || 0);
+  if (/-CHAMPION$/.test(kp)) return by([[2010, 'easy'], [1990, 'medium'], [1970, 'hard'], [1950, 'hardest'], [0, 'hall_of_fame']]);
+  if (/-FINALS-RUNNER-UP$|-FINALS-MVP$/.test(kp)) return by([[2010, 'medium'], [1990, 'hard'], [1970, 'hardest'], [0, 'hall_of_fame']]);
+  if (/-\d{2}-MVP$/.test(kp)) return by([[2015, 'medium'], [1995, 'hard'], [1975, 'hardest'], [0, 'hall_of_fame']]);
+  if (/-ROY$/.test(kp)) return by([[2015, 'hard'], [1990, 'hardest'], [0, 'hall_of_fame']]);
+  if (/-SCORING-LEADER$|-CHAMPION-COACH$/.test(kp)) return by([[2010, 'hard'], [1985, 'hardest'], [0, 'hall_of_fame']]);
+  if (/^KP-DRAFT-\d{4}-FIRST-PICK$/.test(kp)) return gen.tierBy(draftYear, [[2010, 'medium'], [1990, 'hard'], [1970, 'hardest'], [0, 'hall_of_fame']]);
+  if (/FIRST-PICK-TEAM$/.test(kp)) return gen.tierBy(draftYear, [[2010, 'hard'], [1985, 'hardest'], [0, 'hall_of_fame']]);
+  if (/SECOND-PICK$/.test(kp)) return gen.tierBy(draftYear, [[2000, 'hardest'], [1975, 'hall_of_fame'], [0, 'goat']]);
+  if (/^KP-RECORD-\d+-VALUE$/.test(kp)) return 'hall_of_fame';
+  if (/^KP-RECORD-\d+-HOLDER$/.test(kp)) return r.difficulty === 'medium' ? 'hard' : 'hardest';
+  const kind = r.source_ref && r.source_ref.kind;
+  if (kind === 'team' || kind === 'mystery') return SHIFT[r.difficulty] || 'hard';
+  return HAND[r.difficulty] || SHIFT[r.difficulty] || 'medium';
+}
 const eraOf = s => { const y = parseInt(s, 10); return isNaN(y) ? null : y < 1950 ? '1940s' : `${Math.floor(y / 10) * 10}s`; };
 const rows = bank.map(r => {
   const g = genIds.has(r.knowledge_point_id) ? genByKp.get(r.knowledge_point_id) : null;
@@ -120,7 +146,7 @@ const rows = bank.map(r => {
     correct_answer: r.correct_answer,
     wrong_answers: (r.answers || []).filter(a => a !== r.correct_answer),
     explanation: r.explanation || null, category: r.category || null,
-    difficulty: engine.TIER_ORDER.includes(r.difficulty) ? r.difficulty : (TIER[r.difficulty] || 'medium'),
+    difficulty: g ? g.difficulty : tierFor(r),
     // Generated franchise questions belong to that team's "Your Team" pool only.
     question_type: r.question_type, pool: g?.team_id ? 'team' : r.pool, game_modes_allowed: g?.team_id ? ['team'] : r.game_modes_allowed,
     status, active, temporal,
@@ -181,8 +207,10 @@ if (LOAD) {
   const sql = json => `insert into public.questions (${COLS.join(', ')})
     select ${COLS.join(', ')} from jsonb_populate_recordset(null::public.questions, $J$${json}$J$::jsonb)
     on conflict (question_id) do update set ${set}, updated_at = now(),
-      status = case when excluded.status = 'outdated' or excluded.payload ? 'duplicate_of' then excluded.status else questions.status end,
-      active = case when excluded.status = 'outdated' or excluded.payload ? 'duplicate_of' then false else questions.active end`;
+      status = case when excluded.status = 'outdated' or excluded.payload ? 'duplicate_of' then excluded.status
+                    when questions.payload ? 'retired' then excluded.status else questions.status end,
+      active = case when excluded.status = 'outdated' or excluded.payload ? 'duplicate_of' then false
+                    when questions.payload ? 'retired' then excluded.active else questions.active end`;
   for (let i = 0; i < rows.length; i += 400) {
     const chunk = JSON.stringify(rows.slice(i, i + 400));
     if (chunk.includes('$J$')) throw new Error('payload contains the SQL quote tag');

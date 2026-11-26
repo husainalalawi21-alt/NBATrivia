@@ -42,6 +42,10 @@ export const FRANCHISE_NAMES = {
   30: [[1961, 'Chicago Packers'], [1962, 'Chicago Zephyrs'], [1963, 'Baltimore Bullets'], [1973, 'Capital Bullets'], [1974, 'Washington Bullets'], [1997, 'Washington Wizards']]
 };
 
+// Today's abbreviation → balldontlie franchise id.
+export const ABBR_ID = { ATL: 1, BOS: 2, BKN: 3, CHA: 4, CHI: 5, CLE: 6, DAL: 7, DEN: 8, DET: 9, GSW: 10, HOU: 11, IND: 12, LAC: 13, LAL: 14, MEM: 15,
+  MIA: 16, MIL: 17, MIN: 18, NOP: 19, NYK: 20, OKC: 21, ORL: 22, PHI: 23, PHX: 24, POR: 25, SAC: 26, SAS: 27, TOR: 28, UTA: 29, WAS: 30 };
+
 // Name a team as it was in `season` (balldontlie start year). Falls back to
 // the API's own name for defunct teams and anything not in the table.
 export function teamNameIn(team, season) {

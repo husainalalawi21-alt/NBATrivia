@@ -95,8 +95,24 @@ export function findDuplicates(record, bank, threshold = getConfig().semanticThr
 const DIFF_MAP = { easy: 'easy', medium: 'medium', hard: 'hard', expert: 'expert' };
 const TEAM_TIER_DIFF = { fan: 'beginner', diehard: 'easy', superfan: 'medium', legend: 'hard', expert: 'expert' };
 const MYSTERY_TIER_DIFF = { rookie: 'beginner', starter: 'easy', allstar: 'medium', superstar: 'hard', legend: 'expert' };
-export const TIER_ORDER = ['beginner', 'easy', 'medium', 'hard', 'expert'];
-export const TARGET_MIX = { beginner: 0.20, easy: 0.25, medium: 0.30, hard: 0.20, expert: 0.05 };
+// Six levels, easiest first.
+export const TIER_ORDER = ['easy', 'medium', 'hard', 'hardest', 'hall_of_fame', 'goat'];
+export const TIER_LABEL = { easy: 'Easy', medium: 'Medium', hard: 'Hard', hardest: 'Hardest', hall_of_fame: 'Hall of Fame', goat: 'GOAT Level' };
+export const TIER_POINTS = { easy: 100, medium: 150, hard: 200, hardest: 300, hall_of_fame: 400, goat: 500 };
+export const TARGET_MIX = { easy: 0.12, medium: 0.15, hard: 0.2, hardest: 0.22, hall_of_fame: 0.18, goat: 0.13 };
+// The climb most games use: 5 Easy, 5 Medium, 7 Hard, 10 Hardest, 15 Hall of
+// Fame, then GOAT Level until the first miss. `correct` = right answers so far.
+export const LADDER = [['easy', 5], ['medium', 5], ['hard', 7], ['hardest', 10], ['hall_of_fame', 15], ['goat', Infinity]];
+export function ladderStage(correct) {
+  let left = correct;
+  for (let i = 0; i < LADDER.length; i++) {
+    const [tier, size] = LADDER[i];
+    if (left < size) return { index: i, tier, label: TIER_LABEL[tier], n: left + 1, size };
+    left -= size;
+  }
+}
+// Older local banks used five levels; map them onto the six.
+const OLD_TIER = { beginner: 'easy', expert: 'hall_of_fame' };
 // Exclusive pools: a question belongs to exactly ONE mode (spec §4/§27).
 export const POOLS = ['buzz', 'daily', 'q20', 'wai', 'team'];
 export const QUALITY_THRESHOLD = 60;
@@ -282,6 +298,7 @@ export function buildBank({ questions, mystery, teams, facts }) {
   }
   BUILD_STATS.kpCollisions = kpCollisions;
 
+  for (const r of out) { r.raw_difficulty = r.difficulty; if (OLD_TIER[r.difficulty]) r.difficulty = OLD_TIER[r.difficulty]; }
   BANK = out;
   BY_ID = new Map(out.map(r => [r.question_id, r]));
   return BANK;
@@ -375,17 +392,20 @@ export function refreshTemporal(now = Date.now()) {
 }
 
 // ── Eligibility + weighted selection ────────────────────────────
-const TIER_FOR = { beginner: 1, easy: 2, medium: 3, hard: 4, expert: 5 };
+const TIER_FOR = Object.fromEntries(TIER_ORDER.map((t, i) => [t, i + 1]));
+// Streak, Your Team and Buzz climb the ladder; `progress` = right answers so far.
 export function bandFor(mode, progress) {
-  // Steep ramps: a run warms up for a couple of questions, then gets hard fast.
-  if (mode === 'team') return progress < 3 ? ['beginner', 'easy'] : progress < 8 ? ['easy', 'medium'] : progress < 15 ? ['medium', 'hard'] : ['hard', 'expert'];
-  if (mode === 'streak') return progress < 2 ? ['beginner', 'easy'] : progress < 6 ? ['easy', 'medium'] : progress < 12 ? ['medium', 'hard'] : ['hard', 'expert'];
-  // BUZZ stays fast and recognizable — it never climbs past medium.
-  if (mode === 'buzz') return progress < 4 ? ['beginner', 'easy'] : progress < 12 ? ['easy', 'medium'] : ['medium', 'hard'];
+  if (mode === 'streak' || mode === 'team' || mode === 'buzz') return [ladderStage(progress).tier];
   return TIER_ORDER;
 }
-// 20 QUESTIONS is a hard examination: 1 beginner / 3 easy / 5 medium / 6 hard / 5 expert.
-export const Q20_SPREAD = ['beginner', 'easy', 'easy', 'easy', 'medium', 'medium', 'medium', 'medium', 'medium', 'hard', 'hard', 'hard', 'hard', 'hard', 'hard', 'expert', 'expert', 'expert', 'expert', 'expert'];
+// Fixed sets follow the same climb: 20 Questions = the first 20 steps of the
+// ladder (5 Easy, 5 Medium, 7 Hard, 3 Hardest); Daily and head-to-head
+// battles = 10 questions across all six levels.
+export const Q20_SPREAD = [...Array(5).fill('easy'), ...Array(5).fill('medium'), ...Array(7).fill('hard'), ...Array(3).fill('hardest')];
+export const DAILY_SPREAD = ['easy', 'easy', 'medium', 'medium', 'hard', 'hard', 'hardest', 'hardest', 'hall_of_fame', 'goat'];
+export const BATTLE_SPREAD = DAILY_SPREAD;
+// Nearest levels to `tier`, harder first: hard → hardest, medium, hall_of_fame, easy…
+const nearest = tier => { const i = TIER_ORDER.indexOf(tier), out = []; for (let d = 1; d < TIER_ORDER.length; d++) { if (TIER_ORDER[i + d]) out.push(TIER_ORDER[i + d]); if (TIER_ORDER[i - d]) out.push(TIER_ORDER[i - d]); } return out; };
 
 // Core gate: mode allowance + lifecycle + session + GLOBAL history.
 export function eligible({ mode, teamId = null, band = null, category = null, sessionUsed = new Set(), history = getHistory(), cfg = getConfig(), ignoreHistory = false }) {
@@ -398,6 +418,8 @@ export function eligible({ mode, teamId = null, band = null, category = null, se
     // questions; Who Am I? only career mysteries. History is shared too, so a
     // question seen in one mode never comes back in another.
     if (mode === 'team' && r.team_id !== teamId) return false;
+    // Head-to-head sets must exist on every player's device: no team deep-dives.
+    if (mode === 'h2h' && r.team_id && /^Team (seasons|games|playoffs)$/.test(r.category)) return false;
     if (mode === 'wai' && r.question_type !== 'career_mystery') return false;
     if (mode !== 'wai' && r.question_type === 'career_mystery') return false;
     if (band && !band.includes(r.difficulty)) return false;
@@ -421,7 +443,12 @@ function weight(r, ctx) {
   }
   if (st.correctPct != null && (st.correctPct < 8 || st.correctPct > 97)) w *= 0.5; // suspect item
   if (ctx.subjectCount && ctx.subjectCount[r.correct_answer]) w *= 0.25;  // answer spread
-  if (ctx.categoryCount && ctx.categoryCount[r.category] >= 4) w *= 0.3;  // category spread
+  // Adaptive: a type the player is missing or slow on keeps coming; a type
+  // they just answered fast and right is set aside for a few questions.
+  const focus = ctx.adapt && ctx.adapt.focus[r.category];
+  if (focus) w *= focus;
+  if (ctx.adapt && (ctx.adapt.avoid[r.category] || 0) > ctx.adapt.served) w *= 0.1;
+  if (!focus && ctx.categoryCount && ctx.categoryCount[r.category] >= 4) w *= 0.3;  // category spread
   if (ctx.favoriteTeam && (r.teams || []).some(t => t.includes(ctx.favoriteTeam))) w *= 1.2;
   if (r.temporal === 'dynamic') w *= 1.15;                  // prefer current facts
   return Math.max(0.01, w);
@@ -467,14 +494,14 @@ export function nextQuestion(session, opts = {}) {
   const common = { mode: session.mode, teamId: session.teamId, category: session.category, sessionUsed: session.used, history: session.history };
   let pool = eligible({ ...common, band });
   let relaxed = null;
-  // Empty band: step up one difficulty at a time (beginner → easy → …)
-  // before giving up on difficulty altogether, so runs still start easy.
-  for (let top = Math.max(...band.map(t => TIER_ORDER.indexOf(t))); !pool.length && top < TIER_ORDER.length - 1; ) {
-    top++; pool = eligible({ ...common, band: TIER_ORDER.slice(TIER_ORDER.indexOf(band[0]), top + 1) }); relaxed = 'band';
-  }
+  // This level has nothing unseen left: take the nearest level, harder first.
+  if (!pool.length && band.length === 1) for (const t of nearest(band[0])) { pool = eligible({ ...common, band: [t] }); if (pool.length) { relaxed = 'band'; break; } }
   if (!pool.length) { pool = eligible(common); relaxed = 'band'; }
   if (!pool.length) return null;
-  const rec = weightedPick(pool, { accuracy: session.accuracy, subjectCount: session.subjectCount, categoryCount: session.categoryCount, favoriteTeam: opts.favoriteTeam }, rnd);
+  // The difficulty-fit weighting only applies to mixed bands; a ladder band
+  // already IS the right difficulty.
+  const rec = weightedPick(pool, { accuracy: band.length > 1 ? session.accuracy : null, subjectCount: session.subjectCount, categoryCount: session.categoryCount, favoriteTeam: opts.favoriteTeam, adapt: session.adapt }, rnd);
+  session.adapt.served++;
   session.used.add(rec.question_id);
   session.subjectCount[rec.correct_answer] = (session.subjectCount[rec.correct_answer] || 0) + 1;
   session.categoryCount[rec.category] = (session.categoryCount[rec.category] || 0) + 1;
@@ -538,7 +565,25 @@ export function seededRandom(seed) { let s = 0; for (const c of String(seed)) s 
 export function newSession({ mode, teamId = null, category = 'All', seed = null, history = null }) {
   return { id: 'S' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), mode, teamId, category,
     rnd: seed ? seededRandom(seed) : Math.random, used: new Set(), subjectCount: {}, categoryCount: {},
-    history: history || getHistory(), accuracy: null, relaxed: null };
+    history: history || getHistory(), accuracy: null, relaxed: null, adapt: startingFocus() };
+}
+
+// ── Adaptive question types ──────────────────────────────────────
+// Types (categories) the player has struggled with before start with extra
+// weight; during a session a miss or a slow answer adds more, and a fast
+// right answer moves on to a different type for the next few questions.
+const FAST_MS = 4000, SLOW_MS = 10000;
+function startingFocus() {
+  const focus = {}, a = getAnalytics(), per = {};
+  for (const id in a) { const r = byId(id); if (!r) continue; const c = per[r.category] ||= { n: 0, ok: 0 }; c.n += a[id].answered; c.ok += a[id].correct; }
+  for (const cat in per) if (per[cat].n >= 3 && per[cat].ok / per[cat].n < 0.5) focus[cat] = 1.8;
+  return { focus, avoid: {}, served: 0 };
+}
+export function noteAnswer(session, q, { correct, ms }) {
+  if (!session || !session.adapt || !q) return;
+  const ad = session.adapt, cat = q.cat;
+  if (!correct || ms > SLOW_MS) ad.focus[cat] = Math.min(4, (ad.focus[cat] || 1) * 1.8);   // keep practising this type
+  else if (ms < FAST_MS) { ad.avoid[cat] = ad.served + 3; delete ad.focus[cat]; }       // mastered: change type
 }
 
 // ── Daily ledger: a question used in ANY completed Daily is never reused ──
