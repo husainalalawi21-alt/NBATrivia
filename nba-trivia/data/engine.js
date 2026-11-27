@@ -14,7 +14,7 @@
 // ════════════════════════════════════════════════════════════════
 
 export const SEASON = '2025-26';
-export const MODES = ['streak', 'buzz', 'team', 'q20', 'daily', 'wai', 'h2h'];
+export const MODES = ['streak', 'buzz', 'team', 'crossover', 'daily', 'wai', 'h2h'];
 export const LIFECYCLE = ['draft', 'pending', 'approved', 'active', 'disabled', 'outdated'];
 export const RETENTION_OPTIONS = [7, 30, 60, 90, 180, 0]; // 0 = never repeat
 export const DAILY_LEDGER_KEY = 'v2_daily_ledger';
@@ -330,6 +330,12 @@ export function setBank(records) {
   return BANK;
 }
 export const byId = id => (BY_ID ? BY_ID.get(id) : null);
+// Questions made on the device (Crossover) join whichever bank is in use; the
+// device's own copy replaces a downloaded one with the same id.
+export function addRecords(records) {
+  if (!BANK) return;
+  for (const r of records) { if (BY_ID.has(r.question_id)) BANK.splice(BANK.indexOf(BY_ID.get(r.question_id)), 1, r); else BANK.push(r); BY_ID.set(r.question_id, r); }
+}
 
 // Admin edits (status flips, difficulty changes) persist as sparse overrides
 // so the derived bank stays reproducible from source.
@@ -440,6 +446,8 @@ export function eligible({ mode, teamId = null, band = null, category = null, se
     if (mode === 'h2h' && r.team_id && /^Team (seasons|games|playoffs)$/.test(r.category)) return false;
     if (mode === 'wai' && r.question_type !== 'career_mystery') return false;
     if (mode !== 'wai' && r.question_type === 'career_mystery') return false;
+    // Crossover's questions are about one player at a time: they stay in Crossover.
+    if ((mode === 'crossover') !== (r.pool === 'crossover')) return false;
     if (band && !band.includes(r.difficulty)) return false;
     if (category && category !== 'All' && r.category !== category) return false;
     if (sessionUsed.has(r.question_id)) return false;
@@ -543,6 +551,19 @@ export function buildSet(session, count = 20, spread = Q20_SPREAD) {
 
 // Daily: same seed for everyone, then per-user substitution where a question
 // is already in that user's exclusion window — shared set, honest history.
+// Each day has a theme (a group of categories) and stays at Easy to Hard:
+// 3 Easy, 4 Medium, 3 Hard, the theme's questions first.
+export const DAILY_THEMES = [
+  { key: 'playoffs', cats: ['Playoffs', 'Finals', 'Championships'] },
+  { key: 'draft', cats: ['Draft'] },
+  { key: 'legends', cats: ['Legends', 'NBA History', 'Eras', 'Nicknames'] },
+  { key: 'awards', cats: ['MVP', 'Awards'] },
+  { key: 'players', cats: ['Players', 'International', 'Jersey Numbers'] },
+  { key: 'numbers', cats: ['Statistics', 'NBA Records', 'Regular Season'] },
+  { key: 'teams', cats: ['Teams', 'Arenas', 'Coaches', 'Rules'] }
+];
+export const DAILY_MIX = { easy: 3, medium: 4, hard: 3 };
+export const dailyTheme = dateKey => DAILY_THEMES[Math.floor(Date.parse(dateKey + 'T00:00:00Z') / 864e5) % DAILY_THEMES.length];
 export function buildDaily(dateKey, session, count = 10) {
   const rnd = seededRandom('daily-' + dateKey);
   const cfg = getConfig();
@@ -551,21 +572,43 @@ export function buildDaily(dateKey, session, count = 10) {
   // Today's set is fixed; a replay only serves what this player hasn't seen
   // (after one full play, nothing — the Daily is once a day).
   if (today) { const recs = today.map(byId).filter(Boolean); if (recs.length) { const fresh = recs.filter(r => !inExclusion(r.question_id, session.history)); fresh.forEach(r => session.used.add(r.question_id)); return fresh.map(r => serve(r, rnd)); } }
-  const canonical = eligible({ mode: 'daily', sessionUsed: new Set(), ignoreHistory: true }).filter(r => !everUsed.has(r.question_id));
-  const picked = shuffle(canonical, rnd).slice(0, 120);
+  const theme = dailyTheme(dateKey), band = Object.keys(DAILY_MIX);
+  const canonical = eligible({ mode: 'daily', band, sessionUsed: new Set(), ignoreHistory: true }).filter(r => !everUsed.has(r.question_id) && !(r.team_id && /^Team (seasons|games|playoffs)$/.test(r.category)));
+  const shuffled = shuffle(canonical, rnd);
   const out = [];
   let substituted = 0;
-  for (const rec of picked) {
-    if (out.length >= count) break;
-    if (session.used.has(rec.question_id)) continue;
-    if (inExclusion(rec.question_id, session.history)) { substituted++; continue; }
-    session.used.add(rec.question_id);
-    out.push(serve(rec, rnd));
+  const take = (list, tier, n) => {
+    for (const rec of list) {
+      if (n <= 0) break;
+      if (rec.difficulty !== tier || session.used.has(rec.question_id)) continue;
+      if (inExclusion(rec.question_id, session.history)) { substituted++; continue; }
+      session.used.add(rec.question_id); out.push(serve(rec, rnd)); n--;
+    }
+    return n;
+  };
+  for (const [tier, n] of Object.entries(DAILY_MIX)) {
+    const left = take(shuffled.filter(r => theme.cats.includes(r.category)), tier, n);
+    take(shuffled, tier, left);
   }
-  while (out.length < count) { const q = nextQuestion(session, { progress: out.length }); if (!q) break; out.push(q); substituted++; }
+  while (out.length < count) { const q = nextQuestion(session, { progress: out.length, band }); if (!q) break; out.push(q); substituted++; }
   session.substituted = substituted;
   commitDaily(dateKey, out.map(q => q.question_id));
   return out.sort((a, b) => TIER_FOR[a.diff] - TIER_FOR[b.diff]);
+}
+
+// Crossover: up to `count` questions about one player — the ones this player
+// hasn't seen first, a few of each kind, easiest kind first.
+export function buildCrossover(session, player, count = 10) {
+  const rnd = session.rnd;
+  const mine = getBank().filter(r => r.pool === 'crossover' && r.active && r.xo && r.xo.player === player);
+  const fresh = shuffle(mine.filter(r => !inExclusion(r.question_id, session.history)), rnd);
+  const seen = shuffle(mine.filter(r => inExclusion(r.question_id, session.history)), rnd);
+  const out = [], quota = [3, 4, 3];
+  for (let step = 0; step < 3; step++) out.push(...fresh.filter(r => r.xo.step === step).slice(0, quota[step]));
+  for (const r of [...fresh, ...seen]) { if (out.length >= count) break; if (!out.includes(r)) out.push(r); }
+  out.sort((a, b) => a.xo.step - b.xo.step || TIER_FOR[a.difficulty] - TIER_FOR[b.difficulty]);
+  out.forEach(r => session.used.add(r.question_id));
+  return out.map(r => serve(r, rnd));
 }
 
 // Head-to-head: one set both players get, excluding anything EITHER has seen.
@@ -647,7 +690,7 @@ export function poolHealth(teamId = null) {
     const available = eligible({ mode, teamId: tid, sessionUsed: new Set(), history, cfg }).length;
     return { label, total, available, excluded: total - available, low: available < Math.max(20, total * 0.15) };
   };
-  const rows = [line('Streak', 'streak', null), line('Buzz', 'buzz', null), line('20 Questions', 'q20', null), line('Daily Challenge', 'daily', null), line('Who Am I?', 'wai', null)];
+  const rows = [line('Streak', 'streak', null), line('24 Seconds or Less', 'buzz', null), line('Crossover', 'crossover', null), line('Daily Challenge', 'daily', null), line('Who Am I?', 'wai', null)];
   if (teamId) rows.push(line('Your Team', 'team', teamId));
   return rows;
 }

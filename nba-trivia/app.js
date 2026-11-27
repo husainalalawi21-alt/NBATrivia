@@ -41,11 +41,12 @@ export class App extends Logic {
   WAI_POINTS = [1000, 800, 600, 400, 200];
 
   async componentDidMount() {
-    const [lib, mys, teams, eng, facts, ar] = await Promise.all([import('./data/questions.js'), import('./data/mystery.js'), import('./data/teams.js'), import('./data/engine.js'), import('./data/facts.js'), import('./data/ar.js')]);
+    const [lib, mys, teams, eng, facts, ar, xo] = await Promise.all([import('./data/questions.js'), import('./data/mystery.js'), import('./data/teams.js'), import('./data/engine.js'), import('./data/facts.js'), import('./data/ar.js'), import('./data/crossover.js')]);
+    this._xo = xo; this._ar = ar; this._xoRecs = xo.buildRecords(ar);
     // Teams, stats and menus show straight away; the question bank follows.
     // (No screen change here: a player who already tapped ahead stays where they are.)
     const profile = this.localProfile(null), guestTeam = profile.favoriteTeam;
-    this.setState({ lib, mys, teams, profile, account: null, challenges: [], teamDraft: guestTeam });
+    this.setState({ lib, mys, teams, xo, profile, account: null, challenges: [], teamDraft: guestTeam });
     // The live bank from Supabase; the built-in one if the device is offline.
     // A signed-in player's profile shows while it downloads.
     // Games can start on the first 1,000 questions (ids are hashed, so it's a
@@ -53,7 +54,7 @@ export class App extends Logic {
     const arabic = getLang() === 'ar';
     const liveP = cloud.loadQuestions(guestTeam, false, first => {
       if (this.eng || !first.length) return;
-      eng.setBank(first); this._bankAr = arabic; this.eng = eng; this._ready(); this.setState({ eng, online: true }); this.flushPendingStart();
+      eng.setBank(first); eng.addRecords(this._xoRecs); this._bankAr = arabic; this.eng = eng; this._ready(); this.setState({ eng, online: true }); this.flushPendingStart();
     }, arabic);
     const user = await cloud.currentUser();
     const signing = user ? this.signedIn(user) : null;
@@ -61,6 +62,7 @@ export class App extends Logic {
     this._bankTeam = guestTeam;
     if (live && live.length) { eng.setBank(live); this._bankAr = arabic; }
     else if (!this.eng) { eng.buildBank({ questions: lib, mystery: mys, teams, facts, ar }); eng.hydrateOverrides(); eng.refreshTemporal(); this._bankAr = true; }
+    eng.addRecords(this._xoRecs);
     this.eng = eng; this._bankComplete = true;
     if (getLang() === 'ar' && !this._bankAr) this.ensureArabic();   // switched language while it downloaded
     this._ready();
@@ -72,8 +74,9 @@ export class App extends Logic {
     this.flushPendingStart();
     this.refreshRanks();
     this._clock = setInterval(() => { const r = this.state.run; if (this.state.screen === 'game' && r && r.answered === null) this.tick(); }, 60);
+    this._minute = setInterval(() => { if (['home', 'play', 'xo', 'xo-intro'].includes(this.state.screen)) this.forceUpdate(); }, 30000);
   }
-  componentWillUnmount() { clearInterval(this._clock); clearInterval(this._count); }
+  componentWillUnmount() { clearInterval(this._clock); clearInterval(this._count); clearInterval(this._minute); }
 
   fmt(n) { return Number(n || 0).toLocaleString('en-US'); }
   // Stats live on the device for guests and in the player's profile row once
@@ -120,7 +123,7 @@ export class App extends Logic {
   }
   async reloadBank(everything = this.state.isAdmin) {
     const team = this.teamId(), arabic = getLang() === 'ar', rows = await cloud.loadQuestions(team, everything, null, arabic);
-    if (rows && rows.length) { this.eng.setBank(rows); this._bankTeam = team; this._bankAr = arabic; this.forceUpdate(); }
+    if (rows && rows.length) { this.eng.setBank(rows); this.eng.addRecords(this._xoRecs); this._bankTeam = team; this._bankAr = arabic; this.forceUpdate(); }
     if (getLang() === 'ar' && !this._bankAr) this.ensureArabic();
   }
   // The Arabic text of the questions already on the device (a player who
@@ -234,7 +237,7 @@ export class App extends Logic {
     if (!eng || this._hold || (needsAll && !this._bankComplete)) { this._startWhenReady = [mode, opts]; return this.setState({ loadingRun: mode }); }
     const teamId = mode === 'team' ? this.teamId() : null;
     if (mode === 'team' && !teamId) return this.setState({ screen: 'teampick', reg: false, hubFrom: 'home' });
-    const dateKey = new Date().toISOString().slice(0, 10);
+    const dateKey = this._xo.gulfDate();
     const seed = opts.challenge ? opts.challenge.seed : (mode === 'daily' ? 'daily-' + dateKey : 'r' + Math.random().toString(36).slice(2, 10));
     // All multiple-choice modes share one bank; the mode sets the difficulty ramp.
     const poolMode = mode;
@@ -251,7 +254,11 @@ export class App extends Logic {
       if (!eng.inExclusion(rec.question_id) && !session.used.has(rec.question_id)) { session.used.add(rec.question_id); return eng.serve(rec, session.rnd); }
       return eng.nextQuestion(session, { band: [rec.difficulty] });
     }).filter(Boolean);
-    else if (mode === 'q20') run.qs = eng.buildSet(session, 20, eng.Q20_SPREAD);
+    else if (mode === 'crossover') {
+      const level = opts.level || 'easy', pl = this.xoPlayer(level);
+      run.xo = { level, player: this._xo.playerId(pl), name: pl.name };
+      run.qs = eng.buildCrossover(session, run.xo.player, this._xo.RUN);
+    }
     else if (mode === 'wai') run.qs = eng.buildSet(session, 20, eng.TIER_ORDER);
     run.q = this.nextQ(run);
     // Nothing unseen left: say so — questions are never repeated.
@@ -265,6 +272,14 @@ export class App extends Logic {
     if ((mode === 'daily' || mode === 'h2h' || (opts && opts.challenge)) && !this._bankComplete) return;
     const [m, o] = this._startWhenReady; this._startWhenReady = null; this.startRun(m, o);
   }
+  // Crossover: each person's own three players a day — by account, or by a
+  // random code kept on this device for guests (it never leaves the device).
+  who() {
+    const uid = this.state.user && this.state.user.id; if (uid) return uid;
+    let d = null; try { d = localStorage.getItem('v2_device'); if (!d) { d = Math.random().toString(36).slice(2, 12); localStorage.setItem('v2_device', d); } } catch (e) {}
+    return d || 'guest';
+  }
+  xoPlayer(level) { return this._xo.playerOfDay(level, this.who()); }
   nextQ(run) {
     const eng = this.eng;
     if (run.qs) return run.qs[run.idx] || null;
@@ -277,7 +292,7 @@ export class App extends Logic {
     if (Date.now() - r.qStart >= limit) return r.mode === 'wai' ? this.waiOut(true) : this.answer('__timeout');
     this.forceUpdate();
   }
-  limitFor(mode) { return mode === 'q20' || mode === 'daily' ? 10000 : mode === 'h2h' ? 15000 : this.Q_LIMIT; }
+  limitFor(mode) { return mode === 'daily' || mode === 'h2h' ? 15000 : this.Q_LIMIT; }
   answer(opt) {
     const r = this.state.run, lib = this.state.lib; if (!r || r.answered !== null) return;
     const q = r.q, ms = Math.min(r.mode === 'buzz' ? 99999 : this.Q_LIMIT, Date.now() - r.qStart), ok = opt === q.correct;
@@ -303,8 +318,8 @@ export class App extends Logic {
     const mile = ok && climbs && now.index > was.index ? { tier: now.tier, type: 'level' } : hit ? { tier: '', type: 'streak', n: streak, text: hit[1] } : null;
     this.setState({ run: next, gain: ok ? { pts: '+' + pts, extra } : (extra ? { pts: '', extra } : null), milestone: mile || null });
     if (r.mode === 'buzz' && next.time <= 0) return setTimeout(() => this.endRun(next), 700);
-    if ((r.mode === 'streak' || r.mode === 'team') && !ok) return setTimeout(() => this.endRun(next), 1600);
-    const last = (r.mode === 'q20' || r.mode === 'daily' || r.mode === 'h2h') && r.idx + 1 >= r.qs.length;
+    if ((r.mode === 'streak' || r.mode === 'team' || r.mode === 'crossover') && !ok) return setTimeout(() => this.endRun(next), 1600);
+    const last = (r.mode === 'crossover' || r.mode === 'daily' || r.mode === 'h2h') && r.idx + 1 >= r.qs.length;
     setTimeout(() => last ? this.endRun(next) : this.advance(next), ok ? 560 : 1500);
   }
   advance(r) {
@@ -353,7 +368,7 @@ export class App extends Logic {
     const acc = r.answers ? Math.round(r.correct / r.answers * 100) : 0;
     const key = r.mode === 'team' ? 'team' : r.mode;
     const rec = { ...(p.records || {}) }, prev = rec[key] || { score: 0, best: 0, answers: 0 };
-    const byScore = ['buzz', 'q20', 'daily', 'wai', 'h2h'].includes(r.mode);
+    const byScore = ['buzz', 'daily', 'wai', 'h2h'].includes(r.mode);
     const metric = byScore ? r.score : r.best;
     const prevMetric = byScore ? prev.score : prev.best;
     const isRecord = metric > prevMetric && prevMetric > 0;
@@ -363,7 +378,13 @@ export class App extends Logic {
     p.bestStreak = Math.max(p.bestStreak || 0, r.best);
     p.fast += r.log.filter(x => x.ok && x.ms != null && x.ms < 3000).length;
     if (r.mode === 'streak') p.lastStreak = r.best;
-    if (r.mode === 'daily') p.lastDaily = { date: new Date().toISOString().slice(0, 10), correct: r.correct, of: r.answers };
+    if (r.mode === 'daily') p.lastDaily = { date: this._xo.gulfDate(), correct: r.correct, of: r.answers };
+    if (r.mode === 'crossover') {
+      const day = this._xo.gulfDate(), xo = p.xo && p.xo.date === day ? { ...p.xo } : { date: day };
+      const was = xo[r.xo.level] || { best: 0, tries: 0, perfect: false };
+      xo[r.xo.level] = { player: r.xo.player, best: Math.max(was.best, r.best), tries: was.tries + 1, perfect: was.perfect || (r.qs && r.correct === r.qs.length) };
+      p.xo = xo; p.xoPerfect = (p.xoPerfect || 0) + (r.qs && r.correct === r.qs.length ? 1 : 0);
+    }
     if (r.mode === 'team') { p.teamCorrect = (p.teamCorrect || 0) + r.correct; p.teamBest = Math.max(p.teamBest || 0, r.best); }
     if (r.mode === 'wai') { p.mysterySolved = (p.mysterySolved || 0) + r.correct; p.lastWai = r.correct; }
     p.catCorrect = { ...(p.catCorrect || {}) }; r.log.forEach(x => { if (x.ok && x.cat) p.catCorrect[x.cat] = (p.catCorrect[x.cat] || 0) + 1; });
@@ -478,7 +499,7 @@ export class App extends Logic {
     const s = this.state, eng = this.eng;
     if (!eng || s.screen !== 'admin') return { atAdmin: s.screen === 'admin', bankTotals: [], poolRows: [], adminRows: [], retentionOpts: [], statusOpts: [], modeOpts: [], diffOpts: [], chPools: [], chMix: [], chEras: [], goAdmin: () => this.setState({ screen: 'admin' }), goProfileFromAdmin: () => this.setState({ screen: 'profile' }) };
     const sum = eng.bankSummary(), cfg = eng.getConfig(), ch = eng.contentHealth();
-    const poolLabel = { buzz: 'Buzz', daily: 'Daily Challenge', q20: '20 Questions', wai: 'Who Am I?', team: 'Your Team' };
+    const poolLabel = { buzz: '24 Seconds or Less', daily: 'Daily Challenge', q20: '20 Questions (retired)', crossover: 'Crossover', wai: 'Who Am I?', team: 'Your Team' };
     const gap = ch.target - ch.knowledgePoints;
     const health = {
       chKnowledgePoints: this.fmt(ch.knowledgePoints), chTarget: '500,000',
@@ -502,7 +523,7 @@ export class App extends Logic {
     };
     const cellN = i => `padding:var(--space-3) var(--space-4) var(--space-3) ${i === 0 ? 'var(--space-4)' : '10px'};${i < 3 ? 'border-right:1px solid var(--color-divider)' : ''}`;
     const statusOpts = ['All', 'active', 'pending', 'draft', 'disabled', 'outdated'];
-    const modeOpts = ['All', 'streak', 'buzz', 'team', 'q20', 'daily', 'wai', 'h2h'];
+    const modeOpts = ['All', 'streak', 'buzz', 'team', 'crossover', 'daily', 'wai', 'h2h'];
     const diffOpts = ['All', ...eng.TIER_ORDER];
     const term = (s.adminQ || '').toLowerCase();
     const matching = eng.getBank().filter(r =>
@@ -585,8 +606,23 @@ export class App extends Logic {
     let cum = 0;
     const ladderSteps = LADDER.map(([tier, size]) => { const start = cum; cum += size === Infinity ? 0 : size;
       return { tier, label: LABEL[tier], short: SHORT[tier], count: size === Infinity ? t_('ladder.until_miss') : t_('ladder.count', { count: size }), done: size === Infinity ? best > start : best >= cum }; });
-    const today = new Date().toISOString().slice(0, 10);
+    const X = this._xo, today = X ? X.gulfDate() : new Date().toISOString().slice(0, 10);
     const dailyDone = !!(p.lastDaily && p.lastDaily.date === today);
+    const untilNew = X ? X.msToGulfMidnight() : 0, hh = Math.floor(untilNew / 3600e3), mm = Math.floor(untilNew % 3600e3 / 60e3);
+    const timeLeft = hh ? t_('home.time_hm', { h: hh, m: mm }) : t_('home.time_m', { m: Math.max(1, mm) });
+    const theme = eng && eng.dailyTheme ? eng.dailyTheme(today) : null;
+    // Crossover: today's three players and how each went
+    const xoDay = p.xo && p.xo.date === today ? p.xo : {};
+    const nameOf = n => (lang === 'ar' && this._ar ? this._ar.N(n) : n);
+    const xoLevels = X ? X.LEVELS.map(level => {
+      const pl = this.xoPlayer(level), done = xoDay[level], total = Math.min(X.RUN, this._xoRecs.filter(q => q.xo.player === X.playerId(pl)).length);
+      return { level, pl, done, total, label: L.xo.levels[level], desc: L.xo.level_desc[level], name: nameOf(pl.name), shown: !!done, hidden: !done,
+        played: !!done && !done.perfect, perfect: !!(done && done.perfect),
+        status: !done ? L.xo.not_played : done.perfect ? L.xo.perfect : t_('xo.best', { n: done.best, total }),
+        cta: done ? L.xo.try_again : L.common.play,
+        pick: () => this.setState({ screen: 'xo-intro', xoLevel: level }) };
+    }) : [];
+    const xoPlayedCount = xoLevels.filter(x => x.done).length;
 
     // ── game view ──
     const q = r && r.q;
@@ -623,16 +659,19 @@ export class App extends Logic {
     const climbs = r && ['streak', 'team', 'buzz'].includes(r.mode);
     const stage = climbs && eng ? eng.ladderStage(r.correct) : null;
     const lastLog = r && r.log[r.log.length - 1];
-    const tierKey = stage ? stage.tier : q && q.diff ? q.diff : '';
+    const isXo = !!(r && r.mode === 'crossover');
+    const tierKey = isXo ? r.xo.level : stage ? stage.tier : q && q.diff ? q.diff : '';
     const segs = !r ? [] : stage ? (stage.size === Infinity ? [true] : Array.from({ length: stage.size }, (_, i) => i < stage.n - 1))
       : r.qs ? Array.from({ length: r.qs.length }, (_, i) => i < r.idx + (answered ? 1 : 0)) : [];
     const timePct = !r ? 0 : r.mode === 'buzz' ? Math.min(100, liveMs / this.BUZZ_CAP * 100) : liveMs / limit * 100;
-    const pointsMode = r && ['buzz', 'q20', 'daily', 'h2h', 'wai'].includes(r.mode);
+    const pointsMode = r && ['buzz', 'daily', 'h2h', 'wai'].includes(r.mode);
 
     // ── result view ──
     const isStreaky = r && (r.mode === 'streak' || r.mode === 'team');
     const reached = r && climbs && eng ? eng.ladderStage(r.correct) : null;
-    const resultStats = r ? (isStreaky
+    const resultStats = r ? (r.mode === 'crossover'
+      ? [[L.xo.pts, this.fmt(r.score)], [L.result.accuracy, r.acc + '%'], [L.result.global, globalRank], [L.result.fastest, r.fastest != null ? (r.fastest / 1000).toFixed(1) + 's' : '—']]
+      : isStreaky
       ? [[L.result.accuracy, r.acc + '%'], [L.result.best, best], [L.result.global, globalRank], [L.result.team, teamRank]]
       : [[L.result.right, `${r.correct}/${r.answers}`], [L.result.accuracy, r.acc + '%'], [L.result.best_run, r.best], [L.result.fastest, r.fastest != null ? (r.fastest / 1000).toFixed(1) + 's' : '—']]
     ).map(([label, value]) => ({ label, value })) : [];
@@ -640,7 +679,7 @@ export class App extends Logic {
     const confetti = Array.from({ length: 28 }, (_, i) => `left:${(i * 37) % 100}%;background:${CONF[i % CONF.length]};animation-delay:${(i % 7) * 0.12}s;transform:rotate(${i * 29}deg)`);
 
     const navDefs = [[L.nav.home, 'home', '#i-home'], [L.nav.battles, 'h2h', '#i-swords'], [L.nav.ranks, 'board', '#i-trophy'], [L.nav.profile, 'profile', '#i-user']];
-    const tabOf = { home: 'home', play: 'home', result: 'home', share: 'home', teamhub: 'home', teampick: 'home', h2h: 'h2h', 'h2h-intro': 'h2h', 'h2h-made': 'h2h', 'h2h-result': 'h2h', board: 'board', profile: 'profile', username: 'profile', admin: 'profile' };
+    const tabOf = { home: 'home', play: 'home', xo: 'home', 'xo-intro': 'home', result: 'home', share: 'home', teamhub: 'home', teampick: 'home', h2h: 'h2h', 'h2h-intro': 'h2h', 'h2h-made': 'h2h', 'h2h-result': 'h2h', board: 'board', profile: 'profile', username: 'profile', admin: 'profile' };
     const nav = navDefs.map(([label, target, icon]) => ({ label, icon, current: tabOf[sc] === target ? 'page' : false,
       badge: target === 'h2h' && inbox.length > 0, badgeCount: inbox.length,
       pick: () => { this.setState({ screen: target, reg: false, hubFrom: 'home', copied: false, h2hError: '' }); this.onEnter(target); } }));
@@ -729,11 +768,32 @@ export class App extends Logic {
       startDaily: () => { if (!dailyDone) this.startRun('daily'); },
       dailyDone, dailyOpen: !dailyDone,
       dailySub: dailyDone ? L.home.daily_done : L.home.daily_open,
+      dailyTheme: theme ? t_('home.daily_theme', { theme: L.daily_themes[theme.key] }) : '',
+      dailyNext: t_('home.next_in', { time: timeLeft }),
+      todayLabel: L.home.today, moreGames: L.home.more_games,
+      xoSub: xoPlayedCount === 3 ? L.home.xo_done : xoPlayedCount ? t_('home.xo_played', { n: xoPlayedCount }) : L.home.xo_sub,
+      xoDots: xoLevels.map(x => ({ level: x.level, label: L.tiers_short[x.level] || x.label, state: x.perfect ? 'perfect' : x.done ? 'played' : 'new' })),
+      openXo: () => this.setState({ screen: 'xo' }),
+      // ── crossover ──
+      atXo: sc === 'xo', atXoIntro: sc === 'xo-intro',
+      xoLevels, xoNewIn: t_('xo.new_in', { time: timeLeft }),
+      ...(() => {
+        const cur = xoLevels.find(x => x.level === s.xoLevel) || xoLevels[0];
+        if (!cur) return {};
+        const pl = cur.pl, num = pl.n && pl.n[0] ? pl.n[0][1] : null;
+        const years = `${pl.y[0]}–${pl.y[1] == null ? (lang === 'ar' ? 'الحين' : 'today') : pl.y[1] + 1}`;
+        const teams = [...new Set(pl.t)];
+        return { xoIntroLevel: cur.level, xoIntroKicker: t_('xo.intro_kicker', { level: cur.label }), xoIntroName: cur.name,
+          xoIntroMark: num != null ? '#' + num : pl.name.split(' ').map(w => w[0]).join('').slice(0, 2),
+          xoIntroYears: years, xoIntroTeams: teams.slice(0, 3).map(nameOf).join(' · ') + (teams.length > 3 ? ` +${teams.length - 3}` : ''),
+          xoIntroLine: t_('xo.intro_line', { n: cur.total }), xoIntroStatus: cur.done ? cur.status : '',
+          xoIntroHasStatus: !!cur.done, xoIntroCta: cur.done ? L.xo.try_again : L.xo.start,
+          xoStart: () => this.startRun('crossover', { level: cur.level }) };
+      })(),
       dailyScore: dailyDone ? `${p.lastDaily.correct}/${p.lastDaily.of}` : '',
       modeTiles: [
         { kind: 'team', isTeam: !!t, isIcon: !t, icon: '#i-jersey', chip: myChip, abbr: t ? t.id.toUpperCase() : '', name: t ? tn(t) : L.modes.your_team, desc: t ? L.modes.team_desc : L.modes.team_locked, hasStat: !!p.teamBest, stat: t_('home.best', { n: p.teamBest || 0 }), pick: goTeamHub },
         { kind: 'buzz', isTeam: false, isIcon: true, icon: '#i-bolt', name: L.modes.buzz, desc: L.modes.buzz_desc, hasStat: !!rec.buzz, stat: rec.buzz ? this.fmt(rec.buzz.score) : '', pick: () => this.startRun('buzz') },
-        { kind: 'q20', isTeam: false, isIcon: true, icon: '#i-list', name: L.modes.q20, desc: L.modes.q20_desc, hasStat: !!rec.q20, stat: rec.q20 ? this.fmt(rec.q20.score) : '', pick: () => this.startRun('q20') },
         { kind: 'wai', isTeam: false, isIcon: true, icon: '#i-mystery', name: L.modes.wai, desc: L.modes.wai_desc, hasStat: !!rec.wai, stat: rec.wai ? this.fmt(rec.wai.score) : '', pick: () => this.startRun('wai') }
       ],
       goTeamHub,
@@ -741,7 +801,7 @@ export class App extends Logic {
       // ── game ──
       urgent,
       quitGame: () => { const uid = s.user && s.user.id; if (uid && a && r) cloud.recordHistory(uid, r.mode, r.log); this.setState({ screen: 'home', run: null }); },
-      tierKey, tierName: isWai && !q ? L.modes.wai : (LABEL[tierKey] || modeName(r ? r.mode : '')),
+      tierKey, tierName: isXo ? nameOf(r.xo.name) : isWai && !q ? L.modes.wai : (LABEL[tierKey] || modeName(r ? r.mode : '')),
       hasStageCount: !!r, stageCount: !r ? '' : stage ? (stage.size === Infinity ? `#${stage.n}` : `${stage.n}/${stage.size}`) : r.qs ? `${r.idx + 1}/${r.qs.length}` : '',
       segs, endless: !!(stage && stage.size === Infinity),
       timerStyle: `width:${timePct.toFixed(1)}%`,
@@ -774,15 +834,18 @@ export class App extends Logic {
       feedbackSub: !lastLog ? '' : (lv => ok ? (lv.exp || '') : t_('game.answer', { answer: lv.correct }) + (lv.exp ? ' — ' + lv.exp : ''))(logView(lastLog)),
 
       // ── result ──
-      resultKicker: r ? (r.exhausted ? L.result.pool_cleared : isStreaky ? (r.mode === 'team' && t ? t_('result.team_over', { team: tn(t) }) : L.result.streak_over) : t_('result.complete', { mode: modeName(r.mode) })) : '',
-      resultNumber: r ? (isStreaky ? String(r.best) : this.fmt(s.displayScore)) : '',
-      resultLine: r ? (r.exhausted ? t_('result.line_exhausted', { count: r.best }) : isStreaky ? t_('result.line_streak', { count: r.best }) : t_('result.line_points', { correct: r.correct, total: r.answers, points: this.fmt(r.score) })) : '',
+      resultKicker: r && isXo ? t_('xo.result_kicker', { level: L.xo.levels[r.xo.level] }) : r ? (r.exhausted ? L.result.pool_cleared : isStreaky ? (r.mode === 'team' && t ? t_('result.team_over', { team: tn(t) }) : L.result.streak_over) : t_('result.complete', { mode: modeName(r.mode) })) : '',
+      resultNumber: r && isXo ? `${r.correct}/${r.qs.length}` : r ? (isStreaky ? String(r.best) : this.fmt(s.displayScore)) : '',
+      resultLine: r && isXo ? (r.correct === r.qs.length ? t_('xo.perfect_line', { name: nameOf(r.xo.name) }) : t_('xo.line', { count: r.correct, name: nameOf(r.xo.name) })) : r ? (r.exhausted ? t_('result.line_exhausted', { count: r.best }) : isStreaky ? t_('result.line_streak', { count: r.best }) : t_('result.line_points', { correct: r.correct, total: r.answers, points: this.fmt(r.score) })) : '',
       isRecord: !!(r && r.isRecord), prevBest: r ? this.fmt(r.prevBest) : '', newBestText: r ? t_('result.new_best', { prev: this.fmt(r.prevBest) }) : '', confetti,
       hasReached: !!reached, reachedTier: reached ? reached.tier : '', reachedLabel: reached ? LABEL[reached.tier] : '', reachedText: reached ? t_('result.reached', { level: LABEL[reached.tier] }) : '',
       resultStats,
-      playAgain: () => r && this.startRun(r.mode, { cat: r.cat }),
+      playAgain: () => r && this.startRun(r.mode, { cat: r.cat, level: r.xo && r.xo.level }),
+      playAgainLabel: isXo ? L.xo.try_again : L.result.play_again,
+      resultIsXo: isXo, resultNotXo: !isXo, goXo: () => this.setState({ screen: 'xo' }),
       canChallenge: !!(r && !r.challenge && a && ['streak', 'buzz', 'team'].includes(r.mode) && r.log.length),
       cantChallenge: !(r && !r.challenge && a && ['streak', 'buzz', 'team'].includes(r.mode) && r.log.length),
+      homeAfterResult: !(r && !r.challenge && a && ['streak', 'buzz', 'team'].includes(r.mode) && r.log.length) && !isXo,
       challengeFriend: () => r && this.createChallenge(r),
       hasNewBadges: s.newBadges.length > 0, newBadgesText: s.newBadges.map(k => (L.badges[k] && L.badges[k].name) || k).join(lang === 'ar' ? '، ' : ', '),
       reviewCount: r ? `${r.correct}/${r.answers}` : '',
@@ -800,7 +863,7 @@ export class App extends Logic {
       // ── ranks ──
       boardCaption: L.ranks.caption,
       // the main board (every game) and one per game
-      boardGames: [['all', L.ranks.all_games], ['streak', L.modes.streak], ['team', L.modes.team], ['buzz', L.modes.buzz], ['q20', L.modes.q20], ['daily', L.modes.daily], ['wai', L.modes.wai], ['h2h', L.nav.battles]]
+      boardGames: [['all', L.ranks.all_games], ['streak', L.modes.streak], ['team', L.modes.team], ['buzz', L.modes.buzz], ['crossover', L.modes.crossover], ['daily', L.modes.daily], ['wai', L.modes.wai], ['h2h', L.nav.battles]]
         .map(([g, label]) => ({ label, on: yes(s.boardGame === g), pick: () => { this.setState({ boardGame: g }); this.refreshBoard(); } })),
       pointsLegend: ['easy', 'medium', 'hard', 'hardest', 'hall_of_fame', 'goat'].map(tier => ({ tier, label: SHORT[tier] || LABEL[tier], pts: this.fmt(eng ? eng.TIER_POINTS[tier] : 0) })),
       boardScopes: [[L.ranks.global, 'Global'], [L.ranks.your_team, 'Your Team']].map(([label, x]) => ({ label, on: yes(s.scope === x), pick: () => { this.setState({ scope: x }); this.refreshBoard(); } })),

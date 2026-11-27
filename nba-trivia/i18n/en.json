@@ -108,7 +108,7 @@
  },
  "modes": {
   "streak": "Streak",
-  "buzz": "Buzz",
+  "buzz": "24 Seconds or Less",
   "q20": "20 Questions",
   "wai": "Who Am I?",
   "daily": "Daily",
@@ -119,7 +119,9 @@
   "team_locked": "Pick a team to unlock",
   "buzz_desc": "Beat the shot clock",
   "q20_desc": "Every level, one run",
-  "wai_desc": "Guess from career clues"
+  "wai_desc": "Guess from career clues",
+  "crossover": "Crossover",
+  "crossover_desc": "Your players of the day"
  },
  "home": {
   "playing_guest": "Playing as guest",
@@ -133,7 +135,7 @@
   "play_streak": "Play streak",
   "first_run": "Start your first run",
   "daily": "Daily Challenge",
-  "daily_open": "10 questions · a new set every day",
+  "daily_open": "10 questions · Easy to Hard",
   "daily_done": "Done for today — a new set tomorrow",
   "challenged": "{{name}} challenged you",
   "more_waiting_one": "{{count}} more waiting",
@@ -141,7 +143,16 @@
   "your_move": "your move",
   "exhausted_daily": "You've played today's Daily Challenge. A new set unlocks tomorrow.",
   "exhausted_battle": "You've already seen every question in this battle — challenge someone to a new one.",
-  "exhausted_mode": "You've answered every question in this mode. New ones are added every week — try another mode meanwhile."
+  "exhausted_mode": "You've answered every question in this mode. New ones are added every week — try another mode meanwhile.",
+  "daily_theme": "Today: {{theme}}",
+  "next_in": "New in {{time}}",
+  "today": "Today",
+  "more_games": "More games",
+  "time_hm": "{{h}}h {{m}}m",
+  "time_m": "{{m}}m",
+  "xo_sub": "3 new players today",
+  "xo_played": "{{n}} of 3 played",
+  "xo_done": "All 3 played today"
  },
  "game": {
   "who_am_i": "Who am I?",
@@ -401,6 +412,48 @@
   "100": "KNOW-IT-ALL",
   "200": "BASKETBALL GOD"
  },
- "categories": {},
- "team_names": {}
+ "categories": {
+  "Crossover": "Crossover"
+ },
+ "team_names": {},
+ "xo": {
+  "title": "Crossover",
+  "sub": "Your three players today, one per level. Answer questions about their careers in a row — a miss ends the run, and you can try again.",
+  "new_in": "New players in {{time}}",
+  "levels": {
+   "easy": "Easy",
+   "medium": "Medium",
+   "goat": "GOAT Level"
+  },
+  "level_desc": {
+   "easy": "Household names",
+   "medium": "Big names, deeper cuts",
+   "goat": "For the real historians"
+  },
+  "hidden": "Today's player",
+  "reveal": "Tap to reveal",
+  "not_played": "Not played yet",
+  "best": "Best today {{n}}/{{total}}",
+  "perfect": "Perfect",
+  "intro_kicker": "Your {{level}} player today",
+  "intro_line": "Up to {{n}} questions about his career, easiest first. One miss ends the run — try again as many times as you like.",
+  "start": "Start",
+  "try_again": "Try again",
+  "other_players": "Other players",
+  "back": "Crossover",
+  "result_kicker": "Crossover · {{level}}",
+  "line_one": "{{count}} right in a row on {{name}}.",
+  "line_other": "{{count}} right in a row on {{name}}.",
+  "perfect_line": "Perfect — every question on {{name}}.",
+  "pts": "Points"
+ },
+ "daily_themes": {
+  "playoffs": "Playoff Time",
+  "draft": "Draft Day",
+  "legends": "Legends",
+  "awards": "Awards Night",
+  "players": "The Players",
+  "numbers": "Numbers Game",
+  "teams": "Teams & Coaches"
+ }
 }

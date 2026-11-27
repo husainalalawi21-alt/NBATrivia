@@ -97,7 +97,8 @@ const DEEP = '("Team seasons","Team games","Team playoffs")';
 const QCOLS = 'question_id,knowledge_point_id,question_text,question_type,correct_answer,wrong_answers,explanation,difficulty,category,era,subcategory,' +
   'pool,game_modes_allowed,status,active,temporal,valid_from,valid_until,season,team_id,teams,players,quality_score,source_name,source_url,source_date,payload';
 const bankQuery = (cols, from, count, teamId, everything) => {
-  let q = sb.from('questions').select(cols, count ? { count: 'exact' } : undefined).order('question_id').range(from, from + 999);
+  // Crossover's questions are made on the device (data/crossover.js); no need to download them.
+  let q = sb.from('questions').select(cols, count ? { count: 'exact' } : undefined).neq('pool', 'crossover').order('question_id').range(from, from + 999);
   if (!everything) q = q.or(`team_id.is.null,category.not.in.${DEEP}${teamId ? `,team_id.eq.${teamId}` : ''}`);
   return q;
 };
@@ -160,7 +161,7 @@ export async function recordRun(uid, run) {
 // A finished guest game, counted anonymously: the mode and how it went,
 // nothing about who played (no account, no device id). Guests can add rows
 // but not read them (migration 0007).
-const GUEST_MODES = ['streak', 'team', 'buzz', 'q20', 'wai', 'daily'];
+const GUEST_MODES = ['streak', 'team', 'buzz', 'crossover', 'wai', 'daily'];
 export async function logGuestRun(run) {
   if (!sb || !run || !GUEST_MODES.includes(run.mode)) return;
   const answers = Math.min(1000, Math.max(0, run.answers | 0)), correct = Math.min(answers, Math.max(0, run.correct | 0));
