@@ -1,4 +1,5 @@
-"""Author the HyperFrames workspace for the NBA Trivia 'Crossover' update video.
+"""Author the HyperFrames OVERLAY layer (transparent; composited over the footage with ffmpeg)
+for for the NBA Trivia 'Crossover' update video.
 
 Inputs (under the project dir):
   artifacts/transcript_cut.json  - whisper word timings on the silence-cut timeline
@@ -221,19 +222,19 @@ index = f"""<!doctype html>
   @font-face {{ font-family:'Cairo'; font-weight:900; src:url(assets/fonts/cairo-arabic-900-normal.woff2) format('woff2'); unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC; }}
   @font-face {{ font-family:'Cairo'; font-weight:700; src:url(assets/fonts/cairo-latin-700-normal.woff2) format('woff2'); unicode-range:U+0000-00FF,U+2000-206F,U+2190-21FF; }}
   @font-face {{ font-family:'Cairo'; font-weight:900; src:url(assets/fonts/cairo-latin-900-normal.woff2) format('woff2'); unicode-range:U+0000-00FF,U+2000-206F,U+2190-21FF; }}
-  body {{ margin:0; background:#000; }}
+  body {{ margin:0; background:transparent; }}
   #root {{ position:relative; width:1080px; height:1920px; overflow:hidden; font-family:'Cairo',sans-serif; color:#F5F3EE; }}
-  #talk {{ position:absolute; inset:0; width:1080px; height:1920px; object-fit:cover; }}
-  #topshade {{ position:absolute; left:0; right:0; top:0; height:760px; background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,0)); }}
-  #botshade {{ position:absolute; left:0; right:0; bottom:0; height:620px; background:linear-gradient(0deg, rgba(0,0,0,.7), rgba(0,0,0,0)); }}
-  #bug {{ position:absolute; left:48px; top:56px; display:flex; align-items:center; gap:14px; font-weight:900; font-size:30px; letter-spacing:4px; }}
+  #talk {{ position:absolute; inset:0; width:1080px; height:1920px; object-fit:cover; z-index:0; }}
+  #topshade {{ position:absolute; left:0; right:0; top:0; height:760px; background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,0)); z-index:1; }}
+  #botshade {{ position:absolute; left:0; right:0; bottom:0; height:620px; background:linear-gradient(0deg, rgba(0,0,0,.7), rgba(0,0,0,0)); z-index:1; }}
+  #bug {{ position:absolute; left:48px; top:56px; display:flex; align-items:center; gap:14px; font-weight:900; font-size:30px; letter-spacing:4px; z-index:5; }}
   #bug .ball {{ display:block; width:30px; height:30px; border-radius:15px; background:#F28C28; box-shadow: inset -6px -6px 0 rgba(0,0,0,.25); }}
   #bug .r {{ color:#E03A3E; }}
-  #track {{ position:absolute; left:48px; right:48px; top:112px; height:6px; border-radius:3px; background:rgba(255,255,255,.14); overflow:hidden; }}
+  #track {{ position:absolute; left:48px; right:48px; top:112px; height:6px; border-radius:3px; background:rgba(255,255,255,.14); overflow:hidden; z-index:5; }}
   #prog {{ display:block; width:100%; height:100%; background:linear-gradient(90deg,#1D6BFF,#F2B33D,#E03A3E); transform-origin:left center; }}
   .card {{ position:absolute; left:60px; right:60px; top:150px; min-height:300px; max-height:470px; box-sizing:border-box; padding:34px 40px;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; text-align:center; opacity:0;
-    background:rgba(12,14,22,.84); border:2px solid rgba(255,255,255,.12); border-radius:32px; box-shadow:0 30px 80px rgba(0,0,0,.55); }}
+    background:rgba(12,14,22,.84); border:2px solid rgba(255,255,255,.12); border-radius:32px; box-shadow:0 30px 80px rgba(0,0,0,.55); z-index:6; }}
   .en {{ direction:ltr; unicode-bidi:isolate; }}
   .kick {{ font-weight:700; font-size:34px; color:#F2B33D; }}
   .hero {{ font-weight:900; font-size:120px; line-height:1.05; letter-spacing:2px; }}
@@ -266,7 +267,7 @@ index = f"""<!doctype html>
   .daily small {{ font-weight:700; font-size:30px; color:#F2B33D; }}
   .stores {{ display:flex; gap:22px; }}
   .store {{ font-weight:900; font-size:52px; background:#fff; color:#0B0D14; padding:12px 34px; border-radius:20px; }}
-  #caps {{ position:absolute; left:60px; right:60px; top:1430px; height:300px; }}
+  #caps {{ position:absolute; left:60px; right:60px; top:1430px; height:300px; z-index:7; }}
   .cap {{ position:absolute; inset:0; display:flex; flex-wrap:wrap; align-content:center; justify-content:center; gap:0 18px; opacity:0;
     font-weight:900; font-size:66px; line-height:1.35; text-align:center; color:#fff;
     text-shadow:0 4px 0 #000, 0 0 24px rgba(0,0,0,.95), 0 0 6px #000; }}
@@ -276,16 +277,15 @@ index = f"""<!doctype html>
 </head>
 <body>
 <div id="root" data-composition-id="root" data-width="1080" data-height="1920" data-duration="{TOTAL}">
-  <video id="talk" class="clip" src="assets/talk.mp4" data-start="0" data-duration="{TOTAL}" data-track-index="0" muted playsinline></video>
   <div id="topshade"></div>
   <div id="botshade"></div>
+  <div id="ovclip" class="clip" data-start="0" data-duration="{TOTAL}" data-track-index="0" style="position:absolute;inset:0;"></div>
   <div id="bug"><span class="ball"></span><span>NBA <span class="r">TRIVIA</span></span></div>
   <div id="track"><span id="prog"></span></div>
 {cards_html}
   <div id="caps">
 {cap_html}
   </div>
-  <audio id="voice" src="assets/talk.wav" data-start="0" data-duration="{TOTAL}" data-track-index="10" data-volume="1"></audio>
 </div>
 <script>
   window.__timelines = window.__timelines || {{}};

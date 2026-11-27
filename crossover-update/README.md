@@ -30,4 +30,7 @@ No usage numbers are shown: the video only says the stats were reviewed, so none
 2. **Silence cut:** loudness envelope in 50 ms windows; every pause of 0.4 s or more below −36 dB was removed, keeping 0.12 s on each side. 31 segments kept, 20.8 s removed. Cut list in `cuts.json`.
 3. **Audio:** high-pass 80 Hz, light FFT denoise for road noise, loudnorm to −14 LUFS.
 4. **Captions:** re-transcribed on the cut timeline, then corrected by hand for Gulf Arabic and player names (e.g. «جام ورانت» → «جا مورانت», «ريك بيري» → «ريك باري», «أشي» → «ألغي»). Chunk timing follows the whisper word times. Corrected lines live in `tools/build_crossover.py` (`FIX`).
-5. **Composition:** OpenMontage + HyperFrames (HTML/GSAP), font Cairo (OFL). `tools/build_crossover.py` writes the HyperFrames `index.html`; rendered with `hyperframes_compose` `render_existing`.
+5. **Overlay layer:** OpenMontage + HyperFrames (HTML/GSAP), font Cairo (OFL). `tools/build_crossover.py` writes a HyperFrames `index.html` that holds only the overlays (cards, captions, logo, shading) on a transparent background, rendered to WebM with alpha:
+   `npx hyperframes render --format webm --fps 24 --quality standard --strict`.
+   Why not put the footage inside HyperFrames: in screenshot capture mode (no chrome-headless-shell) the `<video>` frame is painted over every DOM layer, so all overlays vanished from the render.
+6. **Composite:** ffmpeg overlays the alpha WebM on the cut footage (`-c:v libvpx-vp9` decoder to keep alpha), muxes the voice, then re-normalises to −14 LUFS (measured −14.3 LUFS, −0.9 dB peak).
