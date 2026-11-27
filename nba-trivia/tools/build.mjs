@@ -173,24 +173,15 @@ function tierFor(r) {
   if (kind === 'team' || kind === 'mystery') return SHIFT[r.difficulty] || 'hard';
   return HAND[r.difficulty] || SHIFT[r.difficulty] || 'medium';
 }
-const PATH_LABEL = { 'Career path': 'المسيرة', 'NBA career path': 'مسيرته في NBA', 'Coaching path': 'مسيرته التدريبية', 'NBA coaching path': 'مسيرته التدريبية في NBA' };
+// The Arabic column for each question (data/ar.js — the app's offline bank uses the same function).
 function arOf(r) {
+  const layer = A.recordLayer(r);
   if (r.question_type === 'career_mystery') {
-    const p = r.person, name = p.ar_name || A.N(p.name);
-    // career paths: the teams in Arabic, and the heading
-    for (const c of p.clues) if (c.type === 'path') c.ar = { label: PATH_LABEL[c.label || 'Career path'] || 'المسيرة', teams: c.teams.map(A.N) };
-    const untranslated = p.clues.filter(c => c.type !== 'numbers' && !c.ar).length;
-    if (untranslated) report.issues.push(`Who Am I? ${p.name}: ${untranslated} clue(s) without Arabic`);
-    return { name, e: `${name} — ${p.kind === 'coach' ? 'مدرب' : 'لاعب'}، ${A.era(p.era)}.`, o: labels([p.name, ...(p.decoys || [])]) };
+    const untranslated = r.person.clues.filter(c => c.type !== 'numbers' && !c.ar).length;
+    if (untranslated) report.issues.push(`Who Am I? ${r.person.name}: ${untranslated} clue(s) without Arabic`);
   }
-  if (!r.ar) return null;
-  let q = r.ar.q;
-  const o = labels(r.answers, r.ar.o || {});
-  if (/^(comparison|before_after)$/.test(r.question_type) && (r.answers || []).length === 2) q = `${q.replace(/؟\s*$/, '')}: ${A.list([...r.answers].sort().map(a => o[a] || a))}؟`;
-  // Who Am I? multiple choice: the clues, one per line
-  return { q, e: r.ar.e || null, o, ...(r.clues ? { clues: q.split('|') } : {}) };
+  return layer;
 }
-const labels = A.labels;
 const eraOf = s => { const y = parseInt(s, 10); return isNaN(y) ? null : y < 1950 ? '1940s' : `${Math.floor(y / 10) * 10}s`; };
 const rows = bank.map(r => {
   const g = genIds.has(r.knowledge_point_id) ? genByKp.get(r.knowledge_point_id) : null;

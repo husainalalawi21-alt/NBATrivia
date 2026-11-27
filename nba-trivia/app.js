@@ -41,7 +41,7 @@ export class App extends Logic {
   WAI_POINTS = [1000, 800, 600, 400, 200];
 
   async componentDidMount() {
-    const [lib, mys, teams, eng, facts] = await Promise.all([import('./data/questions.js'), import('./data/mystery.js'), import('./data/teams.js'), import('./data/engine.js'), import('./data/facts.js')]);
+    const [lib, mys, teams, eng, facts, ar] = await Promise.all([import('./data/questions.js'), import('./data/mystery.js'), import('./data/teams.js'), import('./data/engine.js'), import('./data/facts.js'), import('./data/ar.js')]);
     // Teams, stats and menus show straight away; the question bank follows.
     // (No screen change here: a player who already tapped ahead stays where they are.)
     const profile = this.localProfile(null), guestTeam = profile.favoriteTeam;
@@ -60,7 +60,7 @@ export class App extends Logic {
     const live = await liveP;
     this._bankTeam = guestTeam;
     if (live && live.length) { eng.setBank(live); this._bankAr = arabic; }
-    else if (!this.eng) { eng.buildBank({ questions: lib, mystery: mys, teams, facts }); eng.hydrateOverrides(); eng.refreshTemporal(); this._bankAr = true; }
+    else if (!this.eng) { eng.buildBank({ questions: lib, mystery: mys, teams, facts, ar }); eng.hydrateOverrides(); eng.refreshTemporal(); this._bankAr = true; }
     this.eng = eng; this._bankComplete = true;
     if (getLang() === 'ar' && !this._bankAr) this.ensureArabic();   // switched language while it downloaded
     this._ready();

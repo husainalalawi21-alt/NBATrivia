@@ -194,7 +194,9 @@ function withArabic(p, ar) {
   return { ...p, ar_name: ar.name, clues: p.clues.map((c, i) => (ar.clues[i] == null ? { ...c } : { ...c, ar: ar.clues[i] })) };
 }
 
-export function buildBank({ questions, mystery, teams, facts }) {
+// `ar` (data/ar.js, optional): finish each record's Arabic layer — the app's
+// offline bank; tools/build.mjs does the same for the database.
+export function buildBank({ questions, mystery, teams, facts, ar = null }) {
   if (BANK) return BANK;
   const taken = new Set(), out = [];
   const kpSeen = new Set();
@@ -298,6 +300,8 @@ export function buildBank({ questions, mystery, teams, facts }) {
       if (claim(rec)) out.push(rec); else taken.delete(id);
     }
   }
+
+  if (ar) for (const r of out) r.ar = ar.recordLayer(r);
 
   // Pools are exclusive, then every record is quality-gated.
   assignPools(out);

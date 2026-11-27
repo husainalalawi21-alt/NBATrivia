@@ -116,3 +116,20 @@ export function labels(answers, extra = {}) {
 }
 // The Arabic column for a generated question (tools/build.mjs and the weekly update).
 export const layerOf = k => (k.ar ? { q: k.ar.q, e: k.ar.e || null, o: labels([k.fact, ...(k.wrongs || [])]) } : null);
+
+// The whole Arabic layer of a bank record: question, explanation, answer labels
+// (and the clues of a Who Am I? multiple choice). For a career mystery: the name,
+// the explanation, the option labels, and the teams of its career path.
+const PATH_LABEL = { 'Career path': 'المسيرة', 'NBA career path': 'مسيرته في NBA', 'Coaching path': 'مسيرته التدريبية', 'NBA coaching path': 'مسيرته التدريبية في NBA' };
+export function recordLayer(r) {
+  if (r.question_type === 'career_mystery') {
+    const p = r.person, name = p.ar_name || N(p.name);
+    for (const c of p.clues) if (c.type === 'path') c.ar = { label: PATH_LABEL[c.label || 'Career path'] || 'المسيرة', teams: c.teams.map(N) };
+    return { name, e: `${name} — ${p.kind === 'coach' ? 'مدرب' : 'لاعب'}، ${era(p.era)}.`, o: labels([p.name, ...(p.decoys || [])]) };
+  }
+  if (!r.ar) return null;
+  let q = r.ar.q;
+  const o = labels(r.answers, r.ar.o || {});
+  if (/^(comparison|before_after)$/.test(r.question_type) && (r.answers || []).length === 2) q = `${q.replace(/؟\s*$/, '')}: ${list([...r.answers].sort().map(a => o[a] || a))}؟`;
+  return { q, e: r.ar.e || null, o, ...(r.clues ? { clues: q.split('|') } : {}) };
+}
