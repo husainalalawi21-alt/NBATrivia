@@ -595,12 +595,15 @@ export class App extends Logic {
     const urgent = !!(r && !answered && liveMs < 5000);
     const letters = lang === 'ar' ? ['أ', 'ب', 'ج', 'د'] : ['A', 'B', 'C', 'D'];
     // Arabic mode reads the question's Arabic layer (answers are still checked in English).
-    const AR = lang === 'ar', qa = AR && q && q.ar ? q.ar : null, say = o => (qa && qa.o && qa.o[o]) || o;
-    const shown = q && !isWai ? ((qa && qa.q) || q.text).split('|').join(' ') : '';
+    // In Arabic text a hyphen doesn't join two numbers ("1981-82" would show as "82-1981"),
+    // so seasons and year ranges go in a left-to-right isolate.
+    const AR = lang === 'ar', bidi = x => (AR && typeof x === 'string' ? x.replace(/\d+(?:-\d+)+/g, m => '\u2066' + m + '\u2069') : x);
+    const qa = AR && q && q.ar ? q.ar : null, say = o => bidi((qa && qa.o && qa.o[o]) || o);
+    const shown = q && !isWai ? bidi(((qa && qa.q) || q.text).split('|').join(' ')) : '';
     const logView = x => {
       if (x.wai) { const name = (AR && x.arName) || x.correct;
         return { q: `${L.game.who_am_i} — ${name}`, correct: name, exp: x.wai === 'solved' ? t_('game.solved_on', { n: x.clue }) : x.wai === 'timeout' ? L.game.time_ran_out : L.game.out_of_clues }; }
-      const a = AR && x.ar; return { q: a ? a.q : x.q, correct: a ? a.correct : x.correct, exp: a ? a.e : x.exp };
+      const a = AR && x.ar; return { q: bidi(a ? a.q : x.q), correct: bidi(a ? a.correct : x.correct), exp: bidi(a ? a.e : x.exp) };
     };
     const ok = !!(answered && q && (isWai ? r.log[r.log.length - 1] && r.log[r.log.length - 1].ok : r.answered === q.correct));
     const answers = q && q.options ? q.options.map((o, i) => {
@@ -611,7 +614,7 @@ export class App extends Logic {
     const clueRows = isWai && q ? q.clues.slice(0, r.clueIdx + 1).map((c, i) => {
       const locked = false;
       return { n: i + 1, locked, isNew: i === r.clueIdx && i > 0, isText: !locked && c.type === 'text', isPath: !locked && c.type === 'path', isNumbers: !locked && c.type === 'numbers', isAwards: !locked && c.type === 'awards',
-        text: AR && typeof c.ar === 'string' ? c.ar : c.content, numbers: c.numbers || [], list: AR && Array.isArray(c.ar) ? c.ar : c.list || [],
+        text: bidi(AR && typeof c.ar === 'string' ? c.ar : c.content), numbers: c.numbers || [], list: (AR && Array.isArray(c.ar) ? c.ar : c.list || []).map(bidi),
         teams: (AR && c.ar && c.ar.teams ? c.ar.teams : c.teams || []).map(name => ({ name })) };
     }) : [];
     const modeName = m => m === 'team' ? (t ? tn(t) : L.modes.team) : (L.modes[m] || m);
