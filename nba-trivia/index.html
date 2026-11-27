@@ -41,6 +41,7 @@
     <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
     <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></symbol>
     <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.8 3.9 5.8 3.9 9s-1.3 6.2-3.9 9c-2.6-2.8-3.9-5.8-3.9-9S9.4 5.8 12 3z"/></symbol>
     <symbol id="i-ball" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18M5.7 5.7c3.3 3.5 3.3 9.1 0 12.6M18.3 5.7c-3.3 3.5-3.3 9.1 0 12.6"/></symbol>
     <symbol id="i-apple" viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.8c0-2.5 2-3.7 2.1-3.8-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9-.8 0-1.9-.9-3.1-.8-1.6 0-3.1.9-3.9 2.4-1.7 2.9-.4 7.2 1.2 9.5.8 1.2 1.7 2.4 3 2.4 1.2 0 1.7-.8 3.1-.8 1.5 0 1.9.8 3.1.8 1.3 0 2.1-1.2 2.9-2.3.9-1.3 1.3-2.6 1.3-2.7-.1 0-2.5-1-2.5-3.7zM14 5.4c.7-.8 1.1-2 1-3.1-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.2-.6 2.9-1.4z"/></symbol>
     <symbol id="i-google" viewBox="0 0 24 24" fill="currentColor"><path d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z" opacity=".9"/><path d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z" opacity=".75"/><path d="M6.4 14a6 6 0 0 1 0-4V7.4H3.1a10 10 0 0 0 0 9.2z" opacity=".6"/><path d="M12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10C7.2 7.7 9.4 6 12 6z"/></symbol>
@@ -55,25 +56,26 @@
   <!-- ═══ WELCOME ═══ -->
   <sc-if value="{{ atWelcome }}" hint-placeholder-val="{{ true }}">
     <section class="scr scr-welcome">
+      <button class="lang-pill" onClick="{{ toggleLang }}" lang="{{ otherLang }}"><svg class="ic"><use href="#i-globe"></use></svg>{{ L.lang.switch_to }}</button>
       <div class="w-art" aria-hidden="true">
         <svg class="w-court" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2"><path d="M0 40h400M200 40v260"/><circle cx="200" cy="170" r="62"/><circle cx="200" cy="170" r="18"/><path d="M40 300V40M360 300V40"/><path d="M110 40a90 90 0 0 0 180 0"/></svg>
         <div class="w-ball"><svg viewBox="0 0 100 100" fill="none" stroke="#2a0f00" stroke-width="3.2" stroke-linecap="round"><path d="M4 50h92M50 4v92M18 18c16 17 16 47 0 64M82 18c-16 17-16 47 0 64"/></svg></div>
       </div>
       <div class="w-copy">
         <div class="eyebrow"><svg class="ic"><use href="#i-ball"></use></svg>{{ appName }}</div>
-        <h1 class="display w-title">Know ball.</h1>
-        <p class="lede">Every era, from 1946 to last week. Climb from Easy to GOAT Level — one wrong answer ends the run.</p>
+        <h1 class="display w-title">{{ L.welcome.title }}</h1>
+        <p class="lede">{{ L.welcome.lede }}</p>
       </div>
       <div class="w-actions">
-        <button class="btn-main" onClick="{{ playGuest }}">Play now<svg class="ic"><use href="#i-arrow"></use></svg></button>
-        <button class="btn-soft" onClick="{{ goAuthEmail }}"><svg class="ic"><use href="#i-mail"></use></svg>Create a free account</button>
+        <button class="btn-main" onClick="{{ playGuest }}">{{ L.welcome.play_now }}<svg class="ic"><use href="#i-arrow"></use></svg></button>
+        <button class="btn-soft" onClick="{{ goAuthEmail }}"><svg class="ic"><use href="#i-mail"></use></svg>{{ L.welcome.create_account }}</button>
         <sc-if value="{{ socialOn }}" hint-placeholder-val="{{ false }}">
           <div class="row2">
             <sc-if value="{{ hasApple }}"><button class="btn-soft" onClick="{{ authApple }}"><svg class="ic"><use href="#i-apple"></use></svg>Apple</button></sc-if>
             <sc-if value="{{ hasGoogle }}"><button class="btn-soft" onClick="{{ authGoogle }}"><svg class="ic"><use href="#i-google"></use></svg>Google</button></sc-if>
           </div>
         </sc-if>
-        <button class="btn-link" onClick="{{ goSignIn }}">Already playing? <b>Sign in</b></button>
+        <button class="btn-link" onClick="{{ goSignIn }}">{{ L.welcome.have_account }} <b>{{ L.welcome.sign_in }}</b></button>
       </div>
     </section>
   </sc-if>
@@ -81,24 +83,24 @@
   <!-- ═══ SIGN UP / SIGN IN ═══ -->
   <sc-if value="{{ atAuth }}" hint-placeholder-val="{{ false }}">
     <section class="scr scr-form">
-      <button class="back" onClick="{{ backToWelcome }}" aria-label="Back"><svg class="ic"><use href="#i-back"></use></svg>Back</button>
+      <button class="back" onClick="{{ backToWelcome }}" aria-label="{{ L.common.back }}"><svg class="ic"><use href="#i-back"></use></svg>{{ L.common.back }}</button>
       <h2 class="display h-xl">{{ authTitle }}</h2>
       <p class="muted">{{ authSub }}</p>
       <div class="seg" role="tablist">
         <sc-for list="{{ authTabs }}" as="t" hint-placeholder-count="2"><button class="seg-btn" aria-selected="{{ t.on }}" onClick="{{ t.pick }}">{{ t.label }}</button></sc-for>
       </div>
-      <label class="fld"><span>Email</span><input class="inp" type="email" autocomplete="email" placeholder="you@example.com" value="{{ authEmail }}" onChange="{{ setAuthEmail }}"></label>
-      <label class="fld"><span>Password</span><input class="inp" type="password" autocomplete="{{ passAutocomplete }}" placeholder="At least 8 characters" value="{{ authPass }}" onChange="{{ setAuthPass }}" onKeyDown="{{ authKey }}"></label>
+      <label class="fld"><span>{{ L.auth.email }}</span><input class="inp" dir="ltr" type="email" autocomplete="email" placeholder="you@example.com" value="{{ authEmail }}" onChange="{{ setAuthEmail }}"></label>
+      <label class="fld"><span>{{ L.auth.password }}</span><input class="inp" dir="ltr" type="password" autocomplete="{{ passAutocomplete }}" placeholder="{{ L.auth.password_hint }}" value="{{ authPass }}" onChange="{{ setAuthPass }}" onKeyDown="{{ authKey }}"></label>
       <sc-if value="{{ authHasErrors }}" hint-placeholder-val="{{ false }}"><div class="note note-warn"><sc-for list="{{ authErrorList }}" as="e" hint-placeholder-count="1"><div>{{ e }}</div></sc-for></div></sc-if>
       <button class="btn-main" onClick="{{ submitEmailAuth }}" disabled="{{ busy }}">{{ authCta }}<svg class="ic"><use href="#i-arrow"></use></svg></button>
       <sc-if value="{{ socialOn }}" hint-placeholder-val="{{ false }}">
-        <div class="or"><span>or</span></div>
+        <div class="or"><span>{{ L.common.or }}</span></div>
         <div class="row2">
           <sc-if value="{{ hasApple }}"><button class="btn-soft" onClick="{{ authApple }}"><svg class="ic"><use href="#i-apple"></use></svg>Apple</button></sc-if>
           <sc-if value="{{ hasGoogle }}"><button class="btn-soft" onClick="{{ authGoogle }}"><svg class="ic"><use href="#i-google"></use></svg>Google</button></sc-if>
         </div>
       </sc-if>
-      <p class="fine">Your streaks, ranks and battles follow you to any device.</p>
+      <p class="fine">{{ L.auth.fine }}</p>
     </section>
   </sc-if>
 
@@ -106,12 +108,12 @@
   <sc-if value="{{ atUsername }}" hint-placeholder-val="{{ false }}">
     <section class="scr scr-form">
       <sc-if value="{{ regFlow }}"><div class="steps"><sc-for list="{{ regDots }}" as="d" hint-placeholder-count="3"><i data-on="{{ d }}"></i></sc-for></div></sc-if>
-      <sc-if value="{{ notRegFlow }}"><button class="back" onClick="{{ goProfile }}" aria-label="Back"><svg class="ic"><use href="#i-back"></use></svg>Back</button></sc-if>
-      <h2 class="display h-xl">Pick a username</h2>
-      <p class="muted">It's how you show up on leaderboards and in battles.</p>
-      <div class="handle-input"><span>@</span><input class="inp-bare" placeholder="ballgod" autocomplete="off" autocapitalize="off" spellcheck="false" value="{{ unameDraft }}" onChange="{{ setUname }}" onKeyDown="{{ unameKey }}"></div>
+      <sc-if value="{{ notRegFlow }}"><button class="back" onClick="{{ goProfile }}" aria-label="{{ L.common.back }}"><svg class="ic"><use href="#i-back"></use></svg>{{ L.common.back }}</button></sc-if>
+      <h2 class="display h-xl">{{ L.username.title }}</h2>
+      <p class="muted">{{ L.username.sub }}</p>
+      <div class="handle-input" dir="ltr"><span>@</span><input class="inp-bare" placeholder="ballgod" autocomplete="off" autocapitalize="off" spellcheck="false" value="{{ unameDraft }}" onChange="{{ setUname }}" onKeyDown="{{ unameKey }}"></div>
       <div class="hint" data-ok="{{ unameOk }}">{{ unameStatus }}</div>
-      <button class="btn-main push-down" onClick="{{ claimUsername }}" disabled="{{ unameInvalid }}">Continue<svg class="ic"><use href="#i-arrow"></use></svg></button>
+      <button class="btn-main push-down" onClick="{{ claimUsername }}" disabled="{{ unameInvalid }}">{{ L.common.continue }}<svg class="ic"><use href="#i-arrow"></use></svg></button>
     </section>
   </sc-if>
 
@@ -120,10 +122,10 @@
     <section class="scr scr-teampick">
       <div class="tp-head">
         <sc-if value="{{ regFlow }}"><div class="steps"><sc-for list="{{ regDots }}" as="d" hint-placeholder-count="3"><i data-on="{{ d }}"></i></sc-for></div></sc-if>
-        <sc-if value="{{ notRegFlow }}"><button class="back" onClick="{{ teamPickBack }}" aria-label="Back"><svg class="ic"><use href="#i-back"></use></svg>Back</button></sc-if>
-        <h2 class="display h-xl">Who's your team?</h2>
-        <p class="muted">Unlocks a mode built from their whole history — seasons, games, records.</p>
-        <label class="search"><svg class="ic"><use href="#i-search"></use></svg><input class="inp-bare" placeholder="Search 30 teams" value="{{ teamSearch }}" onChange="{{ setTeamSearch }}"></label>
+        <sc-if value="{{ notRegFlow }}"><button class="back" onClick="{{ teamPickBack }}" aria-label="{{ L.common.back }}"><svg class="ic"><use href="#i-back"></use></svg>{{ L.common.back }}</button></sc-if>
+        <h2 class="display h-xl">{{ L.teampick.title }}</h2>
+        <p class="muted">{{ L.teampick.sub }}</p>
+        <label class="search"><svg class="ic"><use href="#i-search"></use></svg><input class="inp-bare" placeholder="{{ L.teampick.search }}" value="{{ teamSearch }}" onChange="{{ setTeamSearch }}"></label>
       </div>
       <div class="team-grid">
         <sc-for list="{{ teamList }}" as="t" hint-placeholder-count="12">
@@ -133,11 +135,11 @@
             <sc-if value="{{ t.selected }}"><svg class="ic tt-check"><use href="#i-check"></use></svg></sc-if>
           </button>
         </sc-for>
-        <sc-if value="{{ noTeamsFound }}"><div class="empty-line">No team matches “{{ teamSearch }}”.</div></sc-if>
+        <sc-if value="{{ noTeamsFound }}"><div class="empty-line">{{ noTeamText }}</div></sc-if>
       </div>
       <div class="dock">
         <button class="btn-main" onClick="{{ saveTeam }}" disabled="{{ noTeamChosen }}">{{ teamCta }}</button>
-        <sc-if value="{{ regFlow }}"><button class="btn-link" onClick="{{ skipTeam }}">Skip for now</button></sc-if>
+        <sc-if value="{{ regFlow }}"><button class="btn-link" onClick="{{ skipTeam }}">{{ L.teampick.skip }}</button></sc-if>
       </div>
     </section>
   </sc-if>
@@ -147,12 +149,12 @@
     <section class="scr scr-form scr-ready">
       <div class="steps"><sc-for list="{{ regDots }}" as="d" hint-placeholder-count="3"><i data-on="{{ d }}"></i></sc-for></div>
       <span class="tchip tchip-xl" style="{{ myTeamChip }}">{{ myTeamAbbr }}</span>
-      <h2 class="display h-xl">You're in, {{ handle }}.</h2>
+      <h2 class="display h-xl">{{ readyTitle }}</h2>
       <p class="muted">{{ readyLine }}</p>
       <div class="ladder ladder-tall">
         <sc-for list="{{ ladderSteps }}" as="l" hint-placeholder-count="6"><div class="lad" data-tier="{{ l.tier }}"><i></i><b>{{ l.label }}</b><span>{{ l.count }}</span></div></sc-for>
       </div>
-      <button class="btn-main push-down" onClick="{{ startStreak }}">Start your first run<svg class="ic"><use href="#i-arrow"></use></svg></button>
+      <button class="btn-main push-down" onClick="{{ startStreak }}">{{ L.ready.cta }}<svg class="ic"><use href="#i-arrow"></use></svg></button>
     </section>
   </sc-if>
 
@@ -165,13 +167,13 @@
           <span class="me-text"><b>{{ greeting }}</b><small>{{ homeSubline }}</small></span>
         </button>
         <sc-if value="{{ isMember }}"><button class="pill pill-rank" onClick="{{ goBoard }}"><svg class="ic"><use href="#i-trophy"></use></svg>{{ rankPill }}</button></sc-if>
-        <sc-if value="{{ isGuest }}"><button class="pill pill-cta" onClick="{{ goAuthEmail }}">Sign up</button></sc-if>
+        <sc-if value="{{ isGuest }}"><button class="pill pill-cta" onClick="{{ goAuthEmail }}">{{ L.common.sign_up }}</button></sc-if>
       </header>
 
-      <div class="h-msgs"><sc-if value="{{ poolExhausted }}"><div class="note">{{ exhaustedMsg }}</div></sc-if><sc-if value="{{ hasInbox }}"><button class="inbox" onClick="{{ openInbox }}"><span class="avatar sm">{{ inboxInitial }}</span><span class="grow"><b>{{ inboxTitle }}</b><small>{{ inboxSub }}</small></span><span class="pill pill-cta">Play</span></button></sc-if></div>
+      <div class="h-msgs"><sc-if value="{{ poolExhausted }}"><div class="note">{{ exhaustedMsg }}</div></sc-if><sc-if value="{{ hasInbox }}"><button class="inbox" onClick="{{ openInbox }}"><span class="avatar sm">{{ inboxInitial }}</span><span class="grow"><b>{{ inboxTitle }}</b><small>{{ inboxSub }}</small></span><span class="pill pill-cta">{{ L.common.play }}</span></button></sc-if></div>
 
       <button class="hero h-hero" onClick="{{ startStreak }}">
-        <div class="hero-top"><span class="chip chip-fire"><svg class="ic"><use href="#i-flame"></use></svg>Streak</span><span class="hero-best">{{ heroBest }}</span></div>
+        <div class="hero-top"><span class="chip chip-fire"><svg class="ic"><use href="#i-flame"></use></svg>{{ L.modes.streak }}</span><span class="hero-best">{{ heroBest }}</span></div>
         <div class="hero-title display">{{ heroPrompt }}</div>
         <div class="hero-sub">{{ heroSub }}</div>
         <div class="ladder">
@@ -183,7 +185,7 @@
       <div class="h-side">
       <button class="card daily h-daily" onClick="{{ startDaily }}" data-done="{{ dailyDone }}">
         <span class="tile-ic ic-daily"><svg class="ic"><use href="#i-calendar"></use></svg></span>
-        <span class="grow"><b>Daily Challenge</b><small>{{ dailySub }}</small></span>
+        <span class="grow"><b>{{ L.home.daily }}</b><small>{{ dailySub }}</small></span>
         <sc-if value="{{ dailyDone }}"><span class="pill pill-done"><svg class="ic"><use href="#i-check"></use></svg>{{ dailyScore }}</span></sc-if>
         <sc-if value="{{ dailyOpen }}"><svg class="ic chev"><use href="#i-chev"></use></svg></sc-if>
       </button>
@@ -206,7 +208,7 @@
   <sc-if value="{{ atGame }}" hint-placeholder-val="{{ false }}">
     <section class="scr scr-game" data-urgent="{{ urgent }}">
       <header class="g-top">
-        <button class="icon-btn" onClick="{{ quitGame }}" aria-label="Exit"><svg class="ic"><use href="#i-close"></use></svg></button>
+        <button class="icon-btn" onClick="{{ quitGame }}" aria-label="{{ L.common.exit }}"><svg class="ic"><use href="#i-close"></use></svg></button>
         <div class="tier" data-tier="{{ tierKey }}">{{ tierName }}<sc-if value="{{ hasStageCount }}"><span>{{ stageCount }}</span></sc-if></div>
         <div class="g-right">
           <sc-if value="{{ gameHasClock }}"><div class="clock" data-urgent="{{ urgent }}"><svg class="ic"><use href="#i-clock"></use></svg>{{ clock }}</div></sc-if>
@@ -221,16 +223,16 @@
         <div class="g-body">
           <div class="q-card" data-clues="{{ qIsClues }}">
             <div class="q-main">
-            <div class="q-cat">{{ qKicker }}</div>
-            <sc-if value="{{ qIsPlain }}" hint-placeholder-val="{{ true }}"><h2 class="q-text" data-long="{{ qLong }}">{{ qText }}</h2></sc-if>
+            <div class="q-cat" dir="auto">{{ qKicker }}</div>
+            <sc-if value="{{ qIsPlain }}" hint-placeholder-val="{{ true }}"><h2 class="q-text" dir="auto" data-long="{{ qLong }}">{{ qText }}</h2></sc-if>
             <sc-if value="{{ qIsClues }}" hint-placeholder-val="{{ false }}">
-              <h2 class="q-text">Who am I?</h2>
+              <h2 class="q-text">{{ L.game.who_am_i }}</h2>
               <div class="clues">
                 <sc-for list="{{ clueRows }}" as="c" hint-placeholder-count="5">
                   <div class="clue" data-locked="{{ c.locked }}" data-new="{{ c.isNew }}">
                     <span class="clue-n">{{ c.n }}</span>
-                    <div class="clue-body">
-                      <sc-if value="{{ c.locked }}"><span class="clue-lock">Locked</span></sc-if>
+                    <div class="clue-body" dir="auto">
+                      <sc-if value="{{ c.locked }}"><span class="clue-lock">{{ L.common.locked }}</span></sc-if>
                       <sc-if value="{{ c.isText }}"><span>{{ c.text }}</span></sc-if>
                       <sc-if value="{{ c.isPath }}"><span class="path"><sc-for list="{{ c.teams }}" as="tm" hint-placeholder-count="3"><b>{{ tm.name }}</b></sc-for></span></sc-if>
                       <sc-if value="{{ c.isNumbers }}"><span class="nums"><sc-for list="{{ c.numbers }}" as="nm" hint-placeholder-count="2"><b>{{ nm }}</b></sc-for></span></sc-if>
@@ -241,7 +243,7 @@
               </div>
               <sc-if value="{{ hasLockedClues }}"><div class="clue-more"><svg class="ic"><use href="#i-lock"></use></svg>{{ lockedCluesText }}</div></sc-if>
               <sc-if value="{{ showGuessInline }}">
-                <div class="guess-inline"><input class="inp" placeholder="Type the name…" autocomplete="off" autocapitalize="words" spellcheck="false" value="{{ guessText }}" onChange="{{ setGuess }}" onKeyDown="{{ guessKey }}"><button class="btn-main" onClick="{{ submitGuess }}" disabled="{{ guessEmpty }}">Guess</button></div>
+                <div class="guess-inline"><input class="inp" dir="auto" placeholder="{{ L.game.type_name }}" autocomplete="off" autocapitalize="words" spellcheck="false" value="{{ guessText }}" onChange="{{ setGuess }}" onKeyDown="{{ guessKey }}"><button class="btn-main" onClick="{{ submitGuess }}" disabled="{{ guessEmpty }}">{{ L.game.guess }}</button></div>
               </sc-if>
             </sc-if>
             </div>
@@ -250,7 +252,7 @@
                 <span class="fb-ic"><sc-if value="{{ feedbackOk }}"><svg class="ic"><use href="#i-check"></use></svg></sc-if><sc-if value="{{ feedbackBad }}"><svg class="ic"><use href="#i-close"></use></svg></sc-if></span>
                 <div class="grow">
                   <div class="fb-title">{{ feedbackTitle }}<sc-if value="{{ feedbackHasTrail }}"><span>{{ feedbackTrail }}</span></sc-if></div>
-                  <div class="fb-sub">{{ feedbackSub }}</div>
+                  <div class="fb-sub" dir="auto">{{ feedbackSub }}</div>
                 </div>
               </div>
             </sc-if>
@@ -262,7 +264,7 @@
             <sc-for list="{{ answers }}" as="a" hint-placeholder-count="4">
               <button class="ans" data-state="{{ a.state }}" onClick="{{ a.pick }}" disabled="{{ a.disabled }}">
                 <span class="key">{{ a.letter }}</span>
-                <span class="grow">{{ a.text }}</span>
+                <span class="grow" dir="auto">{{ a.text }}</span>
                 <sc-if value="{{ a.isRight }}"><svg class="ic mark"><use href="#i-check"></use></svg></sc-if>
                 <sc-if value="{{ a.isWrong }}"><svg class="ic mark"><use href="#i-close"></use></svg></sc-if>
               </button>
@@ -296,33 +298,33 @@
           <div class="r-num display">{{ resultNumber }}</div>
           <div class="r-line">{{ resultLine }}</div>
           <div class="r-chips">
-            <sc-if value="{{ hasReached }}"><span class="tier" data-tier="{{ reachedTier }}">Reached {{ reachedLabel }}</span></sc-if>
-            <sc-if value="{{ isRecord }}"><span class="chip chip-gold">New best · was {{ prevBest }}</span></sc-if>
+            <sc-if value="{{ hasReached }}"><span class="tier" data-tier="{{ reachedTier }}">{{ reachedText }}</span></sc-if>
+            <sc-if value="{{ isRecord }}"><span class="chip chip-gold">{{ newBestText }}</span></sc-if>
           </div>
         </div>
         <div class="stats4"><sc-for list="{{ resultStats }}" as="s" hint-placeholder-count="4"><div class="stat"><small>{{ s.label }}</small><b>{{ s.value }}</b></div></sc-for></div>
         <div class="r-actions">
-          <button class="btn-main" onClick="{{ playAgain }}">Play again<svg class="ic"><use href="#i-arrow"></use></svg></button>
+          <button class="btn-main" onClick="{{ playAgain }}">{{ L.result.play_again }}<svg class="ic"><use href="#i-arrow"></use></svg></button>
           <div class="row2">
-            <sc-if value="{{ canChallenge }}"><button class="btn-soft" onClick="{{ challengeFriend }}"><svg class="ic"><use href="#i-swords"></use></svg>Challenge</button></sc-if>
-            <button class="btn-soft" onClick="{{ goShare }}"><svg class="ic"><use href="#i-share"></use></svg>Share</button>
-            <sc-if value="{{ cantChallenge }}"><button class="btn-soft" onClick="{{ goHome }}"><svg class="ic"><use href="#i-home"></use></svg>Home</button></sc-if>
+            <sc-if value="{{ canChallenge }}"><button class="btn-soft" onClick="{{ challengeFriend }}"><svg class="ic"><use href="#i-swords"></use></svg>{{ L.result.challenge }}</button></sc-if>
+            <button class="btn-soft" onClick="{{ goShare }}"><svg class="ic"><use href="#i-share"></use></svg>{{ L.common.share }}</button>
+            <sc-if value="{{ cantChallenge }}"><button class="btn-soft" onClick="{{ goHome }}"><svg class="ic"><use href="#i-home"></use></svg>{{ L.common.home }}</button></sc-if>
           </div>
         </div>
         <sc-if value="{{ hasNewBadges }}" hint-placeholder-val="{{ false }}">
-          <div class="unlocked"><svg class="ic"><use href="#i-medal"></use></svg><span>Unlocked: <b>{{ newBadgesText }}</b></span></div>
+          <div class="unlocked"><svg class="ic"><use href="#i-medal"></use></svg><span>{{ L.result.unlocked }} <b>{{ newBadgesText }}</b></span></div>
         </sc-if>
         <sc-if value="{{ isGuest }}" hint-placeholder-val="{{ false }}">
-          <div class="card claim"><span class="grow"><b>Save this score</b><small>Guests aren't ranked. Create an account in ten seconds.</small></span><button class="pill pill-cta" onClick="{{ goAuthEmail }}">Sign up</button></div>
+          <div class="card claim"><span class="grow"><b>{{ L.result.save_title }}</b><small>{{ L.result.save_sub }}</small></span><button class="pill pill-cta" onClick="{{ goAuthEmail }}">{{ L.common.sign_up }}</button></div>
         </sc-if>
       </div>
       <div class="r-review">
-        <div class="section-title">Your answers <span>{{ reviewCount }}</span></div>
+        <div class="section-title">{{ L.result.answers }} <span>{{ reviewCount }}</span></div>
         <div class="review-list">
           <sc-for list="{{ reviewRows }}" as="r" hint-placeholder-count="8">
             <div class="rv" data-ok="{{ r.ok }}">
               <span class="rv-dot"><sc-if value="{{ r.ok }}"><svg class="ic"><use href="#i-check"></use></svg></sc-if><sc-if value="{{ r.bad }}"><svg class="ic"><use href="#i-close"></use></svg></sc-if></span>
-              <div class="grow"><div class="rv-q">{{ r.q }}</div><div class="rv-d">{{ r.detail }}</div></div>
+              <div class="grow"><div class="rv-q" dir="auto">{{ r.q }}</div><div class="rv-d" dir="auto">{{ r.detail }}</div></div>
               <b class="rv-pts">{{ r.pts }}</b>
             </div>
           </sc-for>
@@ -334,28 +336,28 @@
   <!-- ═══ SHARE ═══ -->
   <sc-if value="{{ atShare }}" hint-placeholder-val="{{ false }}">
     <section class="scr scr-share">
-      <header class="topbar"><button class="back" onClick="{{ shareBack }}" aria-label="Back"><svg class="ic"><use href="#i-back"></use></svg>Back</button></header>
+      <header class="topbar"><button class="back" onClick="{{ shareBack }}" aria-label="{{ L.common.back }}"><svg class="ic"><use href="#i-back"></use></svg>{{ L.common.back }}</button></header>
       <div class="story">
         <div class="story-top"><svg class="ic"><use href="#i-ball"></use></svg>{{ appName }}</div>
         <div class="story-mid">
           <span class="chip chip-fire"><svg class="ic"><use href="#i-flame"></use></svg>{{ shareKicker }}</span>
           <div class="story-num display">{{ shareNumber }}</div>
-          <div class="story-quote display">“I know ball.”</div>
+          <div class="story-quote display">{{ L.share.quote }}</div>
         </div>
         <div class="story-foot"><span class="tchip" style="{{ myTeamChip }}">{{ myTeamAbbr }}</span><span class="grow"><b>{{ handle }}</b><small>{{ shareFooter }}</small></span><b class="story-rank">{{ globalRank }}</b></div>
       </div>
       <div class="row2">
-        <button class="btn-main" onClick="{{ shareNative }}"><svg class="ic"><use href="#i-share"></use></svg>Share</button>
+        <button class="btn-main" onClick="{{ shareNative }}"><svg class="ic"><use href="#i-share"></use></svg>{{ L.common.share }}</button>
         <button class="btn-soft" onClick="{{ copyShare }}"><svg class="ic"><use href="#i-copy"></use></svg>{{ copyLabel }}</button>
       </div>
-      <p class="fine center">Sized for Stories, WhatsApp, X, Snapchat and TikTok.</p>
+      <p class="fine center">{{ L.share.fine }}</p>
     </section>
   </sc-if>
 
   <!-- ═══ RANKS ═══ -->
   <sc-if value="{{ atBoard }}" hint-placeholder-val="{{ false }}">
     <section class="scr scr-board">
-      <header class="page-head"><h2 class="display h-lg">Ranks</h2><span class="muted">{{ boardCaption }}</span></header>
+      <header class="page-head"><h2 class="display h-lg">{{ L.ranks.title }}</h2><span class="muted">{{ boardCaption }}</span></header>
       <div class="seg"><sc-for list="{{ boardScopes }}" as="b" hint-placeholder-count="2"><button class="seg-btn" aria-selected="{{ b.on }}" onClick="{{ b.pick }}">{{ b.label }}</button></sc-for></div>
       <div class="chips"><sc-for list="{{ boardPeriods }}" as="p" hint-placeholder-count="3"><button class="chip-btn" aria-pressed="{{ p.on }}" onClick="{{ p.pick }}">{{ p.label }}</button></sc-for></div>
       <sc-if value="{{ boardLoadingNow }}"><div class="board-list"><sc-for list="{{ skeleton }}" as="k" hint-placeholder-count="6"><div class="brow skel"></div></sc-for></div></sc-if>
@@ -381,9 +383,9 @@
       </sc-if>
       <div class="me-row">
         <span class="brank">{{ myRank }}</span>
-        <span class="grow"><b>You</b><small>{{ myRankSub }}</small></span>
+        <span class="grow"><b>{{ L.ranks.you }}</b><small>{{ myRankSub }}</small></span>
         <sc-if value="{{ isMember }}"><b class="bval">{{ myRankValue }}</b></sc-if>
-        <sc-if value="{{ isGuest }}"><button class="pill pill-cta" onClick="{{ goAuthEmail }}">Sign up</button></sc-if>
+        <sc-if value="{{ isGuest }}"><button class="pill pill-cta" onClick="{{ goAuthEmail }}">{{ L.common.sign_up }}</button></sc-if>
       </div>
     </section>
   </sc-if>
@@ -391,15 +393,15 @@
   <!-- ═══ TEAM HUB ═══ -->
   <sc-if value="{{ atTeamHub }}" hint-placeholder-val="{{ false }}">
     <section class="scr scr-hub">
-      <header class="topbar"><button class="back" onClick="{{ goHome }}" aria-label="Back"><svg class="ic"><use href="#i-back"></use></svg>Home</button><button class="pill" onClick="{{ goTeamPick }}"><svg class="ic"><use href="#i-swap"></use></svg>Change team</button></header>
+      <header class="topbar"><button class="back" onClick="{{ goHome }}" aria-label="{{ L.common.back }}"><svg class="ic"><use href="#i-back"></use></svg>{{ L.common.home }}</button><button class="pill" onClick="{{ goTeamPick }}"><svg class="ic"><use href="#i-swap"></use></svg>{{ L.hub.change }}</button></header>
       <div class="hub-hero" style="{{ hubVars }}">
         <span class="tchip tchip-xl" style="{{ myTeamChip }}">{{ myTeamAbbr }}</span>
-        <div class="eyebrow">Your team</div>
+        <div class="eyebrow">{{ L.hub.your_team }}</div>
         <h2 class="display h-lg">{{ hubHeadline }}</h2>
-        <p class="muted">Seasons, playoff runs, records, scores and legends — the further you go, the deeper it gets.</p>
+        <p class="muted">{{ L.hub.sub }}</p>
       </div>
       <div class="stats3"><sc-for list="{{ hubStats }}" as="s" hint-placeholder-count="3"><div class="stat"><small>{{ s.label }}</small><b>{{ s.value }}</b></div></sc-for></div>
-      <div class="section-title">Focus on</div>
+      <div class="section-title">{{ L.hub.focus }}</div>
       <div class="chips wrap"><sc-for list="{{ hubCats }}" as="c" hint-placeholder-count="6"><button class="chip-btn" aria-pressed="{{ c.on }}" onClick="{{ c.pick }}">{{ c.label }}</button></sc-for></div>
       <div class="dock">
         <button class="btn-main" onClick="{{ startTeamRun }}">{{ hubCta }}<svg class="ic"><use href="#i-arrow"></use></svg></button>
@@ -416,13 +418,13 @@
         <div class="grow">
           <div class="p-name">{{ handle }}</div>
           <button class="team-link" onClick="{{ changeTeam }}"><span class="tchip sm" style="{{ myTeamChip }}">{{ myTeamAbbr }}</span>{{ teamLinkLabel }}<svg class="ic"><use href="#i-chev"></use></svg></button>
-          <div class="xp"><div class="xp-top"><b>Level {{ level }}</b><span>{{ xpLine }}</span></div><div class="bar"><i style="{{ xpWidth }}"></i></div></div>
+          <div class="xp"><div class="xp-top"><b>{{ levelText }}</b><span>{{ xpLine }}</span></div><div class="bar"><i style="{{ xpWidth }}"></i></div></div>
         </div>
       </div>
-      <sc-if value="{{ isGuest }}"><div class="card claim"><span class="grow"><b>Playing as a guest</b><small>Create an account to get ranked, battle friends and keep your stats on every device.</small></span><button class="pill pill-cta" onClick="{{ goAuthEmail }}">Sign up</button></div></sc-if>
+      <sc-if value="{{ isGuest }}"><div class="card claim"><span class="grow"><b>{{ L.profile.guest_title }}</b><small>{{ L.profile.guest_sub }}</small></span><button class="pill pill-cta" onClick="{{ goAuthEmail }}">{{ L.common.sign_up }}</button></div></sc-if>
       <div class="stats3"><sc-for list="{{ profileStats }}" as="s" hint-placeholder-count="6"><div class="stat"><small>{{ s.label }}</small><b>{{ s.value }}</b></div></sc-for></div>
       <div class="p-scroll">
-      <div class="section-title">Achievements <span>{{ badgeCount }}</span></div>
+      <div class="section-title">{{ L.profile.achievements }} <span>{{ badgeCount }}</span></div>
       <div class="badges">
         <sc-for list="{{ badges }}" as="b" hint-placeholder-count="10">
           <div class="badge" data-on="{{ b.on }}" title="{{ b.desc }}">
@@ -432,14 +434,15 @@
         </sc-for>
       </div>
       <div class="menu card">
-        <button class="mi" onClick="{{ toggleSound }}"><svg class="ic"><use href="{{ soundIcon }}"></use></svg><span class="grow">Sound effects</span><span class="switch" data-on="{{ soundOn }}"><i></i></span></button>
-        <sc-if value="{{ isMember }}"><button class="mi" onClick="{{ changeUsername }}"><svg class="ic"><use href="#i-at"></use></svg><span class="grow">Change username</span><svg class="ic chev"><use href="#i-chev"></use></svg></button></sc-if>
+        <div class="mi mi-static"><svg class="ic"><use href="#i-globe"></use></svg><span class="grow">{{ L.lang.label }}</span><div class="seg seg-sm" role="tablist"><sc-for list="{{ langOpts }}" as="o" hint-placeholder-count="2"><button class="seg-btn" aria-selected="{{ o.on }}" lang="{{ o.code }}" onClick="{{ o.pick }}">{{ o.label }}</button></sc-for></div></div>
+        <button class="mi" onClick="{{ toggleSound }}"><svg class="ic"><use href="{{ soundIcon }}"></use></svg><span class="grow">{{ L.profile.sound }}</span><span class="switch" data-on="{{ soundOn }}"><i></i></span></button>
+        <sc-if value="{{ isMember }}"><button class="mi" onClick="{{ changeUsername }}"><svg class="ic"><use href="#i-at"></use></svg><span class="grow">{{ L.profile.change_username }}</span><svg class="ic chev"><use href="#i-chev"></use></svg></button></sc-if>
         <button class="mi" onClick="{{ changeTeam }}"><svg class="ic"><use href="#i-swap"></use></svg><span class="grow">{{ teamMenuLabel }}</span><svg class="ic chev"><use href="#i-chev"></use></svg></button>
-        <sc-if value="{{ isAdmin }}"><button class="mi" onClick="{{ goAdmin }}"><svg class="ic"><use href="#i-shield"></use></svg><span class="grow">Question engine<small>{{ engineSummaryLine }}</small></span><svg class="ic chev"><use href="#i-chev"></use></svg></button></sc-if>
-        <sc-if value="{{ isMember }}"><button class="mi mi-danger" onClick="{{ signOut }}"><svg class="ic"><use href="#i-logout"></use></svg><span class="grow">Sign out</span></button></sc-if>
-        <sc-if value="{{ isGuest }}"><button class="mi" onClick="{{ goSignIn }}"><svg class="ic"><use href="#i-user"></use></svg><span class="grow">Sign in</span><svg class="ic chev"><use href="#i-chev"></use></svg></button></sc-if>
+        <sc-if value="{{ isAdmin }}"><button class="mi" onClick="{{ goAdmin }}"><svg class="ic"><use href="#i-shield"></use></svg><span class="grow">{{ L.profile.engine }}<small>{{ engineSummaryLine }}</small></span><svg class="ic chev"><use href="#i-chev"></use></svg></button></sc-if>
+        <sc-if value="{{ isMember }}"><button class="mi mi-danger" onClick="{{ signOut }}"><svg class="ic"><use href="#i-logout"></use></svg><span class="grow">{{ L.common.sign_out }}</span></button></sc-if>
+        <sc-if value="{{ isGuest }}"><button class="mi" onClick="{{ goSignIn }}"><svg class="ic"><use href="#i-user"></use></svg><span class="grow">{{ L.common.sign_in }}</span><svg class="ic chev"><use href="#i-chev"></use></svg></button></sc-if>
       </div>
-      <p class="fine center">Data: balldontlie.io · NBA Database by Wyatt Walsh (Kaggle), CC BY-SA 4.0 · stats.nba.com</p>
+      <p class="fine center">{{ L.profile.credits }}</p>
       </div>
     </section>
   </sc-if>
@@ -447,20 +450,20 @@
   <!-- ═══ BATTLES ═══ -->
   <sc-if value="{{ atH2H }}" hint-placeholder-val="{{ false }}">
     <section class="scr scr-h2h">
-      <header class="page-head"><h2 class="display h-lg">Battles</h2><span class="record"><b data-k="w">{{ wins }}W</b><b data-k="l">{{ losses }}L</b><b data-k="t">{{ ties }}T</b></span></header>
+      <header class="page-head"><h2 class="display h-lg">{{ L.battles.title }}</h2><span class="record"><b data-k="w">{{ wins }}W</b><b data-k="l">{{ losses }}L</b><b data-k="t">{{ ties }}T</b></span></header>
       <div class="hero battle-hero">
         <div class="vs" aria-hidden="true"><span class="avatar" data-member="{{ isMember }}">{{ avatarInitial }}</span><b>VS</b><span class="avatar q">?</span></div>
-        <div class="hero-title display">Challenge a friend</div>
-        <div class="hero-sub">10 questions from Easy to GOAT Level. They get the exact same set — the server decides who knows more.</div>
+        <div class="hero-title display">{{ L.battles.challenge_friend }}</div>
+        <div class="hero-sub">{{ L.battles.hero_sub }}</div>
         <button class="btn-main" onClick="{{ startBattle }}">{{ battleCta }}<svg class="ic"><use href="#i-arrow"></use></svg></button>
       </div>
       <div class="code-row">
-        <input class="inp code" placeholder="Got a code? NBA…" value="{{ h2hCode }}" onChange="{{ setH2HCode }}" onKeyDown="{{ codeKey }}" autocapitalize="characters" spellcheck="false">
-        <button class="btn-soft" onClick="{{ redeemCode }}">Join</button>
+        <input class="inp code" dir="ltr" placeholder="{{ L.battles.code_placeholder }}" value="{{ h2hCode }}" onChange="{{ setH2HCode }}" onKeyDown="{{ codeKey }}" autocapitalize="characters" spellcheck="false">
+        <button class="btn-soft" onClick="{{ redeemCode }}">{{ L.battles.join }}</button>
       </div>
       <sc-if value="{{ h2hHasError }}" hint-placeholder-val="{{ false }}"><div class="note note-warn">{{ h2hError }}</div></sc-if>
-      <div class="section-title">Your battles</div>
-      <sc-if value="{{ h2hEmpty }}" hint-placeholder-val="{{ false }}"><div class="empty-line">No battles yet — start one and send the code to a friend.</div></sc-if>
+      <div class="section-title">{{ L.battles.yours }}</div>
+      <sc-if value="{{ h2hEmpty }}" hint-placeholder-val="{{ false }}"><div class="empty-line">{{ L.battles.empty }}</div></sc-if>
       <div class="battle-list">
         <sc-for list="{{ h2hRows }}" as="c" hint-placeholder-count="2">
           <button class="brow" onClick="{{ c.open }}">
@@ -475,29 +478,29 @@
 
   <sc-if value="{{ atH2HIntro }}" hint-placeholder-val="{{ false }}">
     <section class="scr scr-form scr-center">
-      <button class="back" onClick="{{ goH2H }}" aria-label="Back"><svg class="ic"><use href="#i-back"></use></svg>Battles</button>
+      <button class="back" onClick="{{ goH2H }}" aria-label="{{ L.common.back }}"><svg class="ic"><use href="#i-back"></use></svg>{{ L.battles.title }}</button>
       <div class="vs big" aria-hidden="true"><span class="avatar">{{ chCreatorInitial }}</span><b>VS</b><span class="avatar" data-member="{{ isMember }}">{{ avatarInitial }}</span></div>
-      <div class="eyebrow">You've been challenged</div>
-      <h2 class="display h-xl">{{ chCreator }} thinks they know more.</h2>
-      <div class="stats3 two"><div class="stat"><small>Mode</small><b>{{ chModeLabel }}</b></div><div class="stat"><small>Code</small><b>{{ chCodeLabel }}</b></div></div>
-      <p class="muted">Same questions, same order. Their score stays hidden until you finish.</p>
-      <button class="btn-main push-down" onClick="{{ chAccept }}">Accept the battle<svg class="ic"><use href="#i-arrow"></use></svg></button>
+      <div class="eyebrow">{{ L.battles.challenged }}</div>
+      <h2 class="display h-xl">{{ chThinks }}</h2>
+      <div class="stats3 two"><div class="stat"><small>{{ L.battles.mode }}</small><b>{{ chModeLabel }}</b></div><div class="stat"><small>{{ L.battles.code }}</small><b>{{ chCodeLabel }}</b></div></div>
+      <p class="muted">{{ L.battles.same }}</p>
+      <button class="btn-main push-down" onClick="{{ chAccept }}">{{ L.battles.accept }}<svg class="ic"><use href="#i-arrow"></use></svg></button>
     </section>
   </sc-if>
 
   <sc-if value="{{ atH2HMade }}" hint-placeholder-val="{{ false }}">
     <section class="scr scr-form scr-center">
-      <button class="back" onClick="{{ goH2H }}" aria-label="Back"><svg class="ic"><use href="#i-back"></use></svg>Battles</button>
-      <div class="eyebrow">Battle created</div>
-      <h2 class="display h-xl">Beat my score.</h2>
-      <p class="muted">Send this code or link. Whoever opens it plays your exact questions.</p>
+      <button class="back" onClick="{{ goH2H }}" aria-label="{{ L.common.back }}"><svg class="ic"><use href="#i-back"></use></svg>{{ L.battles.title }}</button>
+      <div class="eyebrow">{{ L.battles.created }}</div>
+      <h2 class="display h-xl">{{ L.battles.beat }}</h2>
+      <p class="muted">{{ L.battles.send_sub }}</p>
       <div class="code-card">
-        <small>Battle code</small>
-        <div class="code-big display">{{ chCodeLabel }}</div>
-        <small class="code-link">{{ chDeepLink }}</small>
+        <small>{{ L.battles.battle_code }}</small>
+        <div class="code-big display" dir="ltr">{{ chCodeLabel }}</div>
+        <small class="code-link" dir="ltr">{{ chDeepLink }}</small>
       </div>
       <div class="row2">
-        <button class="btn-main" onClick="{{ chShare }}"><svg class="ic"><use href="#i-share"></use></svg>Send</button>
+        <button class="btn-main" onClick="{{ chShare }}"><svg class="ic"><use href="#i-share"></use></svg>{{ L.common.send }}</button>
         <button class="btn-soft" onClick="{{ chCopy }}"><svg class="ic"><use href="#i-copy"></use></svg>{{ copyLabel }}</button>
       </div>
     </section>
@@ -505,7 +508,7 @@
 
   <sc-if value="{{ atH2HResult }}" hint-placeholder-val="{{ false }}">
     <section class="scr scr-form scr-center">
-      <button class="back" onClick="{{ goH2H }}" aria-label="Back"><svg class="ic"><use href="#i-back"></use></svg>Battles</button>
+      <button class="back" onClick="{{ goH2H }}" aria-label="{{ L.common.back }}"><svg class="ic"><use href="#i-back"></use></svg>{{ L.battles.title }}</button>
       <div class="r-hero" data-record="{{ chWon }}" data-lost="{{ chLost }}">
         <sc-if value="{{ chWon }}"><div class="confetti" aria-hidden="true"><sc-for list="{{ confetti }}" as="c" hint-placeholder-count="0"><i style="{{ c }}"></i></sc-for></div></sc-if>
         <div class="eyebrow">{{ chKicker }}</div>
@@ -515,22 +518,22 @@
       <div class="duel">
         <sc-for list="{{ chScores }}" as="p" hint-placeholder-count="2"><div class="duel-side" data-win="{{ p.win }}"><span class="avatar">{{ p.initial }}</span><small>{{ p.name }}</small><b class="display">{{ p.value }}</b></div></sc-for>
       </div>
-      <button class="btn-main push-down" onClick="{{ chRematch }}">Rematch<svg class="ic"><use href="#i-arrow"></use></svg></button>
-      <button class="btn-soft" onClick="{{ chShare }}"><svg class="ic"><use href="#i-share"></use></svg>Share result</button>
+      <button class="btn-main push-down" onClick="{{ chRematch }}">{{ L.battles.rematch }}<svg class="ic"><use href="#i-arrow"></use></svg></button>
+      <button class="btn-soft" onClick="{{ chShare }}"><svg class="ic"><use href="#i-share"></use></svg>{{ L.battles.share_result }}</button>
     </section>
   </sc-if>
 
   <!-- ═══ LOADING A GAME ═══ -->
   <sc-if value="{{ showLoading }}" hint-placeholder-val="{{ false }}">
-    <div class="loading" role="status"><span class="spinner"></span><b>Getting your questions ready…</b></div>
+    <div class="loading" role="status"><span class="spinner"></span><b>{{ L.loading }}</b></div>
   </sc-if>
 
 
   <!-- ═══ ADMIN · QUESTION BANK ═══ -->
   <sc-if value="{{ atAdmin }}" hint-placeholder-val="{{ false }}">
-    <section class="scr scr-admin legacy">
+    <section class="scr scr-admin legacy" dir="ltr">
       <div style="padding:var(--space-2) var(--space-4) var(--space-3)">
-        <button class="back" onClick="{{ goProfileFromAdmin }}" aria-label="Back"><svg class="ic"><use href="#i-back"></use></svg>Profile</button>
+        <button class="back" onClick="{{ goProfileFromAdmin }}" aria-label="{{ L.common.back }}"><svg class="ic"><use href="#i-back"></use></svg>Profile</button>
         <div style="font-family:var(--font-heading);font-weight:800;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--color-accent)">Master bank · {{ bankSeason }}</div>
         <h2 style="font-size:36px;letter-spacing:-0.04em;line-height:1;margin:var(--space-2) 0 var(--space-2)">QUESTION ENGINE</h2>
         <div style="font-size:12px;color:var(--color-neutral-400);margin-bottom:var(--space-3)">{{ adminRoleNote }}</div>
@@ -662,7 +665,7 @@
           <span class="tab-label">{{ n.label }}</span>
         </button>
       </sc-for>
-      <sc-if value="{{ showSideCta }}"><button class="btn-main side-cta" onClick="{{ startStreak }}"><svg class="ic"><use href="#i-flame"></use></svg>Play streak</button></sc-if>
+      <sc-if value="{{ showSideCta }}"><button class="btn-main side-cta" onClick="{{ startStreak }}"><svg class="ic"><use href="#i-flame"></use></svg>{{ L.nav.play_streak }}</button></sc-if>
     </nav>
   </sc-if>
 
@@ -672,6 +675,8 @@
 <script src="vendor/supabase.js"></script>
 <script type="module">
   import { App } from './app.js';
+  import { init } from './i18n.js';
+  await init();
   // Phones fill the screen; tablets and desktops get their own layouts (app.css).
   const props = {
     appName: 'NBA Trivia',

@@ -1,1 +1,7 @@
 @font-face { font-family: 'Archivo'; src: url(Archivo.ttf) format('truetype'); font-weight: 100 900; font-stretch: 62% 125%; font-display: swap; }
+/* Cairo (SIL OFL 1.1, fonts/OFL-cairo.txt) for Arabic letters only; Latin stays in Archivo. */
+@font-face { font-family: 'Cairo'; src: url(cairo-arabic-400-normal.woff2) format('woff2'); font-weight: 400; font-display: swap; unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFF, U+200C-200F, U+066B-066C; }
+@font-face { font-family: 'Cairo'; src: url(cairo-arabic-600-normal.woff2) format('woff2'); font-weight: 500 600; font-display: swap; unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFF, U+200C-200F, U+066B-066C; }
+@font-face { font-family: 'Cairo'; src: url(cairo-arabic-700-normal.woff2) format('woff2'); font-weight: 700; font-display: swap; unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFF, U+200C-200F, U+066B-066C; }
+@font-face { font-family: 'Cairo'; src: url(cairo-arabic-800-normal.woff2) format('woff2'); font-weight: 800; font-display: swap; unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFF, U+200C-200F, U+066B-066C; }
+@font-face { font-family: 'Cairo'; src: url(cairo-arabic-900-normal.woff2) format('woff2'); font-weight: 900; font-display: swap; unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFF, U+200C-200F, U+066B-066C; }
