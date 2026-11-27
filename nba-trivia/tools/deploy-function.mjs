@@ -3,7 +3,8 @@
 //   NODE_USE_ENV_PROXY=1 node tools/deploy-function.mjs
 //
 // Uploads supabase/functions/weekly-update/index.ts together with the shared
-// data/generate.js and data/franchises.js (the same rules the backfill uses).
+// data/generate.js and data/franchises.js (the same rules the backfill uses) and
+// data/ar.js with data/names-ar.js (the Arabic of each question).
 // The Supabase access token is added by the environment's network proxy.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -16,6 +17,8 @@ const files = {
   'index.ts': join(ROOT, 'supabase/functions', SLUG, 'index.ts'),
   'generate.js': join(ROOT, 'data/generate.js'),
   'franchises.js': join(ROOT, 'data/franchises.js'),
+  'ar.js': join(ROOT, 'data/ar.js'),                 // the Arabic of each question
+  'names-ar.js': join(ROOT, 'data/names-ar.js'),
 };
 
 const form = new FormData();

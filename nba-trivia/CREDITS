@@ -8,6 +8,11 @@ Code      index.html (screen markup + icon set), app.js (screen logic), dc.js (r
 Fonts     Archivo (The Archivo Project Authors / Omnibus-Type) and, for Arabic, Cairo (The Cairo Project Authors),
           both SIL Open Font License 1.1; files and licences in fonts/.
 Languages English and Arabic: i18n/en.json and i18n/ar.json (i18next format), loaded by i18n.js.
+          Questions in Arabic (Gulf dialect): every question template writes an Arabic sentence with the
+          helpers in data/ar.js; names are spelled from data/names-ar/*.tsv (compiled into data/names-ar.js by
+          tools/names.mjs); hand-written questions and Who Am I? clues in data/questions-ar.js and
+          data/mystery-ar.js. Stored in the questions.ar column (supabase/migrations/0008), downloaded only
+          by players using Arabic. Answers are still checked in English.
 Images    None. Icons are drawn inline (index.html). No team or league logos are used; teams appear as three-letter
           text marks in the team's colour.
 Data      NBA facts are used for trivia reference only.

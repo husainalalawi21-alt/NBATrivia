@@ -174,7 +174,10 @@
   "answer": "الجواب: {{answer}}",
   "level_up": "مستوى جديد",
   "plus_sec": "+{{n}} ث",
-  "minus_sec": "−{{n}} ث"
+  "minus_sec": "−{{n}} ث",
+  "solved_on": "عرفته من التلميح رقم {{n}}.",
+  "time_ran_out": "خلص الوقت.",
+  "out_of_clues": "خلصت التلميحات."
  },
  "result": {
   "pool_cleared": "خلّصت الأسئلة",

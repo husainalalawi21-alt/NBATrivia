@@ -1,3 +1,4 @@
+import * as A from './ar.js';
 // 30 NBA franchises + a fact-driven question generator for the team mode.
 // Facts verified through the 2024–25 season. Fields are optional — the generator
 // only builds a question when the fact (and enough decoys) exist.
@@ -42,34 +43,34 @@ const others = (t, field) => TEAMS.filter(x => x.id !== t.id && x[field] != null
 
 // Builds a pool of generated questions for one team at one tier.
 export function templates(t, tier, rnd) {
-  const F = fullName(t), qs = [];
-  const add = (text, correct, wrongPool, exp, cat) => {
+  const F = fullName(t), qs = [], FA = A.N(F), NA = A.N(t.name);
+  const add = (text, correct, wrongPool, exp, cat, ar) => {
     const wrongs = pick([...new Set(wrongPool.filter(w => w !== correct))], rnd, 3);
-    if (correct && wrongs.length === 3) qs.push({ text, correct, wrongs, exp, cat, teamId: t.id, diff: tier });
+    if (correct && wrongs.length === 3) qs.push({ text, correct, wrongs, exp, cat, teamId: t.id, diff: tier, ar });
   };
   if (tier === 'fan') {
-    add(`Which city do the ${t.name} play in?`, t.city, others(t, 'city'), `${F}.`, 'Team history');
-    add(`Which conference do the ${t.name} play in?`, t.conf + 'ern Conference', ['Western Conference', 'Eastern Conference', 'Central Conference', 'Atlantic Conference'].filter(x => x !== t.conf + 'ern Conference'), `${F} play in the ${t.conf}ern Conference.`, 'Team history');
-    if (t.arena) add(`Where do the ${t.name} play their home games?`, t.arena, others(t, 'arena'), `${F} host games at ${t.arena}.`, 'Arenas');
-    add(`What are the ${t.name}' primary colours?`, t.colors, others(t, 'colors'), `${F}: ${t.colors.toLowerCase()}.`, 'Team history');
-    if (t.legends) add(`Which of these players is a ${t.name} franchise legend?`, t.legends[rnd() < .5 ? 0 : t.legends.length - 1], TEAMS.filter(x => x.id !== t.id).flatMap(x => x.legends || []), `A ${F} great.`, 'Franchise legends');
+    add(`Which city do the ${t.name} play in?`, t.city, others(t, 'city'), `${F}.`, 'Team history', { q: `في أي مدينة يلعب فريق ${NA}؟`, e: `${FA}.` });
+    add(`Which conference do the ${t.name} play in?`, t.conf + 'ern Conference', ['Western Conference', 'Eastern Conference', 'Central Conference', 'Atlantic Conference'].filter(x => x !== t.conf + 'ern Conference'), `${F} play in the ${t.conf}ern Conference.`, 'Team history', { q: `في أي منطقة يلعب فريق ${NA}؟`, e: `${FA} يلعب في المنطقة ${A.conf(t.conf)}.` });
+    if (t.arena) add(`Where do the ${t.name} play their home games?`, t.arena, others(t, 'arena'), `${F} host games at ${t.arena}.`, 'Arenas', { q: `وين يلعب فريق ${NA} مبارياته على أرضه؟`, e: `${FA} يلعب مبارياته على أرضه في ${A.N(t.arena)}.` });
+    add(`What are the ${t.name}' primary colours?`, t.colors, others(t, 'colors'), `${F}: ${t.colors.toLowerCase()}.`, 'Team history', { q: `شنو الألوان الأساسية لفريق ${NA}؟`, e: `${FA}: ${A.colors(t.colors)}.` });
+    if (t.legends) add(`Which of these players is a ${t.name} franchise legend?`, t.legends[rnd() < .5 ? 0 : t.legends.length - 1], TEAMS.filter(x => x.id !== t.id).flatMap(x => x.legends || []), `A ${F} great.`, 'Franchise legends', { q: `أي واحد من هاللاعبين يعتبر من أساطير ${FA}؟`, e: `من عظماء ${FA}.` });
   } else if (tier === 'diehard') {
-    add(`Which division do the ${t.name} play in?`, t.div + ' Division', [...new Set(others(t, 'div'))].map(d => d + ' Division'), `${F} — ${t.div} Division.`, 'Team history');
-    add(`How many NBA championships have the ${t.name} won?`, String(t.titles), ['0', '1', '2', '3', '5', '6', '7', '17', '18'].filter(x => x !== String(t.titles)), t.titles ? `${t.titles} title${t.titles > 1 ? 's' : ''}${t.lastTitle ? `, most recently in ${t.lastTitle}` : ''}.` : `${F} have not won a championship.`, 'Championships');
-    if (t.scorer) add(`Who is the ${t.name}' all-time leading scorer?`, t.scorer, others(t, 'scorer'), `${t.scorer} tops the ${F} scoring list.`, 'Franchise records');
-    if (t.legends) add(`Which player did NOT play for the ${t.name}?`, pick(TEAMS.filter(x => x.id !== t.id).flatMap(x => x.legends || []), rnd, 1)[0], t.legends, `The other three are ${F} names.`, 'Franchise legends');
+    add(`Which division do the ${t.name} play in?`, t.div + ' Division', [...new Set(others(t, 'div'))].map(d => d + ' Division'), `${F} — ${t.div} Division.`, 'Team history', { q: `في أي قسم يلعب فريق ${NA}؟`, e: `${FA} — قسم ${A.DIVS[t.div]}.` });
+    add(`How many NBA championships have the ${t.name} won?`, String(t.titles), ['0', '1', '2', '3', '5', '6', '7', '17', '18'].filter(x => x !== String(t.titles)), t.titles ? `${t.titles} title${t.titles > 1 ? 's' : ''}${t.lastTitle ? `, most recently in ${t.lastTitle}` : ''}.` : `${F} have not won a championship.`, 'Championships', { q: `كم بطولة NBA فاز فيها ${FA}؟`, e: t.titles ? `${A.titles(t.titles)}${t.lastTitle ? `، آخرها في ${t.lastTitle}` : ''}.` : `${FA} ما فاز بأي بطولة.` });
+    if (t.scorer) add(`Who is the ${t.name}' all-time leading scorer?`, t.scorer, others(t, 'scorer'), `${t.scorer} tops the ${F} scoring list.`, 'Franchise records', { q: `مين الهدّاف التاريخي لـ${FA}؟`, e: `${A.N(t.scorer)} يتصدر قائمة هدّافي ${FA}.` });
+    if (t.legends) add(`Which player did NOT play for the ${t.name}?`, pick(TEAMS.filter(x => x.id !== t.id).flatMap(x => x.legends || []), rnd, 1)[0], t.legends, `The other three are ${F} names.`, 'Franchise legends', { q: `أي لاعب من هذول ما لعب مع ${FA}؟`, e: `الثلاثة الباقين من أسماء ${FA}.` });
   } else if (tier === 'superfan') {
-    if (t.lastTitle) add(`In which year did the ${t.name} most recently win the championship?`, String(t.lastTitle), TEAMS.filter(x => x.lastTitle && x.lastTitle !== t.lastTitle).map(x => String(x.lastTitle)), `${F} — ${t.lastTitle}.`, 'Championships');
-    if (t.former) add(`Which name did the ${F} previously go by?`, t.former, others(t, 'former'), `${F} were once the ${t.former}.`, 'Team history');
-    if (t.legends && t.legends.length >= 3) add(`Which of these is the longest-serving ${t.name} franchise cornerstone?`, t.legends[0], TEAMS.filter(x => x.id !== t.id).flatMap(x => x.legends || []), `${t.legends[0]} defined an era in ${t.city}.`, 'Franchise legends');
-    add(`Which team shares the ${t.div} Division with the ${t.name}?`, pick(TEAMS.filter(x => x.div === t.div && x.id !== t.id), rnd, 1).map(x => x.name)[0], TEAMS.filter(x => x.div !== t.div).map(x => x.name), `${t.div} Division rivals.`, 'Team history');
+    if (t.lastTitle) add(`In which year did the ${t.name} most recently win the championship?`, String(t.lastTitle), TEAMS.filter(x => x.lastTitle && x.lastTitle !== t.lastTitle).map(x => String(x.lastTitle)), `${F} — ${t.lastTitle}.`, 'Championships', { q: `في أي سنة فاز ${FA} بآخر بطولة له؟`, e: `${FA} — ${t.lastTitle}.` });
+    if (t.former) add(`Which name did the ${F} previously go by?`, t.former, others(t, 'former'), `${F} were once the ${t.former}.`, 'Team history', { q: `شنو كان الاسم السابق لـ${FA}؟`, e: `قبل كان اسمهم ${A.N(t.former)}.` });
+    if (t.legends && t.legends.length >= 3) add(`Which of these is the longest-serving ${t.name} franchise cornerstone?`, t.legends[0], TEAMS.filter(x => x.id !== t.id).flatMap(x => x.legends || []), `${t.legends[0]} defined an era in ${t.city}.`, 'Franchise legends', { q: `أي واحد من هذول كان حجر الأساس لـ${FA} لأطول فترة؟`, e: `${A.N(t.legends[0])} صنع حقبة كاملة في ${A.N(t.city)}.` });
+    add(`Which team shares the ${t.div} Division with the ${t.name}?`, pick(TEAMS.filter(x => x.div === t.div && x.id !== t.id), rnd, 1).map(x => x.name)[0], TEAMS.filter(x => x.div !== t.div).map(x => x.name), `${t.div} Division rivals.`, 'Team history', { q: `أي فريق يلعب مع ${FA} في قسم ${A.DIVS[t.div]}؟`, e: `منافسين في قسم ${A.DIVS[t.div]}.` });
   } else {
     const pool = TEAMS.filter(x => x.id !== t.id);
-    if (t.former) add(`Before they were the ${F}, which name did they play under?`, t.former, others(t, 'former'), `${F} history: ${t.former} → ${F}.`, 'Team history');
-    if (t.scorer && t.legends) add(`Which ${t.name} great scored more points for the franchise than any other?`, t.scorer, t.legends.filter(l => l !== t.scorer).concat(pool.flatMap(x => x.legends || [])), `${t.scorer} is the franchise scoring leader.`, 'Franchise records');
-    if (t.lastTitle) add(`The ${t.name} lifted the trophy in which of these years?`, String(t.lastTitle), TEAMS.filter(x => x.lastTitle).map(x => String(x.lastTitle)), `${t.lastTitle}.`, 'Championships');
-    if (t.arena) add(`Which arena is home to the ${t.name}?`, t.arena, others(t, 'arena'), `${t.arena}, ${t.city}.`, 'Arenas');
-    if (t.legends) t.legends.forEach(l => add(`Which franchise does ${l} belong to in team lore?`, F, pool.map(fullName), `${l} — a ${F} icon.`, 'Franchise legends'));
+    if (t.former) add(`Before they were the ${F}, which name did they play under?`, t.former, others(t, 'former'), `${F} history: ${t.former} → ${F}.`, 'Team history', { q: `قبل لا يصير اسمهم ${FA}، شنو كان اسمهم؟`, e: `تاريخ ${FA}: كانوا ${A.N(t.former)}، وبعدين صاروا ${FA}.` });
+    if (t.scorer && t.legends) add(`Which ${t.name} great scored more points for the franchise than any other?`, t.scorer, t.legends.filter(l => l !== t.scorer).concat(pool.flatMap(x => x.legends || [])), `${t.scorer} is the franchise scoring leader.`, 'Franchise records', { q: `أي نجم من نجوم ${FA} سجّل للفريق نقاط أكثر من أي لاعب ثاني؟`, e: `${A.N(t.scorer)} هو الهدّاف التاريخي للفريق.` });
+    if (t.lastTitle) add(`The ${t.name} lifted the trophy in which of these years?`, String(t.lastTitle), TEAMS.filter(x => x.lastTitle).map(x => String(x.lastTitle)), `${t.lastTitle}.`, 'Championships', { q: `في أي سنة من هذول رفع ${FA} الكأس؟`, e: `${t.lastTitle}.` });
+    if (t.arena) add(`Which arena is home to the ${t.name}?`, t.arena, others(t, 'arena'), `${t.arena}, ${t.city}.`, 'Arenas', { q: `أي صالة هي ملعب ${FA}؟`, e: `${A.N(t.arena)}، ${A.N(t.city)}.` });
+    if (t.legends) t.legends.forEach(l => add(`Which franchise does ${l} belong to in team lore?`, F, pool.map(fullName), `${l} — a ${F} icon.`, 'Franchise legends', { q: `${A.N(l)} من أساطير أي فريق؟`, e: `${A.N(l)} — من أيقونات ${FA}.` }));
   }
   return qs;
 }
@@ -86,7 +87,7 @@ export function teamQuestion(teamId, tier, used, rnd = Math.random) {
   used.add(q.text);
   const options = [q.correct, ...q.wrongs];
   for (let i = options.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [options[i], options[j]] = [options[j], options[i]]; }
-  return { id: ++uid, text: q.text, correct: q.correct, wrongs: q.wrongs, options, cat: q.cat, diff: q.diff, type: 'mc', exp: q.exp, clues: null };
+  return { id: ++uid, text: q.text, correct: q.correct, wrongs: q.wrongs, options, cat: q.cat, diff: q.diff, type: 'mc', exp: q.exp, clues: null, ar: q.ar || null };
 }
 export function allTemplates(teamId, rnd = Math.random) {
   const t = teamById(teamId); if (!t) return [];

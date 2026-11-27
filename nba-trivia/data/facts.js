@@ -1,3 +1,4 @@
+import * as A from './ar.js';
 // ════════════════════════════════════════════════════════════════
 // facts.js — VERIFIED FACT TABLE → KNOWLEDGE POINTS → QUESTIONS
 //
@@ -136,7 +137,7 @@ export const DRAFTS = [
   [2021, 'Cade Cunningham', 'Detroit Pistons', 'Jalen Green'],
   [2022, 'Paolo Banchero', 'Orlando Magic', 'Chet Holmgren'],
   [2023, 'Victor Wembanyama', 'San Antonio Spurs', 'Brandon Miller'],
-  [2024, 'Zaccharie Risacher', 'Atlanta Hawks', 'Alex Sarr'],
+  [2024, 'Zaccharie Risacher', 'Atlanta Hawks', 'Alexandre Sarr'],
   [2025, 'Cooper Flagg', 'Dallas Mavericks', 'Dylan Harper']
 ];
 
@@ -168,6 +169,36 @@ export const RECORDS = [
   ['Golden State Warriors', 'best regular-season record', '73–9', 'The 2015–16 season.']
 ];
 
+// The same records in Arabic: [record, value, detail], in the same order.
+export const RECORDS_AR = [
+  ['أكثر نقاط في مباراة وحدة', '100', 'ضد نيويورك نيكس في هيرشي، بنسلفانيا، 2 مارس 1962.'],
+  ['أكثر ريباوند في مباراة وحدة', '55', 'ضد بوسطن سلتكس، فريق بيل راسل، في 1960.'],
+  ['أعلى معدل تسجيل في موسم واحد', '50.4 نقطة في المباراة', 'موسم 1961-62.'],
+  ['أكثر ريباوند في المسيرة', '23,924', 'على مدى 14 موسماً.'],
+  ['أكثر تمريرات حاسمة في مباراة وحدة', '30', 'مع أورلاندو ضد دنفر في 1990.'],
+  ['أكثر بلوكات في مباراة وحدة', '17', 'مع ليكرز في 1973.'],
+  ['أكثر تمريرات حاسمة في المسيرة', '15,806', 'كلها مع يوتا.'],
+  ['أكثر سرقات في المسيرة', '3,265', 'وبعد كلها مع يوتا.'],
+  ['أكثر بلوكات في المسيرة', '3,830', 'من أول ما بدأ تسجيل البلوكات في موسم 1973-74.'],
+  ['أكثر نقاط في المسيرة', 'أكثر من 40,000', 'تخطى كريم عبد الجبار في فبراير 2023.'],
+  ['أكثر رميات حرة ناجحة في المسيرة', '9,787', 'وظل ثاني هدّاف في التاريخ لسنوات.'],
+  ['أكثر ثلاثيات في المسيرة', 'أكثر من 4,000', 'تخطى راي ألن في ديسمبر 2021.'],
+  ['أكثر ثلاثيات في مباراة وحدة', '14', 'ضد شيكاغو في أكتوبر 2018.'],
+  ['أكثر تريبل دبل في المسيرة', 'أكثر من 200', 'تخطى رقم أوسكار روبرتسون (181) في 2021.'],
+  ['أكثر مباريات في المسيرة', '1,611', 'على مدى 21 موسماً.'],
+  ['أعلى معدل تسجيل في البلاي أوف خلال المسيرة', '33.4 نقطة في المباراة', 'على مدى 179 مباراة بلاي أوف.'],
+  ['أكثر نقاط في مباراة بلاي أوف', '63', 'بعد وقتين إضافيين ضد بوسطن في 1986.'],
+  ['أكثر نقاط في مباراة بنهائيات NBA', '61', 'المباراة الخامسة في نهائيات 1962.'],
+  ['أكثر بطولات كلاعب', '11', 'في 13 موسماً مع بوسطن.'],
+  ['أكثر بطولات كمدرب', '11', 'ست مع شيكاغو وخمس مع ليكرز.'],
+  ['أكثر انتصارات في الموسم العادي كمدرب', 'أكثر من 1,390', 'كلها مع سان أنطونيو.'],
+  ['أكثر جوائز أفضل لاعب (MVP)', '6', 'بين 1971 و1980.'],
+  ['أطول سلسلة انتصارات في تاريخ NBA', '33 مباراة', 'موسم 1971-72.'],
+  ['أفضل سجل في الموسم العادي', A.pair(73, 9), 'موسم 2015-16.']
+];
+// record values as answer options
+RECORDS.forEach(([, , v], i) => { A.LABELS[v] = RECORDS_AR[i][1]; });
+
 // Era buckets used for distractor plausibility and coverage reporting.
 export const era = season => {
   const y = parseInt(String(season).slice(0, 4), 10);
@@ -184,26 +215,27 @@ export function extractKnowledgePoints() {
 
   SEASONS.forEach(([s, champ, runner, fmvp, mvp, coach, roy, scorer]) => {
     const e = era(s), yr = s;
-    if (champ) push(`KP-${s}-CHAMPION`, { column: 'champion', era: e, season: s, category: 'Championships', fact: champ, question: `Which team won the ${yr} NBA championship?`, explanation: `${champ} won the ${yr} title${runner ? `, beating the ${runner}` : ''}.`, difficulty: e === '2020s' || e === '2010s' ? 'easy' : e === '1990s' || e === '2000s' ? 'medium' : 'hard' });
-    if (runner) push(`KP-${s}-FINALS-RUNNER-UP`, { column: 'champion', era: e, season: s, category: 'Finals', fact: runner, question: `Which team lost the ${yr} NBA Finals?`, explanation: `${champ} beat the ${runner}.`, difficulty: e === '2020s' ? 'medium' : 'hard' });
-    if (fmvp) push(`KP-${s}-FINALS-MVP`, { column: 'player', era: e, season: s, category: 'Finals', fact: fmvp, question: `Who was named Finals MVP for the ${yr} season?`, explanation: `${fmvp} won Finals MVP as ${champ} took the title.`, difficulty: e === '2020s' || e === '2010s' ? 'medium' : 'hard' });
-    if (mvp) push(`KP-${s}-MVP`, { column: 'player', era: e, season: s, category: 'MVP', fact: mvp, question: `Who won the ${yr} NBA Most Valuable Player award?`, explanation: `${mvp} was named MVP for ${yr}.`, difficulty: e === '2020s' ? 'easy' : e === '2010s' || e === '1990s' ? 'medium' : 'hard' });
-    if (coach) push(`KP-${s}-CHAMPION-COACH`, { column: 'coach', era: e, season: s, category: 'Coaches', fact: coach, question: `Who coached the ${yr} NBA champions?`, explanation: `${coach} led ${champ} to the ${yr} title.`, difficulty: e === '2020s' || e === '2010s' ? 'hard' : 'expert' });
-    if (roy) push(`KP-${s}-ROY`, { column: 'player', era: e, season: s, category: 'Awards', fact: roy, question: `Who won Rookie of the Year for the ${yr} season?`, explanation: `${roy} was the ${yr} Rookie of the Year.`, difficulty: e === '2020s' ? 'medium' : 'hard' });
-    if (scorer) push(`KP-${s}-SCORING-LEADER`, { column: 'player', era: e, season: s, category: 'Statistics', fact: scorer, question: `Who led the NBA in scoring for the ${yr} season?`, explanation: `${scorer} was the ${yr} scoring champion.`, difficulty: e === '2020s' ? 'medium' : e === '2010s' ? 'hard' : 'expert' });
+    if (champ) push(`KP-${s}-CHAMPION`, { column: 'champion', era: e, season: s, category: 'Championships', fact: champ, question: `Which team won the ${yr} NBA championship?`, explanation: `${champ} won the ${yr} title${runner ? `, beating the ${runner}` : ''}.`, ar: { q: `مين الفريق اللي فاز ببطولة NBA موسم ${yr}؟`, e: `فاز ${A.N(champ)} بلقب ${yr}${runner ? ` على حساب ${A.N(runner)}` : ''}.` }, difficulty: e === '2020s' || e === '2010s' ? 'easy' : e === '1990s' || e === '2000s' ? 'medium' : 'hard' });
+    if (runner) push(`KP-${s}-FINALS-RUNNER-UP`, { column: 'champion', era: e, season: s, category: 'Finals', fact: runner, question: `Which team lost the ${yr} NBA Finals?`, explanation: `${champ} beat the ${runner}.`, ar: { q: `أي فريق خسر نهائيات NBA موسم ${yr}؟`, e: `فاز ${A.N(champ)} على ${A.N(runner)}.` }, difficulty: e === '2020s' ? 'medium' : 'hard' });
+    if (fmvp) push(`KP-${s}-FINALS-MVP`, { column: 'player', era: e, season: s, category: 'Finals', fact: fmvp, question: `Who was named Finals MVP for the ${yr} season?`, explanation: `${fmvp} won Finals MVP as ${champ} took the title.`, ar: { q: `مين كان أفضل لاعب في النهائيات موسم ${yr}؟`, e: `${A.N(fmvp)} فاز بجائزة أفضل لاعب في النهائيات وتوّج ${A.N(champ)} باللقب.` }, difficulty: e === '2020s' || e === '2010s' ? 'medium' : 'hard' });
+    if (mvp) push(`KP-${s}-MVP`, { column: 'player', era: e, season: s, category: 'MVP', fact: mvp, question: `Who won the ${yr} NBA Most Valuable Player award?`, explanation: `${mvp} was named MVP for ${yr}.`, ar: { q: `مين فاز بجائزة أفضل لاعب (MVP) في NBA موسم ${yr}؟`, e: `${A.N(mvp)} كان أفضل لاعب في موسم ${yr}.` }, difficulty: e === '2020s' ? 'easy' : e === '2010s' || e === '1990s' ? 'medium' : 'hard' });
+    if (coach) push(`KP-${s}-CHAMPION-COACH`, { column: 'coach', era: e, season: s, category: 'Coaches', fact: coach, question: `Who coached the ${yr} NBA champions?`, explanation: `${coach} led ${champ} to the ${yr} title.`, ar: { q: `مين كان مدرب بطل NBA موسم ${yr}؟`, e: `${A.N(coach)} قاد ${A.N(champ)} للقب ${yr}.` }, difficulty: e === '2020s' || e === '2010s' ? 'hard' : 'expert' });
+    if (roy) push(`KP-${s}-ROY`, { column: 'player', era: e, season: s, category: 'Awards', fact: roy, question: `Who won Rookie of the Year for the ${yr} season?`, explanation: `${roy} was the ${yr} Rookie of the Year.`, ar: { q: `مين فاز بجائزة أفضل لاعب صاعد موسم ${yr}؟`, e: `${A.N(roy)} كان أفضل لاعب صاعد في موسم ${yr}.` }, difficulty: e === '2020s' ? 'medium' : 'hard' });
+    if (scorer) push(`KP-${s}-SCORING-LEADER`, { column: 'player', era: e, season: s, category: 'Statistics', fact: scorer, question: `Who led the NBA in scoring for the ${yr} season?`, explanation: `${scorer} was the ${yr} scoring champion.`, ar: { q: `مين كان هدّاف NBA موسم ${yr}؟`, e: `${A.N(scorer)} كان هدّاف الدوري في موسم ${yr}.` }, difficulty: e === '2020s' ? 'medium' : e === '2010s' ? 'hard' : 'expert' });
   });
 
   DRAFTS.forEach(([y, first, team, second]) => {
     const e = era(String(y)), s = `${y - 1}-${String(y).slice(2)}`;
-    push(`KP-DRAFT-${y}-FIRST-PICK`, { column: 'player', era: e, season: s, category: 'Draft', fact: first, question: `Who was the first overall pick in the ${y} NBA draft?`, explanation: `${team} selected ${first} first overall in ${y}.`, difficulty: y >= 2015 ? 'easy' : y >= 2000 ? 'medium' : 'hard' });
-    push(`KP-DRAFT-${y}-FIRST-PICK-TEAM`, { column: 'team', era: e, season: s, category: 'Draft', fact: team, question: `Which team held the first overall pick in the ${y} NBA draft?`, explanation: `${team} used it on ${first}.`, difficulty: y >= 2015 ? 'medium' : 'hard' });
-    if (second) push(`KP-DRAFT-${y}-SECOND-PICK`, { column: 'player', era: e, season: s, category: 'Draft', fact: second, question: `Who was selected second overall in the ${y} NBA draft?`, explanation: `${second} went second, behind ${first}.`, difficulty: 'expert' });
+    push(`KP-DRAFT-${y}-FIRST-PICK`, { column: 'player', era: e, season: s, category: 'Draft', fact: first, question: `Who was the first overall pick in the ${y} NBA draft?`, explanation: `${team} selected ${first} first overall in ${y}.`, ar: { q: `مين كان الاختيار الأول في درافت NBA ${y}؟`, e: `اختار ${A.N(team)} ${A.N(first)} بالاختيار الأول في ${y}.` }, difficulty: y >= 2015 ? 'easy' : y >= 2000 ? 'medium' : 'hard' });
+    push(`KP-DRAFT-${y}-FIRST-PICK-TEAM`, { column: 'team', era: e, season: s, category: 'Draft', fact: team, question: `Which team held the first overall pick in the ${y} NBA draft?`, explanation: `${team} used it on ${first}.`, ar: { q: `أي فريق كان عنده الاختيار الأول في درافت NBA ${y}؟`, e: `${A.N(team)} اختار فيه ${A.N(first)}.` }, difficulty: y >= 2015 ? 'medium' : 'hard' });
+    if (second) push(`KP-DRAFT-${y}-SECOND-PICK`, { column: 'player', era: e, season: s, category: 'Draft', fact: second, question: `Who was selected second overall in the ${y} NBA draft?`, explanation: `${second} went second, behind ${first}.`, ar: { q: `مين انختار ثاني في درافت NBA ${y}؟`, e: `${A.N(second)} انختار ثاني، بعد ${A.N(first)}.` }, difficulty: 'expert' });
   });
 
   RECORDS.forEach(([holder, rec, value, detail], i) => {
+    const [rA, vA, dA] = RECORDS_AR[i];
     const isTeam = /Lakers|Warriors|Celtics|Bulls/.test(holder) && !/Chamberlain|Russell|Jordan/.test(holder);
-    push(`KP-RECORD-${String(i).padStart(3, '0')}-HOLDER`, { column: isTeam ? 'team' : 'player', era: 'all', season: null, category: 'NBA Records', fact: holder, question: `Who holds the NBA record for ${rec}?`, explanation: `${holder} — ${value}. ${detail}`, difficulty: i % 3 === 0 ? 'medium' : 'hard' });
-    push(`KP-RECORD-${String(i).padStart(3, '0')}-VALUE`, { column: 'value', era: 'all', season: null, category: 'NBA Records', fact: value, question: `What is the NBA record for ${rec}, held by ${holder}?`, explanation: detail, difficulty: 'expert' });
+    push(`KP-RECORD-${String(i).padStart(3, '0')}-HOLDER`, { column: isTeam ? 'team' : 'player', era: 'all', season: null, category: 'NBA Records', fact: holder, question: `Who holds the NBA record for ${rec}?`, explanation: `${holder} — ${value}. ${detail}`, ar: { q: `مين صاحب الرقم القياسي في NBA ل${rA}؟`, e: `${A.N(holder)} — ${vA}. ${dA}` }, difficulty: i % 3 === 0 ? 'medium' : 'hard' });
+    push(`KP-RECORD-${String(i).padStart(3, '0')}-VALUE`, { column: 'value', era: 'all', season: null, category: 'NBA Records', fact: value, question: `What is the NBA record for ${rec}, held by ${holder}?`, explanation: detail, ar: { q: `كم الرقم القياسي في NBA ل${rA}، اللي يملكه ${A.N(holder)}؟`, e: dA }, difficulty: 'expert' });
   });
 
   return kps;

@@ -187,6 +187,13 @@ export function scoreQuality(rec, bank) {
   return Math.min(100, s);
 }
 
+// A hand-written mystery with its Arabic clues (mystery-ar.js: one string, or a
+// list for awards, per clue; null keeps the clue as it is, e.g. a jersey number).
+function withArabic(p, ar) {
+  if (ar.clues.length !== p.clues.length) return p;   // out of step: English only (the build reports it)
+  return { ...p, ar_name: ar.name, clues: p.clues.map((c, i) => (ar.clues[i] == null ? { ...c } : { ...c, ar: ar.clues[i] })) };
+}
+
 export function buildBank({ questions, mystery, teams, facts }) {
   if (BANK) return BANK;
   const taken = new Set(), out = [];
@@ -213,7 +220,8 @@ export function buildBank({ questions, mystery, teams, facts }) {
       players: /^[A-Z]/.test(q.correct) && q.correct.split(' ').length <= 3 ? [q.correct] : [],
       season: dynamic ? SEASON : null, temporal: dynamic ? 'dynamic' : 'static',
       valid_from: dynamic ? '2025-10-01' : null, valid_until: dynamic ? '2026-06-30' : null,
-      clues: q.type === 'whoami' ? q.text.split('|') : null
+      clues: q.type === 'whoami' ? q.text.split('|') : null,
+      ar: q.ar || null
     });
     if (claim(rec)) out.push(rec); else taken.delete(id);
   }
@@ -228,7 +236,7 @@ export function buildBank({ questions, mystery, teams, facts }) {
       explanation: `${p.name} — ${p.kind === 'coach' ? 'coach' : 'player'}, ${p.era}.`,
       difficulty: MYSTERY_TIER_DIFF[p.tier] || 'medium', category: 'Career History', subcategory: p.kind,
       players: p.kind === 'player' ? [p.name] : [], teams: (p.clues.find(c => c.type === 'path') || {}).teams || [],
-      identity_puzzle_id: 'IP-' + String(p.id).padStart(5, '0'), person: p
+      identity_puzzle_id: 'IP-' + String(p.id).padStart(5, '0'), person: mystery.AR && mystery.AR[p.name] ? withArabic(p, mystery.AR[p.name]) : p
     });
     rec.knowledge_point_id = 'KP-IDENTITY-' + normalizeText(p.name).toUpperCase().replace(/ /g, '-');
     if (claim(rec)) out.push(rec); else taken.delete(id);
@@ -249,7 +257,7 @@ export function buildBank({ questions, mystery, teams, facts }) {
         question_text: q.text, answers: [q.correct, ...q.wrongs], correct_answer: q.correct, explanation: q.exp,
         difficulty: TEAM_TIER_DIFF[q.diff] || TIER_DIFF[q.diff] || 'medium',
         category: q.cat, subcategory: full, teams: [full], team_id: t.id,
-        source_name: 'Team media guide'
+        source_name: 'Team media guide', ar: q.ar || null
       });
       rec.knowledge_point_id = `KP-${t.id.toUpperCase()}-${String(q.cat || 'GEN').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 10)}-${normalizeText(q.correct).toUpperCase().replace(/ /g, '-').slice(0, 24)}`;
       if (claim(rec)) out.push(rec); else taken.delete(id);
@@ -284,7 +292,8 @@ export function buildBank({ questions, mystery, teams, facts }) {
         explanation: kp.explanation, difficulty: kp.difficulty, category: kp.category,
         season: kp.season, subcategory: kp.era,
         source_name: 'Basketball Reference', source_url: 'https://www.basketball-reference.com/',
-        players: kp.column === 'player' ? [kp.fact] : [], teams: kp.column === 'team' || kp.column === 'champion' ? [kp.fact] : []
+        players: kp.column === 'player' ? [kp.fact] : [], teams: kp.column === 'team' || kp.column === 'champion' ? [kp.fact] : [],
+        ar: kp.ar || null
       });
       if (claim(rec)) out.push(rec); else taken.delete(id);
     }
@@ -474,13 +483,14 @@ export function serve(rec, rnd = Math.random) {
   if (rec.question_type === 'career_mystery') {
     const p = rec.person;
     view.kind = p.kind; view.name = p.name; view.accept = p.accept; view.tier = p.tier; view.era = p.era;
-    view.clues = p.clues;
+    view.clues = p.clues; view.ar = rec.ar || null; view.ar_name = p.ar_name || null;
     const mc = p.decoys.length >= 3 && ['rookie', 'starter'].includes(p.tier);
     view.options = mc ? shuffle([p.name, ...p.decoys.slice(0, 3)], rnd) : null;
     return view;
   }
   view.options = shuffle((rec.answers || []).slice(), rnd);
   view.clues = rec.clues || null;
+  view.ar = rec.ar || null;
   return view;
 }
 export function shuffle(arr, rnd = Math.random) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }

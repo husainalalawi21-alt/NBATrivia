@@ -18,6 +18,8 @@ const PROJECT = process.env.SUPABASE_PROJECT || 'mvsyneqcohupycyehsvp';
 const LOAD = process.argv.includes('--load');
 const today = new Date().toISOString().slice(0, 10);
 
+// The Arabic layer: question, explanation and answer labels (data/ar.js).
+const A = await import(join(ROOT, 'data', 'ar.js'));
 const [questions, mystery, teams, facts, engine, gen, fr, jerseys] = await Promise.all(
   ['questions', 'mystery', 'teams', 'facts', 'engine', 'generate', 'franchises', 'jerseys'].map(m => import(join(ROOT, 'data', m + '.js'))));
 
@@ -47,9 +49,11 @@ for (const [s, f] of Object.entries(finalsBySeason)) {
   const y = +s.slice(0, 4), e = y >= 2020 ? '2020s' : '2010s';
   if (f.partial) continue;
   generated.push({ knowledge_point_id: `KP-${s}-CHAMPION`, column: 'champion', era: e, season: s, category: 'Championships', fact: f.champion,
-    question: `Which team won the ${s} NBA championship?`, explanation: `The ${f.champion} beat the ${f.runnerUp} ${f.score} in the Finals.`, difficulty: 'easy' });
+    question: `Which team won the ${s} NBA championship?`, explanation: `The ${f.champion} beat the ${f.runnerUp} ${f.score} in the Finals.`, difficulty: 'easy',
+    ar: { q: `مين الفريق اللي فاز ببطولة NBA موسم ${s}؟`, e: `فاز ${A.N(f.champion)} على ${A.N(f.runnerUp)} ${A.iso(f.score)} في النهائيات.` } });
   generated.push({ knowledge_point_id: `KP-${s}-FINALS-RUNNER-UP`, column: 'champion', era: e, season: s, category: 'Finals', fact: f.runnerUp,
-    question: `Which team lost the ${s} NBA Finals?`, explanation: `The ${f.champion} beat the ${f.runnerUp} ${f.score}.`, difficulty: 'medium' });
+    question: `Which team lost the ${s} NBA Finals?`, explanation: `The ${f.champion} beat the ${f.runnerUp} ${f.score}.`, difficulty: 'medium',
+    ar: { q: `أي فريق خسر نهائيات NBA موسم ${s}؟`, e: `فاز ${A.N(f.champion)} على ${A.N(f.runnerUp)} ${A.iso(f.score)}.` } });
 }
 const lastFinalsSeason = Math.max(...Object.keys(finalsBySeason).map(s => +s.slice(0, 4)));
 if (isFinite(lastFinalsSeason)) generated.push(...gen.reigningChampion(finalsBySeason[fr.seasonLabel(lastFinalsSeason)], lastFinalsSeason));
@@ -169,6 +173,24 @@ function tierFor(r) {
   if (kind === 'team' || kind === 'mystery') return SHIFT[r.difficulty] || 'hard';
   return HAND[r.difficulty] || SHIFT[r.difficulty] || 'medium';
 }
+const PATH_LABEL = { 'Career path': 'المسيرة', 'NBA career path': 'مسيرته في NBA', 'Coaching path': 'مسيرته التدريبية', 'NBA coaching path': 'مسيرته التدريبية في NBA' };
+function arOf(r) {
+  if (r.question_type === 'career_mystery') {
+    const p = r.person, name = p.ar_name || A.N(p.name);
+    // career paths: the teams in Arabic, and the heading
+    for (const c of p.clues) if (c.type === 'path') c.ar = { label: PATH_LABEL[c.label || 'Career path'] || 'المسيرة', teams: c.teams.map(A.N) };
+    const untranslated = p.clues.filter(c => c.type !== 'numbers' && !c.ar).length;
+    if (untranslated) report.issues.push(`Who Am I? ${p.name}: ${untranslated} clue(s) without Arabic`);
+    return { name, e: `${name} — ${p.kind === 'coach' ? 'مدرب' : 'لاعب'}، ${A.era(p.era)}.`, o: labels([p.name, ...(p.decoys || [])]) };
+  }
+  if (!r.ar) return null;
+  let q = r.ar.q;
+  const o = labels(r.answers, r.ar.o || {});
+  if (/^(comparison|before_after)$/.test(r.question_type) && (r.answers || []).length === 2) q = `${q.replace(/؟\s*$/, '')}: ${A.list([...r.answers].sort().map(a => o[a] || a))}؟`;
+  // Who Am I? multiple choice: the clues, one per line
+  return { q, e: r.ar.e || null, o, ...(r.clues ? { clues: q.split('|') } : {}) };
+}
+const labels = A.labels;
 const eraOf = s => { const y = parseInt(s, 10); return isNaN(y) ? null : y < 1950 ? '1940s' : `${Math.floor(y / 10) * 10}s`; };
 const rows = bank.map(r => {
   const g = genIds.has(r.knowledge_point_id) ? genByKp.get(r.knowledge_point_id) : null;
@@ -192,6 +214,7 @@ const rows = bank.map(r => {
     season: r.season || null, era: eraOf(r.season) || (r.subcategory && /^\d{4}s$/.test(r.subcategory) ? r.subcategory : null),
     players: r.players || [], teams: g?.teams || r.teams || [],
     payload: { clues: r.clues || null, person: r.person || null, source_ref: r.source_ref || null },
+    ar: arOf(r),
     source_name: g ? (g.source || 'balldontlie') : r.source_name,
     source_url: g ? (g.source ? 'https://www.kaggle.com/datasets/wyattowalsh/basketball' : 'https://www.balldontlie.io') : (r.source_url || null),
     source_date: g ? today : r.source_date, quality_score: r.quality_score,
@@ -231,6 +254,15 @@ writeFileSync(join(CACHE, 'bank.json'), JSON.stringify(rows));
 // ── report ───────────────────────────────────────────────────────
 const count = (f) => rows.reduce((m, r) => (m[f(r)] = (m[f(r)] || 0) + 1, m), {});
 console.log('questions', rows.length, '· generated from data', rows.filter(r => r.source_name === 'balldontlie').length, '· live', rows.filter(r => r.active).length);
+{ // Arabic coverage: questions with an Arabic layer, and names still spelled in English
+  const live = rows.filter(r => r.active), noAr = live.filter(r => !r.ar);
+  const missing = [...A.MISSING].sort((a, b) => b[1] - a[1]);
+  writeFileSync(join(CACHE, 'names-missing.json'), JSON.stringify(missing, null, 0));
+  console.log('arabic', live.length - noAr.length, 'of', live.length, 'live questions · without:', Object.entries(noAr.reduce((m, r) => (m[r.source_ref?.kind || r.category] = (m[r.source_ref?.kind || r.category] || 0) + 1, m), {})),
+    '· names without Arabic:', missing.length, '(tools/.cache/names-missing.json)', '· option sets kept in English (same Arabic spelling):', A.COLLISIONS.size);
+  if (questions.AR_MISMATCH.length) console.log('  hand-written questions without Arabic (questions-ar.js out of step):', questions.AR_MISMATCH);
+  if (A.COLLISIONS.size) console.log('  ' + [...A.COLLISIONS].slice(0, 12).join('\n  '));
+}
 console.log('by era', count(r => r.era || '—'));
 console.log('by category', count(r => r.category || '—'));
 console.log('by status', count(r => r.status));
@@ -242,7 +274,7 @@ if (report.issues.length) console.log('\nCHECKS\n  ' + report.issues.join('\n  '
 if (LOAD) {
   const COLS = ['question_id', 'knowledge_point_id', 'question_text', 'correct_answer', 'wrong_answers', 'explanation', 'category', 'difficulty',
     'question_type', 'pool', 'game_modes_allowed', 'status', 'active', 'temporal', 'season', 'era', 'players', 'teams', 'payload',
-    'source_name', 'source_url', 'source_date', 'quality_score', 'team_id', 'valid_from', 'valid_until', 'subcategory'];
+    'source_name', 'source_url', 'source_date', 'quality_score', 'team_id', 'valid_from', 'valid_until', 'subcategory', 'ar'];
   // On re-runs, content refreshes but an admin's approve/disable stands —
   // except that a fact which has gone out of date is always retired.
   const KEEP = new Set(['question_id', 'status', 'active']);

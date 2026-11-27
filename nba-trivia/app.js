@@ -50,17 +50,19 @@ export class App extends Logic {
     // A signed-in player's profile shows while it downloads.
     // Games can start on the first 1,000 questions (ids are hashed, so it's a
     // random slice of every level); the rest replace it when they arrive.
+    const arabic = getLang() === 'ar';
     const liveP = cloud.loadQuestions(guestTeam, false, first => {
       if (this.eng || !first.length) return;
-      eng.setBank(first); this.eng = eng; this._ready(); this.setState({ eng, online: true }); this.flushPendingStart();
-    });
+      eng.setBank(first); this._bankAr = arabic; this.eng = eng; this._ready(); this.setState({ eng, online: true }); this.flushPendingStart();
+    }, arabic);
     const user = await cloud.currentUser();
     const signing = user ? this.signedIn(user) : null;
     const live = await liveP;
     this._bankTeam = guestTeam;
-    if (live && live.length) eng.setBank(live);
-    else if (!this.eng) { eng.buildBank({ questions: lib, mystery: mys, teams, facts }); eng.hydrateOverrides(); eng.refreshTemporal(); }
+    if (live && live.length) { eng.setBank(live); this._bankAr = arabic; }
+    else if (!this.eng) { eng.buildBank({ questions: lib, mystery: mys, teams, facts }); eng.hydrateOverrides(); eng.refreshTemporal(); this._bankAr = true; }
     this.eng = eng; this._bankComplete = true;
+    if (getLang() === 'ar' && !this._bankAr) this.ensureArabic();   // switched language while it downloaded
     this._ready();
     this.setState({ eng, online: !!(live && live.length) });
     if (signing) await signing;
@@ -117,8 +119,23 @@ export class App extends Logic {
     if (account && this._pendingCode) { const c = this._pendingCode; this._pendingCode = null; this.redeem(c); }
   }
   async reloadBank(everything = this.state.isAdmin) {
-    const team = this.teamId(), rows = await cloud.loadQuestions(team, everything);
-    if (rows && rows.length) { this.eng.setBank(rows); this._bankTeam = team; this.forceUpdate(); }
+    const team = this.teamId(), arabic = getLang() === 'ar', rows = await cloud.loadQuestions(team, everything, null, arabic);
+    if (rows && rows.length) { this.eng.setBank(rows); this._bankTeam = team; this._bankAr = arabic; this.forceUpdate(); }
+    if (getLang() === 'ar' && !this._bankAr) this.ensureArabic();
+  }
+  // The Arabic text of the questions already on the device (a player who
+  // switches to Arabic mid-session; English players never download it).
+  async ensureArabic() {
+    if (this._arLoading || !this.eng || !this.state.online) return;
+    this._arLoading = true;
+    try {
+      const map = await cloud.loadArabic(this._bankTeam, this.state.isAdmin);
+      if (!map) return;
+      for (const rec of this.eng.getBank()) if (map.has(rec.question_id)) rec.ar = map.get(rec.question_id);
+      const run = this.state.run;
+      if (run && run.q && map.has(run.q.question_id)) run.q.ar = map.get(run.q.question_id);
+      this._bankAr = true; this.forceUpdate();
+    } finally { this._arLoading = false; }
   }
   async refreshRanks() {
     const uid = this.state.user && this.state.user.id; if (!uid) return this.setState({ ranks: { global: null, team: null } });
@@ -271,7 +288,9 @@ export class App extends Logic {
       if (ok) pts = (this.eng.TIER_POINTS[q.diff] || 100) + lib.buzzSpeedPts(ms);
     } else if (ok) pts = (this.eng.TIER_POINTS[q.diff] || 100) + (r.mode === 'h2h' ? (ms < 3000 ? 50 : ms < 6000 ? 25 : 0) : 0);
     const streak = ok ? r.streak + 1 : 0;
-    const log = [...r.log, { qid: q.question_id, q: q.text, type: q.type, cat: q.cat, chosen: opt, correct: q.correct, ok, ms, pts, exp: q.exp }];
+    const qa = q.ar, lbl = o => (qa && qa.o && qa.o[o]) || o;
+    const log = [...r.log, { qid: q.question_id, q: q.text.split('|').join(' '), type: q.type, cat: q.cat, chosen: opt, correct: q.correct, ok, ms, pts, exp: q.exp,
+      ar: qa && qa.q ? { q: qa.q.split('|').join(' '), correct: lbl(q.correct), e: qa.e || '' } : null }];
     const next = { ...r, answered: opt, time, score: r.score + pts, streak, best: Math.max(r.best, streak), correct: r.correct + (ok ? 1 : 0), answers: r.answers + 1, log, fastest: ok && (r.fastest == null || ms < r.fastest) ? ms : r.fastest };
     this.eng.recordAnswer(q.question_id, { correct: ok, ms, mode: r.mode });
     this.eng.noteAnswer(r.session, q, { correct: ok, ms });
@@ -297,14 +316,15 @@ export class App extends Logic {
     }, 40);
   }
   // Who Am I?
+  arName(q) { return q.ar_name || (q.ar && q.ar.name) || null; }
   nextClue() { const r = this.state.run; if (r.phase !== 'idle' || r.clueIdx + 1 >= r.q.clues.length) return; this.beep(540, .05, 'sine', .04); this.setState({ run: { ...r, clueIdx: r.clueIdx + 1, locked: false } }); }
   waiGuess(text) {
     const r = this.state.run, mys = this.state.mys; if (!r || r.phase === 'done') return;
-    const q = r.q, ok = mys.matches(text, q);
+    const q = r.q, ok = mys.matches(text, q) || (!!mys.matchesAr && mys.matchesAr(text, this.arName(q)));
     if (ok) {
       const pts = this.WAI_POINTS[r.clueIdx] || 200;
       this.eng.recordAnswer(q.question_id, { correct: true, ms: Date.now() - r.qStart, mode: 'wai' });
-      const log = [...r.log, { qid: q.question_id, q: 'Who am I? — ' + q.name, ok: true, pts, ms: Date.now() - r.qStart, clue: r.clueIdx + 1, correct: q.name, exp: `Solved on clue ${r.clueIdx + 1}.` }];
+      const log = [...r.log, { qid: q.question_id, q: 'Who am I? — ' + q.name, ok: true, pts, ms: Date.now() - r.qStart, clue: r.clueIdx + 1, correct: q.name, exp: `Solved on clue ${r.clueIdx + 1}.`, wai: 'solved', arName: this.arName(q) }];
       const next = { ...r, phase: 'done', answered: text, score: r.score + pts, correct: r.correct + 1, answers: r.answers + 1, streak: r.streak + 1, best: Math.max(r.best, r.streak + 1), log };
       this.beep(700, .06); setTimeout(() => this.beep(1050, .1), 60); this.buzz(18);
       this.setState({ run: next, gain: { pts: '+' + this.fmt(pts), extra: null } });
@@ -320,7 +340,7 @@ export class App extends Logic {
   waiOut(timeout, guess) {
     const r = this.state.run, q = r.q;
     this.eng.recordAnswer(q.question_id, { correct: false, ms: Date.now() - r.qStart, mode: 'wai' });
-    const log = [...r.log, { qid: q.question_id, q: 'Who am I? — ' + q.name, ok: false, pts: 0, ms: Date.now() - r.qStart, correct: q.name, exp: timeout ? 'Time ran out.' : 'Out of clues.' }];
+    const log = [...r.log, { qid: q.question_id, q: 'Who am I? — ' + q.name, ok: false, pts: 0, ms: Date.now() - r.qStart, correct: q.name, exp: timeout ? 'Time ran out.' : 'Out of clues.', wai: timeout ? 'timeout' : 'clues', arName: this.arName(q) }];
     const next = { ...r, phase: 'done', answered: guess || '__timeout', answers: r.answers + 1, streak: 0, log };
     this.setState({ run: next, gain: null });
     setTimeout(() => r.idx + 1 >= r.qs.length ? this.endRun(next) : this.advance(next), 1800);
@@ -439,7 +459,7 @@ export class App extends Logic {
     const errs = english().errors || {}, key = Object.keys(errs).find(k => errs[k] === m);
     return key ? t('errors.' + key) : m;
   }
-  async changeLang(l) { await setLang(l); this.forceUpdate(); }
+  async changeLang(l) { await setLang(l); this.forceUpdate(); if (l === 'ar' && !this._bankAr) this.ensureArabic(); }
 
   // ── leaderboard ──
   rows() {
@@ -574,16 +594,25 @@ export class App extends Logic {
     const liveMs = r && !answered ? Math.max(0, (r.mode === 'buzz' ? r.time : limit) - (Date.now() - r.qStart)) : (r ? (r.mode === 'buzz' ? r.time : limit) : 0);
     const urgent = !!(r && !answered && liveMs < 5000);
     const letters = lang === 'ar' ? ['أ', 'ب', 'ج', 'د'] : ['A', 'B', 'C', 'D'];
+    // Arabic mode reads the question's Arabic layer (answers are still checked in English).
+    const AR = lang === 'ar', qa = AR && q && q.ar ? q.ar : null, say = o => (qa && qa.o && qa.o[o]) || o;
+    const shown = q && !isWai ? ((qa && qa.q) || q.text).split('|').join(' ') : '';
+    const logView = x => {
+      if (x.wai) { const name = (AR && x.arName) || x.correct;
+        return { q: `${L.game.who_am_i} — ${name}`, correct: name, exp: x.wai === 'solved' ? t_('game.solved_on', { n: x.clue }) : x.wai === 'timeout' ? L.game.time_ran_out : L.game.out_of_clues }; }
+      const a = AR && x.ar; return { q: a ? a.q : x.q, correct: a ? a.correct : x.correct, exp: a ? a.e : x.exp };
+    };
     const ok = !!(answered && q && (isWai ? r.log[r.log.length - 1] && r.log[r.log.length - 1].ok : r.answered === q.correct));
     const answers = q && q.options ? q.options.map((o, i) => {
       const isC = isWai ? o === q.name : o === q.correct, chosen = r.answered === o, gone = isWai && r.wrongOpts.includes(o);
       const state = gone ? 'gone' : !answered ? 'idle' : isC ? 'right' : chosen ? 'wrong' : 'dim';
-      return { letter: letters[i], text: o, state, disabled: answered || gone, isRight: state === 'right', isWrong: state === 'wrong', pick: () => isWai ? this.waiGuess(o) : this.answer(o) };
+      return { letter: letters[i], text: say(o), state, disabled: answered || gone, isRight: state === 'right', isWrong: state === 'wrong', pick: () => isWai ? this.waiGuess(o) : this.answer(o) };
     }) : [];
     const clueRows = isWai && q ? q.clues.slice(0, r.clueIdx + 1).map((c, i) => {
       const locked = false;
       return { n: i + 1, locked, isNew: i === r.clueIdx && i > 0, isText: !locked && c.type === 'text', isPath: !locked && c.type === 'path', isNumbers: !locked && c.type === 'numbers', isAwards: !locked && c.type === 'awards',
-        text: c.content, numbers: c.numbers || [], list: c.list || [], teams: (c.teams || []).map(name => ({ name })) };
+        text: AR && typeof c.ar === 'string' ? c.ar : c.content, numbers: c.numbers || [], list: AR && Array.isArray(c.ar) ? c.ar : c.list || [],
+        teams: (AR && c.ar && c.ar.teams ? c.ar.teams : c.teams || []).map(name => ({ name })) };
     }) : [];
     const modeName = m => m === 'team' ? (t ? tn(t) : L.modes.team) : (L.modes[m] || m);
     const climbs = r && ['streak', 'team', 'buzz'].includes(r.mode);
@@ -717,7 +746,7 @@ export class App extends Logic {
       gameVisible: s.qVisible,
       qKicker: q ? (isWai ? t_('game.worth', { kind: q.kind === 'coach' ? L.game.coach : L.game.player, points: this.fmt(this.WAI_POINTS[r.clueIdx] || 200) }) : (L.categories[q.cat] || q.cat)) : '',
       qIsClues: !!isWai, qIsPlain: !isWai,
-      qText: q && !isWai ? q.text : '', qLong: !!(q && !isWai && q.text.length > 90),
+      qText: shown, qLong: shown.length > (AR ? 80 : 90),
       clueRows,
       showAnswers: !!(q && q.options),
       hasLockedClues: !!(isWai && q && r.clueIdx + 1 < q.clues.length && r.phase !== 'done'),
@@ -737,7 +766,7 @@ export class App extends Logic {
       showFeedback: !!answered, feedbackOk: ok, feedbackBad: !!answered && !ok,
       feedbackTitle: ok ? L.game['right_' + ((r.answers || 0) % 4)] : (r && r.answered === '__timeout' ? L.game.time_up : L.game.not_quite),
       feedbackHasTrail: !!(ok && isStreaky), feedbackTrail: r ? t_('game.in_a_row', { count: r.streak }) : '',
-      feedbackSub: ok ? ((lastLog && lastLog.exp) || '') : (lastLog ? t_('game.answer', { answer: lastLog.correct }) + (lastLog.exp ? ' — ' + lastLog.exp : '') : ''),
+      feedbackSub: !lastLog ? '' : (lv => ok ? (lv.exp || '') : t_('game.answer', { answer: lv.correct }) + (lv.exp ? ' — ' + lv.exp : ''))(logView(lastLog)),
 
       // ── result ──
       resultKicker: r ? (r.exhausted ? L.result.pool_cleared : isStreaky ? (r.mode === 'team' && t ? t_('result.team_over', { team: tn(t) }) : L.result.streak_over) : t_('result.complete', { mode: modeName(r.mode) })) : '',
@@ -752,7 +781,7 @@ export class App extends Logic {
       challengeFriend: () => r && this.createChallenge(r),
       hasNewBadges: s.newBadges.length > 0, newBadgesText: s.newBadges.map(k => (L.badges[k] && L.badges[k].name) || k).join(lang === 'ar' ? '، ' : ', '),
       reviewCount: r ? `${r.correct}/${r.answers}` : '',
-      reviewRows: r ? r.log.map(x => ({ ok: !!x.ok, bad: !x.ok, q: x.q, detail: x.ok ? (x.exp || L.result.correct) : (x.chosen === '__timeout' ? L.result.timeout : '') + t_('game.answer', { answer: x.correct }), pts: x.pts ? '+' + this.fmt(x.pts) : '0' })) : [],
+      reviewRows: r ? r.log.map(x => { const v = logView(x); return { ok: !!x.ok, bad: !x.ok, q: v.q, detail: x.ok ? (v.exp || L.result.correct) : (x.chosen === '__timeout' ? L.result.timeout : '') + t_('game.answer', { answer: v.correct }), pts: x.pts ? '+' + this.fmt(x.pts) : '0' }; }) : [],
 
       // ── share ──
       shareBack: () => this.setState({ screen: r ? 'result' : 'home' }),

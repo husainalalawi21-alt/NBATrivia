@@ -1,6 +1,7 @@
 // Who Am I? — career-mystery database + engine.
 // Clues are ordered HARDEST → EASIEST. Clue types: text | path (career timeline) | numbers | awards.
 // Tiers: rookie, starter, allstar, superstar, legend. Data current through summer 2025.
+export { AR } from './mystery-ar.js';   // the clues in Arabic
 let n = 0;
 const P = (tier, name, accept, decoys, clues, era) => ({ id: ++n, kind: 'player', tier, name, accept, decoys, clues, era });
 const C = (tier, name, accept, decoys, clues, era) => ({ id: ++n, kind: 'coach', tier, name, accept, decoys, clues, era });
@@ -464,5 +465,18 @@ export function matches(guess, person) {
   if (g === full || person.accept.some(a => norm(a) === g)) return true;
   if (g === last && last.length >= 4) return true;
   return lev(g, full) <= Math.max(1, Math.floor(full.length / 6));
+}
+// A guess typed in Arabic, checked against the Arabic spelling of the name:
+// hamza and alef forms, taa marbuta / haa and yaa / alef maqsura count as the
+// same letter, and short vowels, tatweel, spaces and dashes are ignored.
+const normAr = s => String(s || '').normalize('NFKC').replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+  .replace(/[أإآٱ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/ؤ/g, 'و').replace(/ئ/g, 'ي')
+  .replace(/[^\u0621-\u064A0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+export function matchesAr(guess, arName) {
+  const g = normAr(guess); if (!g || !arName) return false;
+  const full = normAr(arName), last = full.split(' ').pop(), flat = x => x.replace(/ /g, '');
+  if (g === full || flat(g) === flat(full)) return true;
+  if (g === last && last.length >= 4) return true;
+  return lev(flat(g), flat(full)) <= Math.max(1, Math.floor(flat(full).length / 6));
 }
 export const mysteryTitle = c => c <= 5 ? 'CASUAL FAN' : c <= 10 ? 'NBA FAN' : c <= 14 ? 'HOOPS EXPERT' : c <= 17 ? 'NBA HISTORIAN' : c <= 19 ? 'NBA ENCYCLOPEDIA' : 'BASKETBALL ORACLE';

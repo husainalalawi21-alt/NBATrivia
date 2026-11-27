@@ -1,5 +1,6 @@
 // 20–0 question bank + selection engine. Facts current through the 2024–25 season.
 // q(diff, cat, text, correct, wrongs, explanation, type) — type: mc | whoami | ba (before/after) | cmp (comparison)
+import { AR_LIST } from './questions-ar.js';
 let n = 0;
 const q = (diff, cat, text, correct, wrongs, exp, type = 'mc') => ({ id: ++n, diff, cat, type, text, correct, wrongs, exp, active: true });
 const E = 'easy', M = 'medium', H = 'hard', X = 'expert';
@@ -236,6 +237,15 @@ export const QUESTIONS = [
   q(X, 'Draft', 'Who was the 2nd overall pick in the 2004 draft?', 'Emeka Okafor', ['Ben Gordon', 'Dwight Howard', 'Shaun Livingston'], 'Charlotte took Okafor after Orlando picked Dwight Howard.'),
   q(X, 'Nicknames', 'Which player was nicknamed "AK-47"?', 'Andrei Kirilenko', ['Andrea Bargnani', 'Aleksej Pokuševski', 'Alexey Shved'], 'Initials plus his #47, and the Russian rifle.'),
 ];
+
+// The Arabic version of each question (questions-ar.js, same order). A question
+// whose entry doesn't line up stays English-only and is listed here for the build.
+export const AR_MISMATCH = [];
+QUESTIONS.forEach((q, i) => {
+  const a = AR_LIST[i];
+  if (!a || a[0] !== q.correct) { AR_MISMATCH.push(q.text); return; }
+  q.ar = { q: a[1], e: a[2], o: a[3] || null };
+});
 
 // ── Engine ───────────────────────────────────────────
 export function seededRandom(seed) {

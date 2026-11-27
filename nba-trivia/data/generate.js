@@ -10,6 +10,7 @@
 //   valid_from / valid_until   the window a dynamic fact is true for
 //   source     'balldontlie'
 import { teamNameIn, seasonLabel, finalsYear, ABBR_ID } from './franchises.js';
+import * as A from './ar.js';
 
 // Six difficulty levels, easiest first. A question's level comes from how
 // famous the fact is and how long ago it happened.
@@ -145,17 +146,20 @@ export function fromTeamSeasons(regGames, postGames, season) {
     // games; they had 30). Only ask when the home and road games balance.
     const hw = res.filter(r => r.home && r.won).length, hl = res.filter(r => r.home && !r.won).length;
     if (season >= 1971 && Math.abs(2 * (hw + hl) - res.length) <= 1) tag('HOME-RECORD', { category: 'Team seasons', fact: `${hw}–${hl}`, wrongs: recordWrongs(hw, hl, rnd),
-      question: `What was the ${s} ${poss(name)} home record?`, explanation: `${hw}–${hl} at home, ${row.w}–${row.l} overall.`, difficulty: deep });
+      question: `What was the ${s} ${poss(name)} home record?`, explanation: `${hw}–${hl} at home, ${row.w}–${row.l} overall.`, difficulty: deep,
+      ar: { q: `كم كان سجل ${A.N(name)} على أرضه في موسم ${s}؟`, e: `${A.pair(hw, hl)} على أرضه، و${A.pair(row.w, row.l)} في الموسم كامل.` } });
     // longest winning streak
     let run = 0, best = 0; for (const r of res) { run = r.won ? run + 1 : 0; best = Math.max(best, run); }
     if (best >= 3) tag('WIN-STREAK', { category: 'Team seasons', fact: `${best} games`, wrongs: nearbyNumbers(best, rnd, 2).map(n => n + ' games'),
       question: `What was the ${poss(name)} longest winning streak of the ${s} season?`, explanation: `${best} straight wins on the way to ${row.w}–${row.l}.`,
+      ar: { q: `كم كانت أطول سلسلة انتصارات لـ${A.N(name)} في موسم ${s}؟`, e: `${A.wins(best)} متتالية، وأنهوا الموسم ${A.pair(row.w, row.l)}.` },
       difficulty: best >= 20 ? 'hard' : deep });
     // scoring average
     const ppg = (res.reduce((a, r) => a + r.us, 0) / res.length).toFixed(1);
     const skip = Math.floor(rnd() * 4);
     tag('PPG', { category: 'Team seasons', fact: ppg, wrongs: [-6.3, -2.8, 3.4, 5.9].map(d => (Number(ppg) + d).toFixed(1)).filter((v, i) => i !== skip),
       question: `How many points per game did the ${s} ${name} average?`, explanation: `${ppg} points a game over ${res.length} games.`,
+      ar: { q: `كم كان معدل نقاط ${A.N(name)} في المباراة في موسم ${s}؟`, e: `${ppg} نقطة في المباراة على مدى ${A.games(res.length)}.` },
       difficulty: tierBy(season, [[2015, 'hall_of_fame'], [0, 'goat']]) });
     // biggest win and season-high: who was the opponent?
     const wins = res.filter(r => r.won), margin = r => r.us - r.them;
@@ -163,13 +167,15 @@ export function fromTeamSeasons(regGames, postGames, season) {
     if (big && wins.filter(r => margin(r) === margin(big)).length === 1) {
       const wrongs = pick(opps, 3, rnd, [big.opp]);
       if (wrongs.length === 3) tag('BIGGEST-WIN', { column: 'team', category: 'Team games', fact: big.opp, wrongs,
-        question: `The ${s} ${poss(name)} biggest win was by ${margin(big)} points. Who did they beat?`, explanation: `${name} ${big.us}, ${big.opp} ${big.them} on ${longDate(big.g.date)}.`, difficulty: deep });
+        question: `The ${s} ${poss(name)} biggest win was by ${margin(big)} points. Who did they beat?`, explanation: `${name} ${big.us}, ${big.opp} ${big.them} on ${longDate(big.g.date)}.`, difficulty: deep,
+        ar: { q: `أكبر فوز لـ${A.N(name)} في موسم ${s} كان بفارق ${margin(big)} نقطة. على مين فازوا؟`, e: `${A.N(name)} ${big.us}، ${A.N(big.opp)} ${big.them} — ${A.date(big.g.date)}.` } });
     }
     const high = res.reduce((m, r) => (!m || r.us > m.us ? r : m), null);
     if (high && res.filter(r => r.us === high.us).length === 1) {
       const wrongs = pick(opps, 3, rnd, [high.opp]);
       if (wrongs.length === 3) tag('SEASON-HIGH', { column: 'team', category: 'Team games', fact: high.opp, wrongs,
-        question: `The ${s} ${name} scored a season-high ${high.us} points. Who were they playing?`, explanation: `${name} ${high.us}, ${high.opp} ${high.them} on ${longDate(high.g.date)} (${high.won ? 'a win' : 'a loss'}).`, difficulty: deep });
+        question: `The ${s} ${name} scored a season-high ${high.us} points. Who were they playing?`, explanation: `${name} ${high.us}, ${high.opp} ${high.them} on ${longDate(high.g.date)} (${high.won ? 'a win' : 'a loss'}).`, difficulty: deep,
+        ar: { q: `سجّل ${A.N(name)} أعلى رصيد لهم في موسم ${s}: ${high.us} نقطة. ضد مين كانوا يلعبون؟`, e: `${A.N(name)} ${high.us}، ${A.N(high.opp)} ${high.them} — ${A.date(high.g.date)} (${high.won ? 'فوز' : 'خسارة'}).` } });
     }
     // conference finish (today's alignment holds from 2004–05)
     if (season >= 2004 && t.conference) {
@@ -178,6 +184,7 @@ export function fromTeamSeasons(regGames, postGames, season) {
       if (rank && !tied) { const opts = [rank - 2, rank - 1, rank + 1, rank + 2, rank + 3].filter(n => n >= 1 && n <= conf.length && n !== rank);
         tag('CONF-FINISH', { category: 'Team seasons', fact: ord(rank), wrongs: pick(opts.map(ord), 3, rnd),
           question: `Where did the ${s} ${name} finish in the ${t.conference}ern Conference?`, explanation: `${ord(rank)} at ${row.w}–${row.l}.`,
+          ar: { q: `في أي مركز أنهى ${A.N(name)} موسم ${s} في المنطقة ${A.conf(t.conference)}؟`, e: `المركز ${A.ord(rank)} بسجل ${A.pair(row.w, row.l)}.` },
           difficulty: tierBy(season, [[2015, 'hard'], [0, 'hardest']]) }); }
     }
     // the playoff run, round by round (four-round format with the full bracket)
@@ -189,17 +196,20 @@ export function fromTeamSeasons(regGames, postGames, season) {
       tag('PLAYOFF-RUN', { column: 'outcome', category: 'Team playoffs', fact: OUTCOMES[outcome], wrongs: near,
         question: `How far did the ${s} ${name} go in the playoffs?`,
         explanation: outcome === 5 ? `They won the ${y} title.` : outcome === 0 ? `They finished ${row.w}–${row.l} and missed the playoffs.` : `Their season ended against the ${lastS.winnerName} (${lastS.score}).`,
+        ar: { q: `لين وين وصل ${A.N(name)} في البلاي أوف موسم ${s}؟`, e: outcome === 5 ? `فازوا بلقب ${y}.` : outcome === 0 ? `أنهوا الموسم ${A.pair(row.w, row.l)} وما تأهلوا للبلاي أوف.` : `انتهى موسمهم أمام ${A.N(lastS.winnerName)} (${A.iso(lastS.score)}).` },
         difficulty: tierBy(season, [[2018, 'medium'], [2005, 'hard'], [1995, 'hardest'], [0, 'hall_of_fame']]) });
       for (const x of theirs) if (x.winner.id === t.id && x.roundName) {
         const conf = x.round === 4 ? br.series.flatMap(z => [z.a, z.b]).filter(z => br.confName.get(z.id) === br.confName.get(x.loser.id)) : br.sameConference(x.loser.id, [t.id]);
         const wrongs = pick(conf.map(z => teamNameIn(z, season)), 3, rnd, [x.loserName, name]);
         if (wrongs.length === 3) tag(`BEAT-R${x.round}`, { column: 'team', category: 'Team playoffs', fact: x.loserName, wrongs,
           question: `Who did the ${name} beat in the ${y} ${x.roundName}?`, explanation: `${name} won the series ${x.score}.`,
+          ar: { q: `مين الفريق اللي فاز عليه ${A.N(name)} في ${A.round(x.roundName)} ${y}؟`, e: `فاز ${A.N(name)} بالسلسلة ${A.iso(x.score)}.` },
           difficulty: tierBy(season, [[2015, 'hard'], [2000, 'hardest'], [1990, 'hall_of_fame'], [0, 'goat']]) });
         // Game 7s they won
         if (x.games.length === 7) { const g7 = x.games[6], ws = Math.max(g7.home_team_score, g7.visitor_team_score), ls = Math.min(g7.home_team_score, g7.visitor_team_score);
           tag(`GAME7-R${x.round}`, { category: 'Team playoffs', fact: scoreLine(ws, ls), wrongs: nearbyScores(ws, ls, rnd),
             question: `The ${name} won Game 7 of the ${y} ${x.roundName} against the ${x.loserName}. What was the final score?`, explanation: `${name} ${ws}, ${x.loserName} ${ls} on ${longDate(g7.date)}.`,
+            ar: { q: `فاز ${A.N(name)} بالمباراة السابعة في ${A.round(x.roundName)} ${y} أمام ${A.N(x.loserName)}. كم كانت النتيجة النهائية؟`, e: `${A.N(name)} ${ws}، ${A.N(x.loserName)} ${ls} — ${A.date(g7.date)}.` },
             difficulty: tierBy(season, [[2010, 'hardest'], [1995, 'hall_of_fame'], [0, 'goat']]) }); }
       }
     }
@@ -219,12 +229,14 @@ export function fromPostseason(games, season) {
       fact: `${WORD[n]} games`, wrongs: ['Four', 'Five', 'Six', 'Seven'].filter(w => w !== WORD[n]).map(w => w + ' games'),
       question: `How many games did the ${y} ${finalsName(y)} last?`,
       explanation: `The ${f.winnerName} beat the ${f.loserName} ${f.score}.`,
+      ar: { q: `كم مباراة استمرت ${A.finals(y)} ${y}؟`, e: `فاز ${A.N(f.winnerName)} على ${A.N(f.loserName)} ${A.iso(f.score)}.` },
       difficulty: tierBy(season, [[2010, 'hard'], [1990, 'hardest'], [1970, 'hall_of_fame'], [0, 'goat']]) });
     const c = f.clincher, cw = Math.max(c.home_team_score, c.visitor_team_score), cl = Math.min(c.home_team_score, c.visitor_team_score);
     kps.push({ knowledge_point_id: `KP-${s}-FINALS-CLINCHER-SCORE`, column: 'value', era: e, season: s, category: 'Finals',
       fact: scoreLine(cw, cl), wrongs: nearbyScores(cw, cl, rnd),
       question: `The ${f.winnerName} clinched the ${y} title against the ${f.loserName}. What was the final score of the clinching game?`,
       explanation: `${f.winnerName} ${cw}, ${f.loserName} ${cl} on ${longDate(c.date)}.`,
+      ar: { q: `حسم ${A.N(f.winnerName)} لقب ${y} أمام ${A.N(f.loserName)}. كم كانت النتيجة النهائية في مباراة الحسم؟`, e: `${A.N(f.winnerName)} ${cw}، ${A.N(f.loserName)} ${cl} — ${A.date(c.date)}.` },
       difficulty: tierBy(season, [[2000, 'hall_of_fame'], [0, 'goat']]) });
   }
   // Who knocked out whom — every decided series of three or more games
@@ -243,6 +255,7 @@ export function fromPostseason(games, season) {
       fact: x.winnerName, wrongs,
       question: x.roundName ? `Which team knocked the ${x.loserName} out of the ${y} ${x.roundName}?` : `Which team knocked the ${x.loserName} out of the ${y} ${leagueName(y)} playoffs?`,
       explanation: `The ${x.winnerName} won the series ${x.score}.`,
+      ar: { q: x.roundName ? `مين الفريق اللي طلّع ${A.N(x.loserName)} من ${A.round(x.roundName)} ${y}؟` : `مين الفريق اللي طلّع ${A.N(x.loserName)} من بلاي أوف ${A.league(y)} ${y}؟`, e: `فاز ${A.N(x.winnerName)} بالسلسلة ${A.iso(x.score)}.` },
       difficulty: tierBy(season, [[2015, 'hard'], [1995, 'hardest'], [1975, 'hall_of_fame'], [0, 'goat']]), teams: [x.winnerName, x.loserName] });
   }
   return { kps, finals };
@@ -298,6 +311,7 @@ export function fromRegularSeason(games, season, { inProgress = false, asOf = nu
       fact: table[0].name, wrongs: table.slice(1, 4).map(r => r.name),
       question: `Which team has the NBA's best record so far this season (as of ${longDate(asOf)})?`,
       explanation: `The ${table[0].name} were ${table[0].w}–${table[0].l}.`,
+      ar: { q: `أي فريق عنده أفضل سجل في NBA لين الحين هالموسم (لغاية ${A.date(asOf)})؟`, e: `سجل ${A.N(table[0].name)} ${A.pair(table[0].w, table[0].l)}.` },
       difficulty: 'medium', temporal: 'dynamic', valid_from: asOf, valid_until: until });
     for (const conf of ['East', 'West']) {
       const c = table.filter(r => r.team.conference === conf);
@@ -306,6 +320,7 @@ export function fromRegularSeason(games, season, { inProgress = false, asOf = nu
         fact: c[0].name, wrongs: c.slice(1, 4).map(r => r.name),
         question: `Which team leads the ${conf}ern Conference so far this season (as of ${longDate(asOf)})?`,
         explanation: `The ${c[0].name} were ${c[0].w}–${c[0].l}.`,
+        ar: { q: `أي فريق متصدر المنطقة ${A.conf(conf)} لين الحين هالموسم (لغاية ${A.date(asOf)})؟`, e: `سجل ${A.N(c[0].name)} ${A.pair(c[0].w, c[0].l)}.` },
         difficulty: 'medium', temporal: 'dynamic', valid_from: asOf, valid_until: until });
     }
     return kps;
@@ -316,17 +331,17 @@ export function fromRegularSeason(games, season, { inProgress = false, asOf = nu
     kps.push({ knowledge_point_id: `KP-${s}-BEST-RECORD`, column: 'team', era: e, season: s, category: 'Regular Season',
       fact: best.name, wrongs: table.slice(1, 4).map(r => r.name),
       question: `Which team had the best regular-season record in ${s}?`,
-      explanation: `The ${best.name} went ${best.w}–${best.l}.`, difficulty: tierBy(season, [[2010, 'medium'], [1990, 'hard'], [1970, 'hardest'], [0, 'hall_of_fame']]) });
+      explanation: `The ${best.name} went ${best.w}–${best.l}.`, ar: { q: `أي فريق كان عنده أفضل سجل في الموسم العادي ${s}؟`, e: `أنهى ${A.N(best.name)} الموسم ${A.pair(best.w, best.l)}.` }, difficulty: tierBy(season, [[2010, 'medium'], [1990, 'hard'], [1970, 'hardest'], [0, 'hall_of_fame']]) });
     kps.push({ knowledge_point_id: `KP-${s}-BEST-RECORD-WINS`, column: 'value', era: e, season: s, category: 'Regular Season',
       fact: String(best.w), wrongs: nearbyNumbers(best.w, rnd, 1),
       question: `How many regular-season games did the ${s} ${best.name} win?`,
-      explanation: `They finished ${best.w}–${best.l}, the league's best record.`, difficulty: best.w >= 69 ? 'hard' : tierBy(season, [[2010, 'hardest'], [0, 'hall_of_fame']]) });
+      explanation: `They finished ${best.w}–${best.l}, the league's best record.`, ar: { q: `كم مباراة فاز فيها ${A.N(best.name)} في الموسم العادي ${s}؟`, e: `أنهوا الموسم ${A.pair(best.w, best.l)}، أفضل سجل في الدوري.` }, difficulty: best.w >= 69 ? 'hard' : tierBy(season, [[2010, 'hardest'], [0, 'hall_of_fame']]) });
   }
   if (worst.pct !== table[table.length - 2].pct) {
     kps.push({ knowledge_point_id: `KP-${s}-WORST-RECORD`, column: 'team', era: e, season: s, category: 'Regular Season',
       fact: worst.name, wrongs: table.slice(-4, -1).map(r => r.name),
       question: `Which team had the worst regular-season record in ${s}?`,
-      explanation: `The ${worst.name} went ${worst.w}–${worst.l}.`, difficulty: tierBy(season, [[2010, 'hardest'], [1980, 'hall_of_fame'], [0, 'goat']]) });
+      explanation: `The ${worst.name} went ${worst.w}–${worst.l}.`, ar: { q: `أي فريق كان عنده أسوأ سجل في الموسم العادي ${s}؟`, e: `أنهى ${A.N(worst.name)} الموسم ${A.pair(worst.w, worst.l)}.` }, difficulty: tierBy(season, [[2010, 'hardest'], [1980, 'hall_of_fame'], [0, 'goat']]) });
   }
   // "Your Team" mode: every current franchise's win total, season by season
   // (the league-best team's total is already asked above).
@@ -337,6 +352,7 @@ export function fromRegularSeason(games, season, { inProgress = false, asOf = nu
       fact: String(r.w), wrongs: nearbyNumbers(r.w, rng('w' + s + r.team.id), 0),
       question: `How many regular-season games did the ${s} ${r.name} win?`,
       explanation: `They went ${r.w}–${r.l}, ${ord} in the league.`,
+      ar: { q: `كم مباراة فاز فيها ${A.N(r.name)} في الموسم العادي ${s}؟`, e: `أنهوا الموسم ${A.pair(r.w, r.l)}، المركز ${A.ord(rank)} في الدوري.` },
       difficulty: tierBy(season, [[2015, 'hardest'], [1995, 'hall_of_fame'], [0, 'goat']]),
       team_id: r.team.abbreviation.toLowerCase(), teams: [r.name] });
   });
@@ -359,11 +375,12 @@ export function fromRecentGames(games, season, today = new Date().toISOString().
       fact: scoreLine(ws, ls), wrongs: nearbyScores(ws, ls, rnd),
       question: `The ${w} beat the ${l} on ${when}. What was the final score?`,
       explanation: `${w} ${ws}, ${l} ${ls}${g.period > 4 ? ` (${g.period === 5 ? 'OT' : (g.period - 4) + 'OT'})` : ''}.`,
+      ar: { q: `فاز ${A.N(w)} على ${A.N(l)} يوم ${A.date(g.date)}. كم كانت النتيجة النهائية؟`, e: `${A.N(w)} ${ws}، ${A.N(l)} ${ls}${g.period > 4 ? ` (${g.period === 5 ? 'بعد وقت إضافي' : g.period === 6 ? 'بعد وقتين إضافيين' : `بعد ${g.period - 4} أوقات إضافية`})` : ''}.` },
       difficulty: 'hardest', temporal: 'dynamic', valid_from: g.date.slice(0, 10), valid_until: until, teams: [w, l] });
     if (ws - ls >= 25) kps.push({ knowledge_point_id: `KP-GAME-${g.id}-BLOWOUT`, column: 'team', era: era(season), season: s, category: 'This Week',
       fact: l, wrongs: [], two: [w, l],
       question: `On ${when}, the ${w} won by ${ws - ls} points. Who did they beat?`,
-      explanation: `${w} ${ws}, ${l} ${ls}.`, difficulty: 'medium', temporal: 'dynamic', valid_from: g.date.slice(0, 10), valid_until: until, teams: [w, l] });
+      explanation: `${w} ${ws}, ${l} ${ls}.`, ar: { q: `يوم ${A.date(g.date)}، فاز ${A.N(w)} بفارق ${ws - ls} نقطة. على مين فازوا؟`, e: `${A.N(w)} ${ws}، ${A.N(l)} ${ls}.` }, difficulty: 'medium', temporal: 'dynamic', valid_from: g.date.slice(0, 10), valid_until: until, teams: [w, l] });
   }
   // Blowout distractors: other teams that played that week.
   const names = [...new Set(recent.flatMap(g => [teamNameIn(g.home_team, season), teamNameIn(g.visitor_team, season)]))];
@@ -382,11 +399,14 @@ export function reigningChampion(finals, season) {
       ? [finals.runnerUp, ...pick(finals.teams || [], 2, rng('reign' + season), [finals.champion, finals.runnerUp])] : null,
     question: 'Which team are the reigning NBA champions?',
     explanation: `The ${finals.champion} beat the ${finals.runnerUp}${finals.score ? ' ' + finals.score : ''} in the ${finalsYear(season)} Finals.`,
+    ar: { q: 'مين بطل NBA الحالي؟', e: `فاز ${A.N(finals.champion)} على ${A.N(finals.runnerUp)}${finals.score ? ' ' + A.iso(finals.score) : ''} في نهائيات ${finalsYear(season)}.` },
     difficulty: 'easy', temporal: 'dynamic', valid_from: finals.end.slice(0, 10), valid_until: nextFinalsEnd }];
 }
 
 // ── players: drafts, colleges, home countries ────────────────────
-const fullName = p => `${p.first_name} ${p.last_name}`.trim();
+// balldontlie lists a few players under a nickname; the questions use the real name.
+const ALIAS = { 'Double D': 'Dwight Davis' };
+const fullName = p => { const n = `${p.first_name} ${p.last_name}`.trim(); return ALIAS[n] || n; };
 const HOME = new Set(['USA', 'United States', null, undefined, '']);
 export function fromPlayers(players) {
   const kps = [];
@@ -403,7 +423,7 @@ export function fromPlayers(players) {
       if (wrongs.length < 3) continue;
       kps.push({ knowledge_point_id: `KP-DRAFT-${y}-${tag}`, column: 'player', era: e, season: s, category: 'Draft',
         fact: name, wrongs, question: `Who was the ${word} overall pick in the ${y} NBA draft?`,
-        explanation: `${name} went No. ${n} in ${y}.`, difficulty: n === 1 ? tierBy(y, [[2010, 'medium'], [1990, 'hard'], [1970, 'hardest'], [0, 'hall_of_fame']]) : tierBy(y, [[2000, 'hardest'], [1975, 'hall_of_fame'], [0, 'goat']]), players: [name] });
+        explanation: `${name} went No. ${n} in ${y}.`, ar: { q: `مين كان الاختيار ${n === 1 ? 'الأول' : 'الثاني'} في درافت NBA ${y}؟`, e: `اختير ${A.N(name)} رقم ${n} في درافت ${y}.` }, difficulty: n === 1 ? tierBy(y, [[2010, 'medium'], [1990, 'hard'], [1970, 'hardest'], [0, 'hall_of_fame']]) : tierBy(y, [[2000, 'hardest'], [1975, 'hall_of_fame'], [0, 'goat']]), players: [name] });
     }
   }
   // Colleges and countries, for top-five picks only (recognisable names).
@@ -428,13 +448,13 @@ export function fromPlayers(players) {
       const wrongs = pick(near.map(q => q.college).filter(isCollege), 3, rnd, [college]);
       if (wrongs.length === 3) kps.push({ knowledge_point_id: `KP-PLAYER-${p.id}-COLLEGE`, column: 'college', era: era(y), season: seasonLabel(y), category: 'Players',
         fact: college, wrongs, question: `Where did ${name} play college basketball before the NBA?`,
-        explanation: `${name} came out of ${college} and went No. ${p.draft_number} in the ${y} draft.`, difficulty: tierBy(y, [[2010, 'hard'], [1990, 'hardest'], [0, 'hall_of_fame']]), players: [name] });
+        explanation: `${name} came out of ${college} and went No. ${p.draft_number} in the ${y} draft.`, ar: { q: `وين لعب ${A.N(name)} كرة السلة الجامعية قبل NBA؟`, e: `${A.N(name)} جا من ${A.N(college)} واختير رقم ${p.draft_number} في درافت ${y}.` }, difficulty: tierBy(y, [[2010, 'hard'], [1990, 'hardest'], [0, 'hall_of_fame']]), players: [name] });
     }
     if (!HOME.has(p.country)) {
       const wrongs = pick(countries, 3, rnd, [p.country]);
       if (wrongs.length === 3) kps.push({ knowledge_point_id: `KP-PLAYER-${p.id}-COUNTRY`, column: 'country', era: era(y), season: seasonLabel(y), category: 'Players',
         fact: p.country, wrongs, question: `Which country is ${name} from?`,
-        explanation: `${name}, the No. ${p.draft_number} pick in ${y}, is from ${p.country}.`, difficulty: tierBy(y, [[2010, 'medium'], [0, 'hard']]), players: [name] });
+        explanation: `${name}, the No. ${p.draft_number} pick in ${y}, is from ${p.country}.`, ar: { q: `${A.N(name)} من أي دولة؟`, e: `${A.N(name)}، الاختيار رقم ${p.draft_number} في درافت ${y}، من ${A.N(p.country)}.` }, difficulty: tierBy(y, [[2010, 'medium'], [0, 'hard']]), players: [name] });
     }
   }
   return kps;
@@ -456,6 +476,7 @@ export function fromJerseys(table) {
       const wrongs = pick(mates.slice(0, 6).map(m => m[1]), 3, rnd, [player]);
       if (wrongs.length === 3) kps.push({ ...base, knowledge_point_id: `KP-JERSEY-${abbr}-${num}-${season}`, column: 'player', fact: player, wrongs,
         question: `Who wore No. ${num} for the ${team} in ${s}?`, explanation: `${player} wore No. ${num} for the ${team}.`,
+        ar: { q: `مين لبس رقم ${num} مع ${A.N(team)} في موسم ${s}؟`, e: `${A.N(player)} لبس رقم ${num} مع ${A.N(team)}.` },
         difficulty: tierBy(season, [[2010, 'medium'], [1990, 'hard'], [1970, 'hardest'], [0, 'hall_of_fame']]) });
     } else {
       const nums = [...new Set(mates.map(m => m[2]))];
@@ -463,6 +484,7 @@ export function fromJerseys(table) {
       const wrongs = pick(nums.slice(0, 6), 3, rnd, [num]).map(n => 'No. ' + n);
       kps.push({ ...base, knowledge_point_id: `KP-JERSEY-${abbr}-${slug(player)}-${season}-NUM`, column: 'number', fact: 'No. ' + num, wrongs,
         question: `What number did ${player} wear for the ${team} in ${s}?`, explanation: `${player} wore No. ${num} for the ${team}.`,
+        ar: { q: `أي رقم لبس ${A.N(player)} مع ${A.N(team)} في موسم ${s}؟`, e: `${A.N(player)} لبس رقم ${num} مع ${A.N(team)}.` },
         difficulty: tierBy(season, [[2010, 'hard'], [1990, 'hardest'], [1970, 'hall_of_fame'], [0, 'goat']]) });
     }
   }
@@ -494,12 +516,14 @@ export function fromDraft(rows, { abbrOf, bios }) {
         if (wrongs.length === 3) kps.push({ knowledge_point_id: `KP-DRAFT-${y}-${p.person_id}-TEAM`, column: 'team', era: e, season: s, category: 'Draft', source: KAGGLE,
           fact: p.team, wrongs, question: `Which team drafted ${p.player_name} in ${y}?`,
           explanation: `The ${p.team} took him No. ${p.n} overall${p.organization ? ` out of ${p.organization}` : ''}.`,
+          ar: { q: `أي فريق اختار ${A.N(p.player_name)} في درافت ${y}؟`, e: `اختاره ${A.N(p.team)} رقم ${p.n}${p.organization ? ` من ${A.N(p.organization)}` : ''}.` },
           difficulty: p.n <= 5 && y >= 2000 ? 'medium' : tierBy(y, [[2005, 'hard'], [1990, 'hardest'], [1975, 'hall_of_fame'], [0, 'goat']]), players: [p.player_name], teams: [p.team] });
       } else if (p.n >= 2 && p.n <= 20 && y >= 1975 && abbr) {
         const wrongs = pick(near(p, 4, q => q.player_name), 3, rnd, [p.player_name]);
         if (wrongs.length === 3) kps.push({ knowledge_point_id: `KP-DRAFT-${y}-PICK-${p.n}`, column: 'player', era: e, season: s, category: 'Draft', source: KAGGLE,
           fact: p.player_name, wrongs, question: `Who did the ${p.team} draft with the No. ${p.n} pick in ${y}?`,
           explanation: `${p.player_name}${p.organization ? ` (${p.organization})` : ''}, No. ${p.n} overall.`,
+          ar: { q: `مين اختار ${A.N(p.team)} بالاختيار رقم ${p.n} في درافت ${y}؟`, e: `${A.N(p.player_name)}${p.organization ? ` (${A.N(p.organization)})` : ''}، الاختيار رقم ${p.n}.` },
           difficulty: tierBy(y, [[2010, 'hard'], [1995, 'hardest'], [1980, 'hall_of_fame'], [0, 'goat']]), team_id: abbr, teams: [p.team], players: [p.player_name] });
       }
       if (notable && p.n >= 3) {
@@ -507,6 +531,7 @@ export function fromDraft(rows, { abbrOf, bios }) {
         kps.push({ knowledge_point_id: `KP-DRAFT-${y}-${p.person_id}-PICKNO`, column: 'value', era: e, season: s, category: 'Draft', source: KAGGLE,
           fact: 'No. ' + p.n, wrongs: pick(opts, 3, rnd), question: `With which pick was ${p.player_name} selected in the ${y} draft?`,
           explanation: `The ${p.team} took him No. ${p.n} overall${+p.round_number > 1 ? `, in round ${p.round_number}` : ''}.`,
+          ar: { q: `بأي رقم انختار ${A.N(p.player_name)} في درافت ${y}؟`, e: `اختاره ${A.N(p.team)} رقم ${p.n}${+p.round_number > 1 ? `، في الدور ${A.ord(+p.round_number)}` : ''}.` },
           difficulty: bio.greatest_75_flag === 'Y' ? 'hard' : tierBy(y, [[2005, 'hardest'], [0, 'hall_of_fame']]), players: [p.player_name] });
       }
     }
@@ -528,13 +553,13 @@ export function fromBios(rows) {
       const wrongs = pick(peers.filter(q => Math.abs(yr(q) - y) <= 6).slice(0, 14).map(q => q.display_first_last), 3, rnd, [name]);
       if (wrongs.length === 3) kps.push({ knowledge_point_id: `KP-BIO-${r.person_id}-NBA75`, column: 'player', era: era(y), season: null, category: 'Legends', source: KAGGLE,
         fact: name, wrongs, question: `Which of these players made the NBA 75th Anniversary Team: ${[name, ...wrongs].sort().join(', ').replace(/, ([^,]*)$/, ' or $1')}?`,
-        explanation: `${name} was one of the 76 players honoured in 2021.`, difficulty: y >= 1990 ? 'medium' : y >= 1970 ? 'hard' : 'hardest', players: [name] });
+        explanation: `${name} was one of the 76 players honoured in 2021.`, ar: { q: `أي واحد من هاللاعبين انضم لفريق الذكرى الـ75 لـNBA: ${A.list([name, ...wrongs].sort().map(A.N))}؟`, e: `${A.N(name)} كان من الـ76 لاعب اللي تكرّموا في 2021.` }, difficulty: y >= 1990 ? 'medium' : y >= 1970 ? 'hard' : 'hardest', players: [name] });
     }
     if (r.greatest_75_flag === 'Y' || +r.season_exp >= 14) {
       const opts = [-3, -2, -1, 1, 2, 3].map(d => seasonLabel(y + d));
       kps.push({ knowledge_point_id: `KP-BIO-${r.person_id}-DEBUT`, column: 'value', era: era(y), season: seasonLabel(y), category: 'Players', source: KAGGLE,
         fact: seasonLabel(y), wrongs: pick(opts, 3, rnd), question: `In which season did ${name} make his NBA debut?`,
-        explanation: `${name} broke in in ${seasonLabel(y)} and played ${r.season_exp} seasons.`, difficulty: tierBy(y, [[2000, 'hard'], [1980, 'hardest'], [0, 'hall_of_fame']]), players: [name] });
+        explanation: `${name} broke in in ${seasonLabel(y)} and played ${r.season_exp} seasons.`, ar: { q: `في أي موسم لعب ${A.N(name)} أول مباراة له في NBA؟`, e: `بدأ ${A.N(name)} مسيرته في موسم ${seasonLabel(y)} ولعب ${A.seasons(+r.season_exp)}.` }, difficulty: tierBy(y, [[2000, 'hard'], [1980, 'hardest'], [0, 'hall_of_fame']]), players: [name] });
     }
   }
   return kps;
@@ -561,7 +586,8 @@ export function fromTeamBox(games, season) {
     kps.push({ knowledge_point_id: `KP-${s}-${label}-LEADER`, column: 'team', era: e, season: s, category: cat, source: KAGGLE,
       fact: sorted[0].name, wrongs: sorted.slice(1, 4).map(r => r.name),
       question: label === 'THREES' ? `Which team made the most 3-pointers per game in ${s}?` : `Which team averaged the most assists in ${s}?`,
-      explanation: `The ${sorted[0].name}: ${sorted[0][key].toFixed(1)} a game.`, difficulty: tierBy(season, tiers) });
+      explanation: `The ${sorted[0].name}: ${sorted[0][key].toFixed(1)} a game.`,
+      ar: { q: label === 'THREES' ? `أي فريق سجّل أكثر ثلاثيات في المباراة في موسم ${s}؟` : `أي فريق كان عنده أعلى معدل تمريرات حاسمة في موسم ${s}؟`, e: `${A.N(sorted[0].name)}: ${sorted[0][key].toFixed(1)} في المباراة.` }, difficulty: tierBy(season, tiers) });
   };
   if (season >= 1979) lead('p3', 'THREES', 'Statistics', [[2015, 'hard'], [2000, 'hardest'], [0, 'hall_of_fame']]);
   lead('pa', 'ASSISTS', 'Statistics', [[2015, 'hardest'], [0, 'hall_of_fame']]);
@@ -572,6 +598,7 @@ export function fromTeamBox(games, season) {
     kps.push({ knowledge_point_id: `KP-${s}-${r.abbr.toUpperCase()}-THREES-PG`, column: 'value', era: e, season: s, category: 'Team seasons', source: KAGGLE,
       fact: v, wrongs,
       question: `How many 3-pointers per game did the ${s} ${r.name} make?`, explanation: `${v} a game over ${r.gp} games.`,
+      ar: { q: `كم ثلاثية في المباراة سجّل ${A.N(r.name)} في موسم ${s}؟`, e: `${v} في المباراة على مدى ${A.games(r.gp)}.` },
       difficulty: tierBy(season, [[2015, 'hall_of_fame'], [0, 'goat']]), team_id: r.abbr, teams: [r.name] });
   }
   return kps;
@@ -628,16 +655,21 @@ export function fromCareers(players, { seasons = [], jerseys = [], exclude = [],
     const bio = bios.get(String(p.person_id)) || {}, position = bio.position || null, height = bio.height || p.height;
     const debut = seasonLabel(p.from_year), pos = posOf(position), ht = feet(height);
     const clues = [];
-    clues.push({ type: 'text', content: `${ht && pos ? `A ${ht} ${pos}` : pos ? `A ${pos}` : 'A player'} who entered the NBA in ${debut}.` });
+    const cm = A.cm(height);
+    clues.push({ type: 'text', content: `${ht && pos ? `A ${ht} ${pos}` : pos ? `A ${pos}` : 'A player'} who entered the NBA in ${debut}.`,
+      ar: `${A.POS[pos] || 'لاعب'}${cm ? ` طوله ${cm} سم` : ''}، دخل NBA في موسم ${debut}.` });
     const school = (bio.school || p.college || '').trim(), abroad = p.country && p.country !== 'USA';
     const land = c => /^(Democratic Republic|Republic of|United|Czech Republic|Dominican Republic|Central African Republic|Bahamas|Netherlands|Philippines|U\.?S\.? Virgin|Virgin Islands)/i.test(c) ? 'the ' + c : c;
-    if (abroad) clues.push({ type: 'text', content: school && !/^none$/i.test(school) ? `Came to the NBA from ${land(p.country)}, after playing for ${school}.` : `Came to the NBA from ${land(p.country)}.` });
-    else if (isHS(school)) clues.push({ type: 'text', content: `Went straight to the NBA from high school (${school.replace(/\s*\(([A-Z]{2})\)$/, ', $1')}).` });
-    else if (school && !/^none$/i.test(school)) clues.push({ type: 'text', content: `Played college basketball at ${school}.` });
+    if (abroad) clues.push({ type: 'text', content: school && !/^(none|no college)$/i.test(school) ? `Came to the NBA from ${land(p.country)}, after playing for ${school}.` : `Came to the NBA from ${land(p.country)}.`,
+      ar: school && !/^(none|no college)$/i.test(school) ? `جا لـNBA من ${A.N(p.country)}، بعد ما لعب مع ${A.N(school)}.` : `جا لـNBA من ${A.N(p.country)}.` });
+    else if (isHS(school)) clues.push({ type: 'text', content: `Went straight to the NBA from high school (${school.replace(/\s*\(([A-Z]{2})\)$/, ', $1')}).`,
+      ar: `دخل NBA على طول من الثانوية (${A.N(school.replace(/\s*\(([A-Z]{2})\)$/, ''))}).` });
+    else if (school && !/^(none|no college)$/i.test(school)) clues.push({ type: 'text', content: `Played college basketball at ${school}.`, ar: `لعب كرة السلة الجامعية في ${A.N(school)}.` });
     const retired = p.to_year && p.to_year <= 2021;
-    clues.push({ type: 'text', content: retired ? `Played ${exp} NBA season${exp === 1 ? '' : 's'}, the last in ${seasonLabel(p.to_year)}.` : `Had played ${exp} NBA season${exp === 1 ? '' : 's'} by 2022-23.` });
-    if (yr && pick && p.draft_team) clues.push({ type: 'text', content: `Drafted No. ${pick} overall in ${yr} by the ${p.draft_team}.` });
-    else if (/undrafted/i.test(String(bio.draft_year || p.draft_year))) clues.push({ type: 'text', content: 'Went undrafted.' });
+    clues.push({ type: 'text', content: retired ? `Played ${exp} NBA season${exp === 1 ? '' : 's'}, the last in ${seasonLabel(p.to_year)}.` : `Had played ${exp} NBA season${exp === 1 ? '' : 's'} by 2022-23.`,
+      ar: retired ? `لعب ${A.seasons(exp)} في NBA، آخرها ${seasonLabel(p.to_year)}.` : `لعب ${A.seasons(exp)} في NBA لين موسم 2022-23.` });
+    if (yr && pick && p.draft_team) clues.push({ type: 'text', content: `Drafted No. ${pick} overall in ${yr} by the ${p.draft_team}.`, ar: `اختاره ${A.N(p.draft_team)} رقم ${pick} في درافت ${yr}.` });
+    else if (/undrafted/i.test(String(bio.draft_year || p.draft_year))) clues.push({ type: 'text', content: 'Went undrafted.', ar: 'ما انختار في الدرافت.' });
     const list = [
       a.mvp.length && times(a.mvp.length, 'MVP') + (a.mvp.length === 1 ? ` (${a.mvp[0]})` : ''),
       a.fmvp.length && times(a.fmvp.length, 'Finals MVP'),
@@ -645,10 +677,17 @@ export function fromCareers(players, { seasons = [], jerseys = [], exclude = [],
       a.roy.length && `Rookie of the Year ${a.roy[0]}`,
       n75 && 'NBA 75th Anniversary Team'
     ].filter(Boolean);
-    if (list.length) clues.push({ type: 'awards', list });
+    const arList = [
+      a.mvp.length && A.times(a.mvp.length, 'أفضل لاعب (MVP)') + (a.mvp.length === 1 ? ` ${a.mvp[0]}` : ''),
+      a.fmvp.length && A.times(a.fmvp.length, 'أفضل لاعب في النهائيات'),
+      a.scoring.length && A.times(a.scoring.length, 'هدّاف الدوري'),
+      a.roy.length && `أفضل لاعب صاعد ${a.roy[0]}`,
+      n75 && 'فريق الذكرى الـ75 لـNBA'
+    ].filter(Boolean);
+    if (list.length) clues.push({ type: 'awards', list, ar: arList });
     else if (jn) clues.push({ type: 'numbers', numbers: [...jn] });
     if (clues.length < 4) continue;                       // too little to go on
-    people.push({ id: 100000 + Number(p.person_id), kind: 'player', tier, name, accept: [], decoys: [], clues,
+    people.push({ id: 100000 + Number(p.person_id), kind: 'player', tier, name, accept: [], decoys: [], clues, ar_name: A.N(name),
       era: `${Math.floor(p.from_year / 10) * 10}s${p.to_year && Math.floor(p.to_year / 10) !== Math.floor(p.from_year / 10) ? '–' + Math.floor(p.to_year / 10) * 10 + 's' : ''}`,
       _g: group(position), _from: p.from_year, _sig: `${p.from_year}|${school}|${p.country}|${yr}|${pick}` });
   }

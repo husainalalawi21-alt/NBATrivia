@@ -13,9 +13,10 @@
 //   CRON_SECRET          must match the x-cron-secret header the schedule sends
 // SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are provided by Supabase.
 //
-// generate.js and franchises.js are the same files as nba-trivia/data/;
-// tools/deploy-function.mjs uploads them next to this file.
+// generate.js, franchises.js, ar.js and names-ar.js are the same files as
+// nba-trivia/data/; tools/deploy-function.mjs uploads them next to this file.
 import { fromRegularSeason, fromRecentGames, fromPostseason, reigningChampion, gapsIn } from './generate.js';
+import * as A from './ar.js';
 
 const URL_ = Deno.env.get('SUPABASE_URL')!;
 const KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -130,7 +131,8 @@ Deno.serve(async req => {
         const s = finals.season, e = '2020s';
         kps.push({ knowledge_point_id: `KP-${s}-CHAMPION`, column: 'champion', era: e, season: s, category: 'Championships', fact: finals.champion,
           wrongs: [finals.runnerUp, ...finals.teams.filter((t: string) => t !== finals.champion && t !== finals.runnerUp).slice(0, 2)],
-          question: `Which team won the ${s} NBA championship?`, explanation: `The ${finals.champion} beat the ${finals.runnerUp} ${finals.score} in the Finals.`, difficulty: 'easy' });
+          question: `Which team won the ${s} NBA championship?`, explanation: `The ${finals.champion} beat the ${finals.runnerUp} ${finals.score} in the Finals.`, difficulty: 'easy',
+          ar: { q: `مين الفريق اللي فاز ببطولة NBA موسم ${s}؟`, e: `فاز ${A.N(finals.champion)} على ${A.N(finals.runnerUp)} ${A.iso(finals.score)} في النهائيات.` } });
       }
     }
     const usable = kps.filter(k => k.wrongs && k.wrongs.length === 3);
@@ -154,7 +156,8 @@ Deno.serve(async req => {
         explanation: k.explanation || null, category: k.category, difficulty: k.difficulty, question_type: 'multiple_choice', pool, game_modes_allowed: [pool, 'h2h'],
         status: q >= 60 ? 'active' : 'pending', active: q >= 60, temporal: k.temporal || 'static', season: k.season, era: k.era,
         players: k.players || [], teams: k.teams || [], payload: { source_ref: { kind: 'weekly-update' } }, source_name: 'balldontlie',
-        source_url: 'https://www.balldontlie.io', source_date: today, quality_score: q, valid_from: k.valid_from || null, valid_until: k.valid_until || null });
+        source_url: 'https://www.balldontlie.io', source_date: today, quality_score: q, valid_from: k.valid_from || null, valid_until: k.valid_until || null,
+        ar: A.layerOf(k) });
     }
     // New facts go in with their status; facts already in the bank get fresh
     // content but keep whatever an admin decided (approved / disabled).

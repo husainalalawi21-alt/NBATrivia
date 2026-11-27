@@ -87,20 +87,24 @@ const toRecord = q => ({
   valid_from: q.valid_from, valid_until: q.valid_until, season: q.season, team_id: q.team_id,
   teams: q.teams || [], players: q.players || [], quality_score: q.quality_score,
   source_name: q.source_name, source_url: q.source_url, source_date: q.source_date,
-  person: q.payload && q.payload.person, clues: q.payload && q.payload.clues,
+  person: q.payload && q.payload.person, clues: q.payload && q.payload.clues, ar: q.ar || null,
   usage_count: 0, duplicate_warnings: [] });
 // Everyone gets the shared bank (all multiple-choice questions, every team's
 // basics and jersey numbers); a team's deep season / game / playoff questions
 // only come for the player's own team. Admins load everything.
 const DEEP = '("Team seasons","Team games","Team playoffs")';
-export async function loadQuestions(teamId = null, everything = false, onFirstPage = null) {
+// The columns the game reads; the Arabic one only for a player using Arabic.
+const QCOLS = 'question_id,knowledge_point_id,question_text,question_type,correct_answer,wrong_answers,explanation,difficulty,category,era,subcategory,' +
+  'pool,game_modes_allowed,status,active,temporal,valid_from,valid_until,season,team_id,teams,players,quality_score,source_name,source_url,source_date,payload';
+const bankQuery = (cols, from, count, teamId, everything) => {
+  let q = sb.from('questions').select(cols, count ? { count: 'exact' } : undefined).order('question_id').range(from, from + 999);
+  if (!everything) q = q.or(`team_id.is.null,category.not.in.${DEEP}${teamId ? `,team_id.eq.${teamId}` : ''}`);
+  return q;
+};
+export async function loadQuestions(teamId = null, everything = false, onFirstPage = null, arabic = false) {
   if (!sb) return null;
   // The first page also returns the total, so the rest download in parallel.
-  const page = (from, count) => {
-    let q = sb.from('questions').select('*', count ? { count: 'exact' } : undefined).order('question_id').range(from, from + 999);
-    if (!everything) q = q.or(`team_id.is.null,category.not.in.${DEEP}${teamId ? `,team_id.eq.${teamId}` : ''}`);
-    return q;
-  };
+  const page = (from, count) => bankQuery(arabic ? QCOLS + ',ar' : QCOLS, from, count, teamId, everything);
   const first = await page(0, true);
   if (first.error) return null;
   if (onFirstPage) onFirstPage(first.data.map(toRecord));
@@ -109,6 +113,17 @@ export async function loadQuestions(teamId = null, everything = false, onFirstPa
   const out = [...first.data];
   for (const { data, error } of await Promise.all(rest)) { if (error) break; out.push(...data); }
   return out.map(toRecord);
+}
+// Switching to Arabic mid-session: just the Arabic of the questions already loaded.
+export async function loadArabic(teamId = null, everything = false) {
+  if (!sb) return null;
+  const first = await bankQuery('question_id,ar', 0, true, teamId, everything);
+  if (first.error) return null;
+  const total = first.count || first.data.length, rest = [];
+  for (let from = 1000; from < total; from += 1000) rest.push(bankQuery('question_id,ar', from, false, teamId, everything));
+  const out = new Map(first.data.map(r => [r.question_id, r.ar]));
+  for (const { data, error } of await Promise.all(rest)) { if (error) return null; for (const r of data) out.set(r.question_id, r.ar); }
+  return out;
 }
 export async function setQuestionStatus(id, status) {
   if (!sb) return { error: 'offline' };

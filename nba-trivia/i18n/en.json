@@ -167,7 +167,10 @@
   "answer": "Answer: {{answer}}",
   "level_up": "Level up",
   "plus_sec": "+{{n}} SEC",
-  "minus_sec": "−{{n}} SEC"
+  "minus_sec": "−{{n}} SEC",
+  "solved_on": "Solved on clue {{n}}.",
+  "time_ran_out": "Time ran out.",
+  "out_of_clues": "Out of clues."
  },
  "result": {
   "pool_cleared": "Pool cleared",
