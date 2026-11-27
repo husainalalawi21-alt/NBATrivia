@@ -359,7 +359,9 @@
     <section class="scr scr-board">
       <header class="page-head"><h2 class="display h-lg">{{ L.ranks.title }}</h2><span class="muted">{{ boardCaption }}</span></header>
       <div class="seg"><sc-for list="{{ boardScopes }}" as="b" hint-placeholder-count="2"><button class="seg-btn" aria-selected="{{ b.on }}" onClick="{{ b.pick }}">{{ b.label }}</button></sc-for></div>
+      <div class="chips"><sc-for list="{{ boardGames }}" as="g" hint-placeholder-count="8"><button class="chip-btn" aria-pressed="{{ g.on }}" onClick="{{ g.pick }}">{{ g.label }}</button></sc-for></div>
       <div class="chips"><sc-for list="{{ boardPeriods }}" as="p" hint-placeholder-count="3"><button class="chip-btn" aria-pressed="{{ p.on }}" onClick="{{ p.pick }}">{{ p.label }}</button></sc-for></div>
+      <div class="pts-legend"><small>{{ L.ranks.per_answer }}</small><sc-for list="{{ pointsLegend }}" as="x" hint-placeholder-count="6"><span class="pts" data-tier="{{ x.tier }}"><span>{{ x.label }}</span><b>{{ x.pts }}</b></span></sc-for></div>
       <sc-if value="{{ boardLoadingNow }}"><div class="board-list"><sc-for list="{{ skeleton }}" as="k" hint-placeholder-count="6"><div class="brow skel"></div></sc-for></div></sc-if>
       <sc-if value="{{ boardNone }}">
         <div class="empty">

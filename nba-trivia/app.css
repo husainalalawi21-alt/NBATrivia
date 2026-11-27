@@ -640,3 +640,13 @@ button.brow:hover { border-color: var(--line-2); }
 [lang="ar"] .eyebrow, [lang="ar"] .story-top { text-transform: none; }
 /* English content inside the Arabic layout (questions until they're translated) reads left to right */
 [dir="rtl"] [dir="auto"] { unicode-bidi: plaintext; }
+
+/* Ranks: points per right answer, by level — all six visible at once */
+.pts-legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; align-items: center; flex: none; }
+.pts-legend small { grid-column: 1 / -1; font-size: 12px; font-weight: 700; color: var(--muted); line-height: 1.2; }
+.pts { display: flex; align-items: center; justify-content: space-between; gap: 4px; height: 26px; padding: 0 9px; border-radius: 999px;
+  background: var(--surface-2, rgba(255,255,255,.06)); font-size: 12px; font-weight: 800; white-space: nowrap; min-width: 0; }
+.pts span { color: var(--tc, var(--muted)); overflow: hidden; text-overflow: ellipsis; }
+.pts b { color: var(--text); font-variant-numeric: tabular-nums; }
+.pts[data-tier="goat"] span { color: #ffb347; }
+@media (min-width: 900px) { .scr-board .chips { flex-wrap: wrap; overflow: visible; } }

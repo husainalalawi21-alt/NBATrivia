@@ -98,7 +98,12 @@ const MYSTERY_TIER_DIFF = { rookie: 'beginner', starter: 'easy', allstar: 'mediu
 // Six levels, easiest first.
 export const TIER_ORDER = ['easy', 'medium', 'hard', 'hardest', 'hall_of_fame', 'goat'];
 export const TIER_LABEL = { easy: 'Easy', medium: 'Medium', hard: 'Hard', hardest: 'Hardest', hall_of_fame: 'Hall of Fame', goat: 'GOAT Level' };
-export const TIER_POINTS = { easy: 100, medium: 150, hard: 200, hardest: 300, hall_of_fame: 400, goat: 500 };
+// Points for a right answer, by the question's level. The leaderboard adds the same
+// numbers up on the server (public.points_for, migration 0009) — keep the two in step.
+export const TIER_POINTS = { easy: 100, medium: 200, hard: 400, hardest: 700, hall_of_fame: 1000, goat: 2500 };
+// Battles created before the switch finish on the old points, so both players are scored alike.
+export const OLD_TIER_POINTS = { easy: 100, medium: 150, hard: 200, hardest: 300, hall_of_fame: 400, goat: 500 };
+export const POINTS_SWITCH = Date.parse('2026-11-28T00:00:00Z');
 export const TARGET_MIX = { easy: 0.12, medium: 0.15, hard: 0.2, hardest: 0.22, hall_of_fame: 0.18, goat: 0.13 };
 // The climb most games use: 5 Easy, 5 Medium, 7 Hard, 10 Hardest, 15 Hall of
 // Fame, then GOAT Level until the first miss. `correct` = right answers so far.

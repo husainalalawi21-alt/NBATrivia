@@ -175,6 +175,14 @@ export async function leaderboard(period = 'today', team = null, limit = 50) {
   return data || [];
 }
 
+// Points: every right answer by its level, added up on the server (migration 0009).
+// mode null = every game; team = only that team's fans.
+export async function pointsBoard(period = 'all', mode = null, team = null, limit = 50) {
+  if (!sb) return [];
+  const { data } = await sb.rpc('points_board', { p_period: period, p_mode: mode, p_team: team, p_limit: limit });
+  return data || [];
+}
+
 // ── head to head ───────────────────────────────────────────────────
 export async function createChallenge(row) {
   if (!sb) return { error: 'offline' };

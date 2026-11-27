@@ -12,7 +12,7 @@ export class App extends Logic {
     authMode: 'register', authEmail: '', authPass: '', authErrs: [], unameDraft: '',
     teamDraft: null, teamSearch: '', teamCat: 'All', hubFrom: 'home',
     run: null, qVisible: true, gain: null, milestone: null, displayScore: 0,
-    scope: 'Global', period: 'Today', authFrom: null,
+    scope: 'Global', period: 'Today', boardGame: 'all', authFrom: null,
     challenges: [], activeChallenge: null, h2hCode: '', h2hError: '',
     copied: false, newBadges: [], sound: (() => { try { return localStorage.getItem('v2_sound') === '1'; } catch (e) { return false; } })(), poolExhausted: false, loadingRun: null,
     adminQ: '', adminStatus: 'All', adminMode: 'All', adminDiff: 'All', adminSel: null,
@@ -140,7 +140,7 @@ export class App extends Logic {
   async refreshRanks() {
     const uid = this.state.user && this.state.user.id; if (!uid) return this.setState({ ranks: { global: null, team: null } });
     const tid = this.teamId();
-    const [g, t] = await Promise.all([cloud.leaderboard('all', null, 1000), tid ? cloud.leaderboard('all', tid, 1000) : Promise.resolve([])]);
+    const [g, t] = await Promise.all([cloud.pointsBoard('all', null, null, 1000), tid ? cloud.pointsBoard('all', null, tid, 1000) : Promise.resolve([])]);
     const mine = list => { const r = list.find(x => x.user_id === uid); return r ? Number(r.rank) : null; };
     this.setState({ ranks: { global: mine(g), team: mine(t) } });
   }
@@ -151,8 +151,9 @@ export class App extends Logic {
     const team = s.scope === 'Your Team' ? this.teamId() : null;
     if (s.scope === 'Your Team' && !team) return this.setState({ board: [], boardLoading: false });
     this.setState({ boardLoading: true });
-    const key = s.scope + s.period, rows = await cloud.leaderboard(period, team, 50);
-    if (this.state.scope + this.state.period === key) this.setState({ board: rows, boardLoading: false });
+    const game = s.boardGame === 'all' ? null : s.boardGame;
+    const key = s.scope + s.period + s.boardGame, rows = await cloud.pointsBoard(period, game, team, 50);
+    if (this.state.scope + this.state.period + this.state.boardGame === key) this.setState({ board: rows, boardLoading: false });
   }
   // Team names in the player's language (the Arabic file carries [city, nickname] per team).
   teamNick(team) { const n = team && strings().team_names && strings().team_names[team.id]; return team ? (n ? n[1] : team.name) : ''; }
@@ -281,12 +282,13 @@ export class App extends Logic {
     const r = this.state.run, lib = this.state.lib; if (!r || r.answered !== null) return;
     const q = r.q, ms = Math.min(r.mode === 'buzz' ? 99999 : this.Q_LIMIT, Date.now() - r.qStart), ok = opt === q.correct;
     let pts = 0, time = r.time, extra = null;
+    const table = r.challenge && r.challenge.createdAt < this.eng.POINTS_SWITCH ? this.eng.OLD_TIER_POINTS : this.eng.TIER_POINTS;
     if (r.mode === 'buzz') {
       time = r.time - ms;
       if (ok) { const b = lib.timeBonus(ms); time = Math.min(this.BUZZ_CAP, time + b * 1000); extra = b ? t('game.plus_sec', { n: b }) : null; }
       else { time -= this.BUZZ_PENALTY; extra = t('game.minus_sec', { n: 3 }); }
-      if (ok) pts = (this.eng.TIER_POINTS[q.diff] || 100) + lib.buzzSpeedPts(ms);
-    } else if (ok) pts = (this.eng.TIER_POINTS[q.diff] || 100) + (r.mode === 'h2h' ? (ms < 3000 ? 50 : ms < 6000 ? 25 : 0) : 0);
+      if (ok) pts = (table[q.diff] || 100) + lib.buzzSpeedPts(ms);
+    } else if (ok) pts = (table[q.diff] || 100) + (r.mode === 'h2h' ? (ms < 3000 ? 50 : ms < 6000 ? 25 : 0) : 0);
     const streak = ok ? r.streak + 1 : 0;
     const qa = q.ar, lbl = o => (qa && qa.o && qa.o[o]) || o;
     const log = [...r.log, { qid: q.question_id, q: q.text.split('|').join(' '), type: q.type, cat: q.cat, chosen: opt, correct: q.correct, ok, ms, pts, exp: q.exp,
@@ -468,7 +470,7 @@ export class App extends Logic {
     return (s.board || []).map(b => {
       const rank = Number(b.rank), tm = b.favorite_team ? T.teamById(b.favorite_team) : null;
       return { rank: String(rank), medal: rank <= 3 ? String(rank) : false, top: rank <= 3, name: this.at(b.username), initial: String(b.username).slice(0, 1).toUpperCase(),
-        team: tm ? this.teamFull(tm) : t('ranks.no_team'), value: b.value, me: b.user_id === uid };
+        team: tm ? this.teamFull(tm) : t('ranks.no_team'), value: this.fmt(Number(b.value)), me: b.user_id === uid };
     });
   }
 
@@ -797,15 +799,19 @@ export class App extends Logic {
 
       // ── ranks ──
       boardCaption: L.ranks.caption,
+      // the main board (every game) and one per game
+      boardGames: [['all', L.ranks.all_games], ['streak', L.modes.streak], ['team', L.modes.team], ['buzz', L.modes.buzz], ['q20', L.modes.q20], ['daily', L.modes.daily], ['wai', L.modes.wai], ['h2h', L.nav.battles]]
+        .map(([g, label]) => ({ label, on: yes(s.boardGame === g), pick: () => { this.setState({ boardGame: g }); this.refreshBoard(); } })),
+      pointsLegend: ['easy', 'medium', 'hard', 'hardest', 'hall_of_fame', 'goat'].map(tier => ({ tier, label: SHORT[tier] || LABEL[tier], pts: this.fmt(eng ? eng.TIER_POINTS[tier] : 0) })),
       boardScopes: [[L.ranks.global, 'Global'], [L.ranks.your_team, 'Your Team']].map(([label, x]) => ({ label, on: yes(s.scope === x), pick: () => { this.setState({ scope: x }); this.refreshBoard(); } })),
       boardPeriods: ['Today', 'Week', 'All time'].map(x => ({ label: L.ranks[{ Today: 'today', Week: 'week', 'All time': 'all' }[x]], on: yes(s.period === x), pick: () => { this.setState({ period: x }); this.refreshBoard(); } })),
       boardLoadingNow: !!s.boardLoading && !boardRows.length, skeleton: [1, 2, 3, 4, 5, 6],
       boardHasRows: boardRows.length > 0, boardRows,
       boardNone: !s.boardLoading && !boardRows.length,
       boardNoneTitle: s.scope === 'Your Team' && !t ? L.ranks.pick_first : L.ranks.nobody,
-      boardNoneLine: s.scope === 'Your Team' && !t ? L.ranks.pick_line : t_(`ranks.none_${s.scope === 'Your Team' ? 'team' : 'streak'}_${{ Today: 'today', Week: 'week' }[s.period] || 'all'}`, { team: t ? tn(t) : '' }),
-      boardNoneCta: s.scope === 'Your Team' && !t ? L.ranks.choose_team : s.scope === 'Your Team' ? t_('ranks.play_team', { team: tn(t) }) : L.ranks.play_streak,
-      boardNoneAction: () => s.scope === 'Your Team' && !t ? changeTeam() : s.scope === 'Your Team' ? this.startRun('team') : this.startRun('streak'),
+      boardNoneLine: s.scope === 'Your Team' && !t ? L.ranks.pick_line : L.ranks['none_points_' + ({ Today: 'today', Week: 'week' }[s.period] || 'all')],
+      boardNoneCta: s.scope === 'Your Team' && !t ? L.ranks.choose_team : s.boardGame === 'team' && t ? t_('ranks.play_team', { team: tn(t) }) : L.ranks.play_streak,
+      boardNoneAction: () => s.scope === 'Your Team' && !t ? changeTeam() : s.boardGame === 'team' && t ? this.startRun('team') : this.startRun('streak'),
       myRank: (() => { const me = boardRows.find(x => x.me); return me ? me.rank : '—'; })(),
       myRankSub: a ? this.at(a.username) : L.ranks.sign_up_ranked,
       myRankValue: (() => { const me = boardRows.find(x => x.me); return me ? me.value : '—'; })(),

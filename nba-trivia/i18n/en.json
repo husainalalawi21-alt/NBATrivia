@@ -212,9 +212,9 @@
  },
  "ranks": {
   "title": "Ranks",
-  "caption": "Longest streaks",
+  "caption": "Points from every right answer",
   "global": "Global",
-  "your_team": "Your team",
+  "your_team": "Your team's fans",
   "today": "Today",
   "week": "This week",
   "all": "All time",
@@ -232,7 +232,12 @@
   "play_streak": "Play streak",
   "you": "You",
   "sign_up_ranked": "Sign up to get ranked",
-  "no_team": "No team yet"
+  "no_team": "No team yet",
+  "all_games": "All games",
+  "per_answer": "Per right answer",
+  "none_points_today": "No one has scored points today. The top spot is open.",
+  "none_points_week": "No one has scored points this week. The top spot is open.",
+  "none_points_all": "No one has scored points yet. The top spot is open."
  },
  "hub": {
   "your_team": "Your team",
