@@ -14,7 +14,7 @@
 //
 // Each player:
 //   y   [first season, last season] as start years (1998 = 1998-99); last null = still playing
-//   d   [draft year, pick, team that drafted him]; pick null for a territorial pick
+//   d   [draft year, pick, team that drafted him(, 'territorial')]; pick null when it isn't asked
 //   c   college · hs: came straight from high school · ctry: plays for a country other than the USA
 //   born  born outside the country he plays for · club: the club he joined the NBA from
 //   t   NBA teams in order, as they were called then
@@ -166,7 +166,7 @@ export const PLAYERS = [
     x: [[1, 'In which Spike Lee film did Ray Allen star?', 'He Got Game', ['Blue Chips', 'White Men Can\'t Jump', 'Above the Rim'], 'في أي فيلم لسبايك لي مثّل راي ألن؟',
          { 'He Got Game': 'هي غات غيم', 'Blue Chips': 'بلو تشيبس', "White Men Can't Jump": 'وايت مِن كانت جمب', 'Above the Rim': 'أبوف ذا ريم' }],
         [1, 'Ray Allen\'s famous corner three in Game 6 of the 2013 Finals came against which team?', 'San Antonio Spurs', ['Oklahoma City Thunder', 'Dallas Mavericks', 'Indiana Pacers'], 'ثلاثية راي ألن المشهورة من الزاوية في المباراة السادسة من نهائيات 2013 كانت ضد أي فريق؟']] }),
-  P('Steve Nash', 'medium', { y: [1996, 2014], d: [1996, 15, 'Phoenix Suns'], c: 'Santa Clara', ctry: 'Canada', born: 'South Africa', t: ['Phoenix Suns', 'Dallas Mavericks', 'Phoenix Suns', 'Los Angeles Lakers'], s: 18,
+  P('Steve Nash', 'medium', { y: [1996, 2013], d: [1996, 15, 'Phoenix Suns'], c: 'Santa Clara', ctry: 'Canada', born: 'South Africa', t: ['Phoenix Suns', 'Dallas Mavericks', 'Phoenix Suns', 'Los Angeles Lakers'], s: 18,
     n: [['Phoenix Suns', '13']],
     x: [[1, 'After retiring, Nash became head coach of which team?', 'Brooklyn Nets', ['Phoenix Suns', 'Dallas Mavericks', 'Toronto Raptors'], 'بعد الاعتزال، ناش صار مدرب أي فريق؟']] }),
   P('Tony Parker', 'medium', { y: [2001, 2018], d: [2001, 28, 'San Antonio Spurs'], ctry: 'France', born: 'Belgium', club: 'Paris Basket Racing', t: ['San Antonio Spurs', 'Charlotte Hornets'], s: 18,
@@ -238,7 +238,7 @@ export const PLAYERS = [
     n: [['Los Angeles Clippers', '32']],
     x: [[1, 'Blake won the 2011 Slam Dunk Contest by jumping over what?', 'A car', ['A teammate', 'A mascot', 'A table'], 'بليك فاز بمسابقة السلام دنك 2011 لما نط فوق وش؟',
          { 'A car': 'سيارة', 'A teammate': 'زميله في الفريق', 'A mascot': 'تميمة الفريق', 'A table': 'طاولة' }]] }),
-  P('Wilt Chamberlain', 'medium', { y: [1959, 1972], d: [1959, null, 'Philadelphia Warriors'], c: 'Kansas', t: ['Philadelphia Warriors', 'San Francisco Warriors', 'Philadelphia 76ers', 'Los Angeles Lakers'], s: 14,
+  P('Wilt Chamberlain', 'medium', { y: [1959, 1972], d: [1959, null, 'Philadelphia Warriors', 'territorial'], c: 'Kansas', t: ['Philadelphia Warriors', 'San Francisco Warriors', 'Philadelphia 76ers', 'Los Angeles Lakers'], s: 14,
     n: [['Philadelphia Warriors', '13']], r: ['1966-67', '1971-72'], k: ['The Big Dipper', 'الدب الأكبر'], no: ['count'],
     x: [[0, 'Wilt scored 100 points in a game in 1962 against which team?', 'New York Knicks', ['Boston Celtics', 'Los Angeles Lakers', 'Syracuse Nationals'], 'ويلت سجل 100 نقطة في مباراة سنة 1962 ضد أي فريق؟']] }),
 
@@ -257,7 +257,7 @@ export const PLAYERS = [
   P('Dominique Wilkins', 'goat', { y: [1982, 1998], d: [1982, 3, 'Utah Jazz'], c: 'Georgia', t: ['Atlanta Hawks', 'Los Angeles Clippers', 'Boston Celtics', 'San Antonio Spurs', 'Orlando Magic'],
     n: [['Atlanta Hawks', '21']], k: ['The Human Highlight Film', 'الهايلايت البشري'],
     x: [[1, 'Wilkins\' legendary 1988 Slam Dunk Contest final was against which player?', 'Michael Jordan', ['Spud Webb', 'Clyde Drexler', 'Larry Nance'], 'نهائي مسابقة السلام دنك الأسطوري في 1988 كان بين ويلكنز وأي لاعب؟']] }),
-  P('George Gervin', 'goat', { y: [1976, 1985], c: 'Eastern Michigan', t: ['San Antonio Spurs', 'Chicago Bulls'],
+  P('George Gervin', 'goat', { y: [1976, 1985], d: [1974, 40, 'Phoenix Suns'], c: 'Eastern Michigan', t: ['San Antonio Spurs', 'Chicago Bulls'],
     n: [['San Antonio Spurs', '44']], k: ['The Iceman', 'رجل الثلج'],
     x: [[0, 'What was Gervin\'s signature shot?', 'Finger roll', ['Skyhook', 'Dream Shake', 'Step-back three'], 'وش التسديدة اللي اشتهر فيها غيرفن؟',
          { 'Finger roll': 'الفينغر رول', Skyhook: 'السكاي هوك', 'Dream Shake': 'الدريم شيك', 'Step-back three': 'الستيب باك ثري' }],
@@ -306,7 +306,7 @@ export const PLAYERS = [
   P('Walt Frazier', 'goat', { y: [1967, 1979], d: [1967, 5, 'New York Knicks'], c: 'Southern Illinois', t: ['New York Knicks', 'Cleveland Cavaliers'], s: 13,
     n: [['New York Knicks', '10']], r: ['1969-70', '1972-73'], k: ['Clyde', 'كلايد'],
     x: [[2, 'In Game 7 of the 1970 Finals Frazier scored 36 points with how many assists?', '19', ['12', '15', '17'], 'في المباراة السابعة من نهائيات 1970 فريزر سجل 36 نقطة ومعها كم تمريرة حاسمة؟']] }),
-  P('Willis Reed', 'goat', { y: [1964, 1973], c: 'Grambling State', t: ['New York Knicks'], s: 10,
+  P('Willis Reed', 'goat', { y: [1964, 1973], d: [1964, null, 'New York Knicks'], c: 'Grambling State', t: ['New York Knicks'], s: 10,
     n: [['New York Knicks', '19']], r: ['1969-70', '1972-73'], k: ['The Captain', 'الكابتن'],
     x: [[1, 'Reed limped out for Game 7 of the 1970 Finals against which team?', 'Los Angeles Lakers', ['Boston Celtics', 'Milwaukee Bucks', 'Baltimore Bullets'], 'ريد طلع وهو يعرج في المباراة السابعة من نهائيات 1970 ضد أي فريق؟']] }),
   P('Dave Cowens', 'goat', { y: [1970, 1982], d: [1970, 4, 'Boston Celtics'], c: 'Florida State', t: ['Boston Celtics', 'Milwaukee Bucks'], s: 11,
@@ -404,9 +404,9 @@ export function questionsFor(p, A) {
   const rndFor = key => seededRandom(`${id}:${key}`);
   // draft
   if (p.d) {
-    const [y, pk, team] = p.d;
-    const dx = pk ? `${name} went No. ${pk} to the ${team} in the ${y} draft.` : `The ${team} took ${name} as a territorial pick in ${y}.`;
-    const dxAr = pk ? `اختاره ${N(team)} رقم ${pk} في درافت ${y}.` : `${N(team)} اختاروه كاختيار إقليمي في ${y}.`;
+    const [y, pk, team, how] = p.d;
+    const dx = pk ? `${name} went No. ${pk} to the ${team} in the ${y} draft.` : how === 'territorial' ? `The ${team} took ${name} as a territorial pick in ${y}.` : `The ${team} drafted ${name} in ${y}.`;
+    const dxAr = pk ? `اختاره ${N(team)} رقم ${pk} في درافت ${y}.` : how === 'territorial' ? `${N(team)} اختاروه كاختيار إقليمي في ${y}.` : `اختاره ${N(team)} في درافت ${y}.`;
     const trap = firsts[0] && !sameFranchise(firsts[0], team) ? [firsts[0]] : [];
     add('draft-team', 0, `Which team drafted ${name}?`, team, [...trap, ...otherTeams(p, rndFor('draft-team'), 3 - trap.length, [team])],
       `أي فريق اختار ${an} في الدرافت؟`, dx, dxAr);

@@ -240,6 +240,24 @@ for (const r of rows) {
   if (twin) { r.status = 'disabled'; r.active = false; r.payload = { ...r.payload, duplicate_of: twin.r.question_id }; report.issues.push(`duplicate retired: "${r.question_text}" = "${twin.r.question_text}"`); }
   else group.push({ r, w });
 }
+// ── Crossover: questions about one player at a time (data/crossover.js) ──
+// The app makes these on the device; they are loaded so a player's answers
+// can be saved (question_history) and count on the points board.
+{
+  const xo = await import(join(ROOT, 'data', 'crossover.js'));
+  const recs = xo.buildRecords(A);
+  for (const r of recs) rows.push({
+    question_id: r.question_id, knowledge_point_id: r.knowledge_point_id, question_text: r.question_text,
+    correct_answer: r.correct_answer, wrong_answers: r.answers.filter(a => a !== r.correct_answer),
+    explanation: r.explanation, category: r.category, difficulty: r.difficulty, question_type: r.question_type,
+    pool: 'crossover', game_modes_allowed: ['crossover'], status: 'active', active: true, temporal: 'static',
+    season: null, era: null, players: r.players, teams: [], payload: { xo: r.xo },
+    ar: r.ar, source_name: 'NBA Trivia', source_url: null, source_date: today, quality_score: 90,
+    team_id: null, valid_from: null, valid_until: null, subcategory: r.subcategory });
+  // Titles must be seasons his teams won (the champions table).
+  for (const p of xo.PLAYERS) for (const s of p.r || []) { const c = xo.championOf(s); if (!c || !p.t.includes(c)) report.issues.push(`crossover ${p.name}: title ${s} — champion ${c} is not one of his teams`); }
+  console.log('crossover', recs.length, 'questions ·', xo.PLAYERS.length, 'players');
+}
 writeFileSync(join(CACHE, 'bank.json'), JSON.stringify(rows));
 
 // ── report ───────────────────────────────────────────────────────
