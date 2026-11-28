@@ -1,0 +1,15 @@
+{
+  "appId": "com.twentyfourseconds.app",
+  "appName": "24 Seconds or Less",
+  "webDir": "www",
+  "backgroundColor": "#07080c",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#07080c",
+    "allowsLinkPreview": false
+  },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 700, "launchAutoHide": true, "backgroundColor": "#07080c", "showSpinner": false },
+    "StatusBar": { "style": "DARK", "overlaysWebView": true }
+  }
+}

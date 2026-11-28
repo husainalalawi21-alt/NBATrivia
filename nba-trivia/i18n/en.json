@@ -292,7 +292,11 @@
    "questions": "Questions",
    "team_best": "Team best",
    "top_category": "Top category"
-  }
+  },
+  "privacy": "Privacy policy",
+  "support": "Help & support",
+  "delete_account": "Delete account",
+  "not_affiliated": "Not affiliated with or endorsed by the NBA or its teams."
  },
  "badges": {
   "first": {
@@ -455,5 +459,13 @@
   "players": "The Players",
   "numbers": "Numbers Game",
   "teams": "Teams & Coaches"
+ },
+ "delete": {
+  "title": "Delete your account?",
+  "body": "This permanently deletes {{name}}: your points and places on the leaderboards, every game and answer, and the battles you started. It can't be undone.",
+  "keep": "Keep my account",
+  "confirm": "Delete my account",
+  "busy": "Deleting…",
+  "error": "Couldn't delete the account — check your connection and try again."
  }
 }

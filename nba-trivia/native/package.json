@@ -1,0 +1,22 @@
+{
+  "name": "twenty-four-seconds-ios",
+  "private": true,
+  "version": "1.0.0",
+  "description": "The iPhone app: the web game (../) inside a native shell (Capacitor).",
+  "scripts": {
+    "build": "node scripts/build-www.mjs",
+    "sync": "node scripts/build-www.mjs && cap sync ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "8.6.3",
+    "@capacitor/ios": "8.6.3",
+    "@capacitor/haptics": "8.0.2",
+    "@capacitor/status-bar": "8.0.4",
+    "@capacitor/splash-screen": "8.0.2",
+    "@capacitor/share": "8.0.3",
+    "@capacitor/app": "8.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.6.3"
+  }
+}

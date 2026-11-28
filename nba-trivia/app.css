@@ -294,6 +294,11 @@ button.card:active { transform: scale(.985); }
 .h-modes .tile small { -webkit-line-clamp: 2; }
 .tile[data-kind="buzz"] b { font-size: 15px; }
 
+/* tall phones (Pro Max): the home's cards use the extra height */
+@media (min-height: 880px) and (max-width: 699px) {
+  .today .day-card { min-height: 172px; }
+  .h-modes { max-height: 210px; }
+}
 /* ── crossover ─────────────────────────────────────────────────────── */
 .pill-time { cursor: default; color: var(--muted); font-size: 13px; font-weight: 700; }
 .pill-time .ic { width: 15px; height: 15px; }
@@ -511,6 +516,18 @@ button.brow:hover { border-color: var(--line-2); }
 .mi small { display: block; font-size: 12px; font-weight: 600; color: var(--muted); }
 .mi + .mi { border-top: 1px solid var(--line); }
 .mi-danger { color: #ff8f9c; }
+.mi-quiet { color: var(--dim); font-size: 14px; font-weight: 600; min-height: 44px; }
+.mi-quiet > .ic:first-child { color: var(--dim); width: 16px; height: 16px; }
+/* delete account */
+.del-card { flex: none; display: grid; gap: 12px; justify-items: start; padding: 22px 18px; border-radius: var(--r-xl); border: 1px solid rgba(255, 84, 104, .28);
+  background: radial-gradient(110% 90% at 100% 0%, rgba(255, 84, 104, .16), transparent 60%), var(--card); }
+.del-ic { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 16px; background: rgba(255, 84, 104, .16); color: var(--bad); }
+.del-ic .ic { width: 26px; height: 26px; }
+.del-card .muted { font-size: 15px; }
+.btn-danger { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; justify-content: center; min-height: 52px; border-radius: 16px;
+  font-weight: 800; font-size: 16px; color: var(--bad); border: 1px solid rgba(255, 84, 104, .35); background: rgba(255, 84, 104, .08); }
+.btn-danger[disabled] { opacity: .6; cursor: default; }
+.scr-delete .dock { gap: 10px; max-width: 520px; width: 100%; margin-inline: auto; }
 .mi-danger > .ic:first-child { color: #ff8f9c; }
 .switch { width: 42px; height: 26px; border-radius: 99px; background: var(--card-3); position: relative; transition: background .15s; }
 .switch i { position: absolute; top: 3px; inset-inline-start: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .15s; }

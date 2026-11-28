@@ -169,7 +169,20 @@ export class App extends Logic {
     if (!this.state.sound) return;
     try { const ac = this._ac || (this._ac = new (window.AudioContext || window.webkitAudioContext)()); const o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.value = f; g.gain.value = vol; o.connect(g); g.connect(ac.destination); o.start(); g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + d); o.stop(ac.currentTime + d); } catch (e) {}
   }
-  buzz(pattern) { if (navigator.vibrate) navigator.vibrate(pattern); }
+  // In the iPhone app (Capacitor) the phone's own haptics and share sheet;
+  // in a browser, the web versions.
+  native(name) { const C = window.Capacitor; return C && C.isNativePlatform && C.isNativePlatform() && C.Plugins ? C.Plugins[name] : null; }
+  buzz(pattern) {
+    const H = this.native('Haptics');
+    if (H) { (Array.isArray(pattern) ? H.notification({ type: 'ERROR' }) : H.impact({ style: pattern > 25 ? 'MEDIUM' : 'LIGHT' })).catch(() => {}); return; }
+    if (navigator.vibrate) navigator.vibrate(pattern);
+  }
+  shareText_(text) {
+    const S = this.native('Share');
+    if (S) return S.share({ text }).catch(() => {});
+    if (navigator.share) return navigator.share({ text }).catch(() => {});
+    navigator.clipboard && navigator.clipboard.writeText(text); this.setState({ copied: true });
+  }
 
   // ── accounts ──
   unameCheck(v) {
@@ -467,7 +480,7 @@ export class App extends Logic {
     if (screen === 'h2h' || screen === 'profile') this.refreshChallenges();
     if (screen === 'home') this.refreshRanks();
   }
-  challengeLink(code) { return `${location.origin}${location.pathname}?c=${code}`; }
+  challengeLink(code) { return /^https?:$/.test(location.protocol) ? `${location.origin}${location.pathname}?c=${code}` : `${SITE}?c=${code}`; }
   shareText() {
     const r = this.state.run, url = this.props.shareUrl ?? '20-0.app', name = this.props.appName ?? 'NBA Trivia';
     const a = this.state.account, who = a ? '@' + a.username : t('share.me');
@@ -679,7 +692,7 @@ export class App extends Logic {
     const confetti = Array.from({ length: 28 }, (_, i) => `left:${(i * 37) % 100}%;background:${CONF[i % CONF.length]};animation-delay:${(i % 7) * 0.12}s;transform:rotate(${i * 29}deg)`);
 
     const navDefs = [[L.nav.home, 'home', '#i-home'], [L.nav.battles, 'h2h', '#i-swords'], [L.nav.ranks, 'board', '#i-trophy'], [L.nav.profile, 'profile', '#i-user']];
-    const tabOf = { home: 'home', play: 'home', xo: 'home', 'xo-intro': 'home', result: 'home', share: 'home', teamhub: 'home', teampick: 'home', h2h: 'h2h', 'h2h-intro': 'h2h', 'h2h-made': 'h2h', 'h2h-result': 'h2h', board: 'board', profile: 'profile', username: 'profile', admin: 'profile' };
+    const tabOf = { home: 'home', play: 'home', xo: 'home', 'xo-intro': 'home', delete: 'profile', result: 'home', share: 'home', teamhub: 'home', teampick: 'home', h2h: 'h2h', 'h2h-intro': 'h2h', 'h2h-made': 'h2h', 'h2h-result': 'h2h', board: 'board', profile: 'profile', username: 'profile', admin: 'profile' };
     const nav = navDefs.map(([label, target, icon]) => ({ label, icon, current: tabOf[sc] === target ? 'page' : false,
       badge: target === 'h2h' && inbox.length > 0, badgeCount: inbox.length,
       pick: () => { this.setState({ screen: target, reg: false, hubFrom: 'home', copied: false, h2hError: '' }); this.onEnter(target); } }));
@@ -857,7 +870,7 @@ export class App extends Logic {
       shareNumber: r ? (isStreaky ? r.best : this.fmt(r.score)) : best,
       shareFooter: t ? t_('share.fan', { team: tn(t), level }) : t_('share.level', { level }),
       copyLabel: s.copied ? L.common.copied : L.common.copy,
-      shareNative: () => { const text = this.shareText(); if (navigator.share) navigator.share({ text }).catch(() => {}); else { navigator.clipboard && navigator.clipboard.writeText(text); this.setState({ copied: true }); } },
+      shareNative: () => this.shareText_(this.shareText()),
       copyShare: () => { navigator.clipboard && navigator.clipboard.writeText(this.shareText()); this.setState({ copied: true }); },
 
       // ── ranks ──
@@ -901,6 +914,22 @@ export class App extends Logic {
       soundOn: !!s.sound, soundIcon: s.sound ? '#i-sound' : '#i-mute',
       engineSummaryLine: eng ? `${this.fmt(eng.bankSummary().active)} active · ${this.fmt(eng.bankSummary().seen)} seen` : L.profile.loading,
       changeUsername: () => this.setState({ screen: 'username', reg: false, unameDraft: a ? a.username : '' }),
+      // Apple requires in-app account deletion; privacy policy and support pages live on the website.
+      privacyUrl: SITE + 'privacy.html' + (lang === 'ar' ? '#ar' : ''), supportUrl: SITE + 'support.html' + (lang === 'ar' ? '#ar' : ''),
+      goDelete: () => this.setState({ screen: 'delete', deleteError: '' }),
+      atDelete: sc === 'delete', deleteBody: t_('delete.body', { name: a ? this.at(a.username) : '' }),
+      deleteBusy: !!s.busy, deleteCta: s.busy ? L.delete.busy : L.delete.confirm,
+      deleteHasError: !!s.deleteError, deleteError: s.deleteError ? L.delete.error : '',
+      cancelDelete: () => this.setState({ screen: 'profile', deleteError: '' }),
+      confirmDelete: async () => {
+        if (s.busy) return;
+        this.setState({ busy: true, deleteError: '' });
+        const uid = s.user && s.user.id, res = await cloud.deleteAccount();
+        if (res.error) return this.setState({ busy: false, deleteError: res.error });
+        try { localStorage.removeItem(this.profileKey(uid)); localStorage.removeItem('v2_q_history:' + uid); } catch (e) {}
+        if (this.eng) this.eng.useHistoryOf(null);
+        this.setState({ busy: false, screen: 'welcome', guest: false, authEmail: '', authPass: '', user: null, account: null, isAdmin: false, challenges: [], ranks: { global: null, team: null }, profile: this.localProfile(null) });
+      },
       signOut: async () => { await cloud.signOut(); if (this.eng) this.eng.useHistoryOf(null); this.setState({ screen: 'welcome', guest: false, authEmail: '', authPass: '', user: null, account: null, isAdmin: false, challenges: [], ranks: { global: null, team: null }, profile: this.localProfile(null) }); },
 
       // ── admin · question engine ──
@@ -926,7 +955,7 @@ export class App extends Logic {
       chKicker: ch ? (ch.mode === 'h2h' ? L.battles.result : t_('battles.mode_battle', { mode: modeName(ch.mode) })) : '', chCreator: ch ? this.at(ch.creator) : '', chThinks: ch ? t_('battles.thinks', { name: this.at(ch.creator) }) : '', chCreatorInitial: ch ? initial(ch.creator) : '', chModeLabel: ch ? modeName(ch.mode) : '', chCodeLabel: ch ? ch.code : '',
       chDeepLink: ch ? this.challengeLink(ch.code).replace(/^https?:\/\//, '') : '',
       chAccept: () => { if (!a) return this.setState({ screen: 'welcome', reg: true }); this.startRun(ch.mode, { challenge: ch }); },
-      chShare: () => { const text = ch && ch.status === 'completed' ? t_('battles.share_done', { app: appName, a: '@' + ch.creator, sa: this.fmt(creatorVal), b: '@' + ch.opponent, sb: this.fmt(oppVal), link: this.challengeLink(ch.code) }) : t_('battles.share_open', { score: ch ? this.fmt(creatorVal) : '', app: appName, code: ch ? ch.code : '', link: ch ? this.challengeLink(ch.code) : '' }); if (navigator.share) navigator.share({ text }).catch(() => {}); else { navigator.clipboard && navigator.clipboard.writeText(text); this.setState({ copied: true }); } },
+      chShare: () => { const text = ch && ch.status === 'completed' ? t_('battles.share_done', { app: appName, a: '@' + ch.creator, sa: this.fmt(creatorVal), b: '@' + ch.opponent, sb: this.fmt(oppVal), link: this.challengeLink(ch.code) }) : t_('battles.share_open', { score: ch ? this.fmt(creatorVal) : '', app: appName, code: ch ? ch.code : '', link: ch ? this.challengeLink(ch.code) : '' }); this.shareText_(text); },
       chCopy: () => { navigator.clipboard && navigator.clipboard.writeText(ch ? this.challengeLink(ch.code) : ''); this.setState({ copied: true }); },
       chWon: !!(ch && ch.result === 'won'), chLost: !!(ch && ch.result === 'lost'),
       chResultTitle: ch && ch.result === 'won' ? L.battles.you_win : ch && ch.result === 'lost' ? L.battles.you_lose : L.battles.dead_heat,
@@ -937,6 +966,8 @@ export class App extends Logic {
   }
 }
 
+// The public website: privacy policy, support, battle links.
+const SITE = 'https://nba-trivia-20-0.netlify.app/';
 // Team colours for the three-letter marks (no logos).
 const TEAM_HEX = { atl: '#E03A3E', bos: '#007A33', bkn: '#4b4b55', cha: '#00788C', chi: '#CE1141', cle: '#860038', dal: '#00538C', den: '#FEC524', det: '#1D42BA', gsw: '#1D428A',
   hou: '#CE1141', ind: '#FDBB30', lac: '#C8102E', lal: '#552583', mem: '#5D76A9', mia: '#98002E', mil: '#00471B', min: '#236192', nop: '#85714D', nyk: '#006BB6',

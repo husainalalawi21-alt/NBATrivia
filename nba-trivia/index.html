@@ -252,6 +252,23 @@
     </section>
   </sc-if>
 
+  <!-- ═══ DELETE ACCOUNT ═══ -->
+  <sc-if value="{{ atDelete }}" hint-placeholder-val="{{ false }}">
+    <section class="scr scr-delete">
+      <header class="topbar"><button class="back" onClick="{{ cancelDelete }}" aria-label="{{ L.common.back }}"><svg class="ic"><use href="#i-back"></use></svg>{{ L.nav.profile }}</button></header>
+      <div class="del-card">
+        <span class="del-ic"><svg class="ic"><use href="#i-close"></use></svg></span>
+        <h2 class="display h-lg">{{ L.delete.title }}</h2>
+        <p class="muted">{{ deleteBody }}</p>
+        <sc-if value="{{ deleteHasError }}"><div class="note">{{ deleteError }}</div></sc-if>
+      </div>
+      <div class="dock">
+        <button class="btn-main" onClick="{{ cancelDelete }}">{{ L.delete.keep }}</button>
+        <button class="btn-danger" onClick="{{ confirmDelete }}" disabled="{{ deleteBusy }}">{{ deleteCta }}</button>
+      </div>
+    </section>
+  </sc-if>
+
   <!-- ═══ GAME ═══ -->
   <sc-if value="{{ atGame }}" hint-placeholder-val="{{ false }}">
     <section class="scr scr-game" data-urgent="{{ urgent }}">
@@ -491,9 +508,12 @@
         <button class="mi" onClick="{{ changeTeam }}"><svg class="ic"><use href="#i-swap"></use></svg><span class="grow">{{ teamMenuLabel }}</span><svg class="ic chev"><use href="#i-chev"></use></svg></button>
         <sc-if value="{{ isAdmin }}"><button class="mi" onClick="{{ goAdmin }}"><svg class="ic"><use href="#i-shield"></use></svg><span class="grow">{{ L.profile.engine }}<small>{{ engineSummaryLine }}</small></span><svg class="ic chev"><use href="#i-chev"></use></svg></button></sc-if>
         <sc-if value="{{ isMember }}"><button class="mi mi-danger" onClick="{{ signOut }}"><svg class="ic"><use href="#i-logout"></use></svg><span class="grow">{{ L.common.sign_out }}</span></button></sc-if>
+        <a class="mi" href="{{ privacyUrl }}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-shield"></use></svg><span class="grow">{{ L.profile.privacy }}</span><svg class="ic chev"><use href="#i-chev"></use></svg></a>
+        <a class="mi" href="{{ supportUrl }}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-mail"></use></svg><span class="grow">{{ L.profile.support }}</span><svg class="ic chev"><use href="#i-chev"></use></svg></a>
+        <sc-if value="{{ isMember }}"><button class="mi mi-quiet" onClick="{{ goDelete }}"><svg class="ic"><use href="#i-close"></use></svg><span class="grow">{{ L.profile.delete_account }}</span></button></sc-if>
         <sc-if value="{{ isGuest }}"><button class="mi" onClick="{{ goSignIn }}"><svg class="ic"><use href="#i-user"></use></svg><span class="grow">{{ L.common.sign_in }}</span><svg class="ic chev"><use href="#i-chev"></use></svg></button></sc-if>
       </div>
-      <p class="fine center">{{ L.profile.credits }}</p>
+      <p class="fine center">{{ L.profile.credits }}<br>{{ L.profile.not_affiliated }}</p>
       </div>
     </section>
   </sc-if>
@@ -730,7 +750,8 @@
   await init();
   // Phones fill the screen; tablets and desktops get their own layouts (app.css).
   const props = {
-    appName: 'NBA Trivia',
+    // The iPhone app (Capacitor) has its own name on the App Store.
+    appName: window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform() ? '24 Seconds or Less' : 'NBA Trivia',
     shareUrl: '20-0.app',
     streakGlow: true,
   };

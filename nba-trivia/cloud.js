@@ -39,6 +39,14 @@ export async function signInWith(provider) {
   return error ? { error: friendly(error) } : {};
 }
 export async function signOut() { if (sb) await sb.auth.signOut(); }
+// Deletes the signed-in player's account and everything tied to it (migration 0011).
+export async function deleteAccount() {
+  if (!sb) return { error: 'offline' };
+  const { error } = await sb.rpc('delete_my_account');
+  if (error) return { error: msg(error) };
+  await sb.auth.signOut({ scope: 'local' }).catch(() => {});
+  return {};
+}
 function friendly(e) {
   const m = msg(e);
   if (/already registered|already been registered/i.test(m)) return 'That email already has an account — sign in instead';
